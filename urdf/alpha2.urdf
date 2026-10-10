@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <!-- MASS MODEL: total 2.3 kg = 20 servos (IDs 1-6,17-20: 40.3 g; IDs 7-16: 52.8 g; modelled as point masses at each joint pivot, in the child link) + 3x18650 cells (50 g, upright, rear of body, assumed position) + remaining mass (shell, mainboards, wiring) distributed by convex-hull volume. -->
+<!-- COLLISION: each link uses a convex decomposition (CoACD, up to 8 convex pieces per link, from the visual mesh) instead of a single convex hull. -->
 <!-- Alpha 2 (UBTech) humanoid. Generated from alpha2_21parts OBJ meshes + Alpha2_PC_Programming alpha2.FBX/alpha2.xml.
      Frame: ROS REP-103 (x forward, y left, z up), SI units. Zero pose = standing pose of the PC-software model (arms down).
      Every link frame is axis-aligned with base_link at q=0 and sits on its servo pivot. Inertials are ESTIMATES (see README). -->
@@ -16,7 +17,35 @@
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry><mesh filename="package://alpha2_description/meshes/collision/base_link.stl"/></geometry>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/base_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/base_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/base_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/base_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/base_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/base_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/base_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/base_link_7.stl"/></geometry>
     </collision>
   </link>
   <link name="r_shoulder_pitch_link">
@@ -31,7 +60,35 @@
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_shoulder_pitch_link.stl"/></geometry>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_shoulder_pitch_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_shoulder_pitch_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_shoulder_pitch_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_shoulder_pitch_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_shoulder_pitch_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_shoulder_pitch_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_shoulder_pitch_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_shoulder_pitch_link_7.stl"/></geometry>
     </collision>
   </link>
   <!-- servo 1 (右肩上下); PC-software node "right hand4"; InitAngle=120, Offset=-130 -->
@@ -55,7 +112,35 @@
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_shoulder_roll_link.stl"/></geometry>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_shoulder_roll_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_shoulder_roll_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_shoulder_roll_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_shoulder_roll_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_shoulder_roll_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_shoulder_roll_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_shoulder_roll_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_shoulder_roll_link_7.stl"/></geometry>
     </collision>
   </link>
   <!-- servo 2 (右肩左右); PC-software node "right hand3"; InitAngle=120, Offset=-210 -->
@@ -79,7 +164,35 @@
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_elbow_link.stl"/></geometry>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_elbow_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_elbow_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_elbow_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_elbow_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_elbow_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_elbow_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_elbow_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_elbow_link_7.stl"/></geometry>
     </collision>
   </link>
   <!-- servo 3 (右肘); PC-software node "right hand2"; InitAngle=120, Offset=-115 -->
@@ -103,7 +216,35 @@
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_hand_link.stl"/></geometry>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_hand_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_hand_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_hand_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_hand_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_hand_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_hand_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_hand_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_hand_link_7.stl"/></geometry>
     </collision>
   </link>
   <!-- servo 17 (右指); PC-software node "right hand1"; InitAngle=120, Offset=-120 -->
@@ -127,7 +268,35 @@
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_shoulder_pitch_link.stl"/></geometry>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_shoulder_pitch_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_shoulder_pitch_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_shoulder_pitch_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_shoulder_pitch_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_shoulder_pitch_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_shoulder_pitch_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_shoulder_pitch_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_shoulder_pitch_link_7.stl"/></geometry>
     </collision>
   </link>
   <!-- servo 4 (左肩上下); PC-software node "left hand4"; InitAngle=120, Offset=-110 -->
@@ -151,7 +320,35 @@
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_shoulder_roll_link.stl"/></geometry>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_shoulder_roll_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_shoulder_roll_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_shoulder_roll_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_shoulder_roll_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_shoulder_roll_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_shoulder_roll_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_shoulder_roll_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_shoulder_roll_link_7.stl"/></geometry>
     </collision>
   </link>
   <!-- servo 5 (左肩左右); PC-software node "left hand3"; InitAngle=120, Offset=-30 -->
@@ -175,7 +372,35 @@
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_elbow_link.stl"/></geometry>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_elbow_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_elbow_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_elbow_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_elbow_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_elbow_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_elbow_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_elbow_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_elbow_link_7.stl"/></geometry>
     </collision>
   </link>
   <!-- servo 6 (左肘); PC-software node "left hand2"; InitAngle=120, Offset=-135 -->
@@ -199,7 +424,35 @@
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_hand_link.stl"/></geometry>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_hand_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_hand_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_hand_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_hand_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_hand_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_hand_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_hand_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_hand_link_7.stl"/></geometry>
     </collision>
   </link>
   <!-- servo 18 (左指); PC-software node "left hand1"; InitAngle=120, Offset=-120 -->
@@ -223,7 +476,35 @@
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_hip_roll_link.stl"/></geometry>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_hip_roll_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_hip_roll_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_hip_roll_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_hip_roll_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_hip_roll_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_hip_roll_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_hip_roll_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_hip_roll_link_7.stl"/></geometry>
     </collision>
   </link>
   <!-- servo 7 (右股左右); PC-software node "right leg5"; InitAngle=120, Offset=-120 -->
@@ -247,7 +528,35 @@
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_hip_pitch_link.stl"/></geometry>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_hip_pitch_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_hip_pitch_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_hip_pitch_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_hip_pitch_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_hip_pitch_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_hip_pitch_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_hip_pitch_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_hip_pitch_link_7.stl"/></geometry>
     </collision>
   </link>
   <!-- servo 8 (右股上下); PC-software node "right leg4"; InitAngle=65, Offset=-75 -->
@@ -271,7 +580,35 @@
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_knee_link.stl"/></geometry>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_knee_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_knee_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_knee_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_knee_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_knee_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_knee_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_knee_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_knee_link_7.stl"/></geometry>
     </collision>
   </link>
   <!-- servo 9 (右膝); PC-software node "right leg3"; InitAngle=145, Offset=-150 -->
@@ -295,7 +632,35 @@
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_ankle_pitch_link.stl"/></geometry>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_ankle_pitch_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_ankle_pitch_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_ankle_pitch_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_ankle_pitch_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_ankle_pitch_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_ankle_pitch_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_ankle_pitch_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_ankle_pitch_link_7.stl"/></geometry>
     </collision>
   </link>
   <!-- servo 10 (右腳掌上下); PC-software node "right leg2"; InitAngle=135, Offset=-140 -->
@@ -319,7 +684,35 @@
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_ankle_roll_link.stl"/></geometry>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_ankle_roll_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_ankle_roll_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_ankle_roll_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_ankle_roll_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_ankle_roll_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_ankle_roll_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_ankle_roll_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/r_ankle_roll_link_7.stl"/></geometry>
     </collision>
   </link>
   <!-- servo 11 (右腳掌左右); PC-software node "right leg1"; InitAngle=120, Offset=-120 -->
@@ -343,7 +736,35 @@
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_hip_roll_link.stl"/></geometry>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_hip_roll_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_hip_roll_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_hip_roll_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_hip_roll_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_hip_roll_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_hip_roll_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_hip_roll_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_hip_roll_link_7.stl"/></geometry>
     </collision>
   </link>
   <!-- servo 12 (左股左右); PC-software node "left leg5"; InitAngle=120, Offset=-122 -->
@@ -367,7 +788,35 @@
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_hip_pitch_link.stl"/></geometry>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_hip_pitch_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_hip_pitch_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_hip_pitch_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_hip_pitch_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_hip_pitch_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_hip_pitch_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_hip_pitch_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_hip_pitch_link_7.stl"/></geometry>
     </collision>
   </link>
   <!-- servo 13 (左股上下); PC-software node "left leg4"; InitAngle=175, Offset=-165 -->
@@ -391,7 +840,35 @@
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_knee_link.stl"/></geometry>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_knee_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_knee_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_knee_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_knee_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_knee_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_knee_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_knee_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_knee_link_7.stl"/></geometry>
     </collision>
   </link>
   <!-- servo 14 (左膝); PC-software node "left leg3"; InitAngle=95, Offset=-90 -->
@@ -415,7 +892,35 @@
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_ankle_pitch_link.stl"/></geometry>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_ankle_pitch_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_ankle_pitch_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_ankle_pitch_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_ankle_pitch_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_ankle_pitch_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_ankle_pitch_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_ankle_pitch_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_ankle_pitch_link_7.stl"/></geometry>
     </collision>
   </link>
   <!-- servo 15 (左腳掌上下); PC-software node "left leg2"; InitAngle=105, Offset=-100 -->
@@ -439,7 +944,35 @@
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_ankle_roll_link.stl"/></geometry>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_ankle_roll_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_ankle_roll_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_ankle_roll_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_ankle_roll_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_ankle_roll_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_ankle_roll_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_ankle_roll_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/l_ankle_roll_link_7.stl"/></geometry>
     </collision>
   </link>
   <!-- servo 16 (左腳掌左右); PC-software node "left leg1"; InitAngle=120, Offset=-120 -->
@@ -463,7 +996,7 @@
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry><mesh filename="package://alpha2_description/meshes/collision/head_yaw_link.stl"/></geometry>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/head_yaw_link_0.stl"/></geometry>
     </collision>
   </link>
   <!-- servo 19 (頭左右); PC-software node "head2"; InitAngle=120, Offset=-120 -->
@@ -487,7 +1020,31 @@
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
-      <geometry><mesh filename="package://alpha2_description/meshes/collision/head_pitch_link.stl"/></geometry>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/head_pitch_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/head_pitch_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/head_pitch_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/head_pitch_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/head_pitch_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/head_pitch_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://alpha2_description/meshes/collision/head_pitch_link_7.stl"/></geometry>
     </collision>
   </link>
   <!-- servo 20 (頭上下); PC-software node "head1"; InitAngle=120, Offset=-135 ; URDF zero overridden: q = servo - 120 (user: servo 19/20 at 120 = level) -->
@@ -500,37 +1057,37 @@
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
 
-  <!-- Reference frames (no mass, no geometry). Sole frames: centre of the sole plane of each foot; hand tips: lowest point of the hand link at the zero pose. -->
+  <!-- Reference frames (no mass, no geometry). Sole frames: centre of the sole plane of each foot (from the full-resolution visual mesh); hand tips: lowest point of the hand link at the zero pose. -->
   <link name="r_sole_frame"/>
   <joint name="r_sole_frame_joint" type="fixed">
     <parent link="r_ankle_roll_link"/>
     <child link="r_sole_frame"/>
-    <origin xyz="0.005153 -0.014847 -0.027969" rpy="0 0 0"/>
+    <origin xyz="0.000213 -0.016948 -0.027969" rpy="0 0 0"/>
   </joint>
   <link name="l_sole_frame"/>
   <joint name="l_sole_frame_joint" type="fixed">
     <parent link="l_ankle_roll_link"/>
     <child link="l_sole_frame"/>
-    <origin xyz="0.000202 0.009880 -0.027222" rpy="0 0 0"/>
+    <origin xyz="0.000213 0.016948 -0.027969" rpy="0 0 0"/>
   </joint>
   <link name="r_hand_tip"/>
   <joint name="r_hand_tip_joint" type="fixed">
     <parent link="r_hand_link"/>
     <child link="r_hand_tip"/>
-    <origin xyz="0.000475 0.011671 -0.038763" rpy="0 0 0"/>
+    <origin xyz="-0.000000 0.012449 -0.038605" rpy="0 0 0"/>
   </joint>
   <link name="l_hand_tip"/>
   <joint name="l_hand_tip_joint" type="fixed">
     <parent link="l_hand_link"/>
     <child link="l_hand_tip"/>
-    <origin xyz="0.021756 -0.011977 -0.038685" rpy="0 0 0"/>
+    <origin xyz="0.021396 -0.012449 -0.038527" rpy="0 0 0"/>
   </joint>
-  <!-- base_footprint: point on the ground below base_link with the robot in the zero pose (feet flat, arms down). -->
+  <!-- base_footprint: point on the ground below base_link in the PC-software default stance (servo = InitAngle, legs slightly bent); height = lowest point of the visual meshes. In the zero pose (straight legs) the feet sit 2 mm above this ground. -->
   <link name="base_footprint"/>
   <joint name="base_footprint_joint" type="fixed">
     <parent link="base_footprint"/>
     <child link="base_link"/>
-    <origin xyz="0 0 0.218642" rpy="0 0 0"/>
+    <origin xyz="0 0 0.220606" rpy="0 0 0"/>
   </joint>
 
   <!-- Camera: the small circle on the front face of the head (lens centre). camera_link: x forward, y left, z up. camera_optical_frame: REP-103 optical (z forward, x right, y down). Intrinsics unknown. -->

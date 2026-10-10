@@ -97,15 +97,10 @@
   <disable_collisions link1="r_shoulder_pitch_link" link2="r_shoulder_roll_link" reason="Adjacent" />
   <disable_collisions link1="base_link" link2="l_shoulder_roll_link" reason="Default" />
   <disable_collisions link1="base_link" link2="r_shoulder_roll_link" reason="Default" />
-  <disable_collisions link1="l_ankle_roll_link" link2="l_knee_link" reason="Default" />
-  <disable_collisions link1="l_elbow_link" link2="l_hip_pitch_link" reason="Default" />
-  <disable_collisions link1="l_elbow_link" link2="l_hip_roll_link" reason="Default" />
   <disable_collisions link1="base_link" link2="l_elbow_link" reason="Never" />
   <disable_collisions link1="base_link" link2="l_hand_link" reason="Never" />
   <disable_collisions link1="base_link" link2="r_elbow_link" reason="Never" />
   <disable_collisions link1="base_link" link2="r_hand_link" reason="Never" />
-  <disable_collisions link1="head_pitch_link" link2="l_elbow_link" reason="Never" />
-  <disable_collisions link1="head_pitch_link" link2="l_hand_link" reason="Never" />
   <disable_collisions link1="head_pitch_link" link2="l_hip_pitch_link" reason="Never" />
   <disable_collisions link1="head_pitch_link" link2="l_hip_roll_link" reason="Never" />
   <disable_collisions link1="head_pitch_link" link2="l_knee_link" reason="Never" />
@@ -116,6 +111,8 @@
   <disable_collisions link1="head_pitch_link" link2="r_hip_pitch_link" reason="Never" />
   <disable_collisions link1="head_pitch_link" link2="r_hip_roll_link" reason="Never" />
   <disable_collisions link1="head_pitch_link" link2="r_knee_link" reason="Never" />
+  <disable_collisions link1="head_pitch_link" link2="r_shoulder_pitch_link" reason="Never" />
+  <disable_collisions link1="head_pitch_link" link2="r_shoulder_roll_link" reason="Never" />
   <disable_collisions link1="head_yaw_link" link2="l_elbow_link" reason="Never" />
   <disable_collisions link1="head_yaw_link" link2="l_hand_link" reason="Never" />
   <disable_collisions link1="head_yaw_link" link2="l_hip_pitch_link" reason="Never" />
@@ -143,7 +140,6 @@
   <disable_collisions link1="l_elbow_link" link2="r_shoulder_roll_link" reason="Never" />
   <disable_collisions link1="l_hand_link" link2="l_shoulder_pitch_link" reason="Never" />
   <disable_collisions link1="l_hand_link" link2="l_shoulder_roll_link" reason="Never" />
-  <disable_collisions link1="l_hand_link" link2="r_ankle_pitch_link" reason="Never" />
   <disable_collisions link1="l_hand_link" link2="r_elbow_link" reason="Never" />
   <disable_collisions link1="l_hand_link" link2="r_hand_link" reason="Never" />
   <disable_collisions link1="l_hand_link" link2="r_hip_pitch_link" reason="Never" />
