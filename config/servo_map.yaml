@@ -1,0 +1,25 @@
+# Servo <-> URDF joint map (from UBXRobot3DView.dll disassembly + alpha2.xml).
+# Rule used by the PC software 3D view:  rotation_deg = servo_angle_deg + pc_offset   (about the xml <Axis>, relative to the FBX/URDF zero pose).
+# URDF:  q_rad = radians(servo_angle_deg + pc_offset);  servo_angle_deg = degrees(q_rad) - pc_offset.   Servo travel min/max/home: measured on the robot, from ubtech-open-alpha2 app-core.js SERVO_CALIBRATION (identical to ubtech-open-lynx).
+# servo_at_q0 = -pc_offset.  q_init = radians(pc_init_angle + pc_offset) is the PC-software default stance.
+joints:
+  - {servo_id: 1, joint: r_shoulder_pitch_joint, pc_node: "right hand4", urdf_axis: [0, 1, 0], pc_offset: -130, pc_init_angle: 120, servo_at_q0: 130, q_init_deg: -10, servo_min: 5, servo_max: 235, servo_home: 120, sign: 1}
+  - {servo_id: 2, joint: r_shoulder_roll_joint, pc_node: "right hand3", urdf_axis: [1, 0, 0], pc_offset: -210, pc_init_angle: 120, servo_at_q0: 210, q_init_deg: -90, servo_min: 50, servo_max: 210, servo_home: 120, sign: 1}
+  - {servo_id: 3, joint: r_elbow_joint, pc_node: "right hand2", urdf_axis: [0, -1, 0], pc_offset: -115, pc_init_angle: 120, servo_at_q0: 115, q_init_deg: 5, servo_min: 55, servo_max: 185, servo_home: 120, sign: 1}
+  - {servo_id: 4, joint: l_shoulder_pitch_joint, pc_node: "left hand4", urdf_axis: [0, -1, 0], pc_offset: -110, pc_init_angle: 120, servo_at_q0: 110, q_init_deg: 10, servo_min: 5, servo_max: 235, servo_home: 120, sign: 1}
+  - {servo_id: 5, joint: l_shoulder_roll_joint, pc_node: "left hand3", urdf_axis: [1, 0, 0], pc_offset: -30, pc_init_angle: 120, servo_at_q0: 30, q_init_deg: 90, servo_min: 30, servo_max: 190, servo_home: 120, sign: 1}
+  - {servo_id: 6, joint: l_elbow_joint, pc_node: "left hand2", urdf_axis: [0, 1, 0], pc_offset: -135, pc_init_angle: 120, servo_at_q0: 135, q_init_deg: -15, servo_min: 55, servo_max: 185, servo_home: 120, sign: 1}
+  - {servo_id: 7, joint: r_hip_roll_joint, pc_node: "right leg5", urdf_axis: [-1, 0, 0], pc_offset: -120, pc_init_angle: 120, servo_at_q0: 120, q_init_deg: 0, servo_min: 100, servo_max: 200, servo_home: 120, sign: 1}
+  - {servo_id: 8, joint: r_hip_pitch_joint, pc_node: "right leg4", urdf_axis: [0, 1, 0], pc_offset: -75, pc_init_angle: 65, servo_at_q0: 75, q_init_deg: -10, servo_min: 20, servo_max: 220, servo_home: 65, sign: 1}
+  - {servo_id: 9, joint: r_knee_joint, pc_node: "right leg3", urdf_axis: [0, -1, 0], pc_offset: -150, pc_init_angle: 145, servo_at_q0: 150, q_init_deg: -5, servo_min: 35, servo_max: 230, servo_home: 145, sign: 1}
+  - {servo_id: 10, joint: r_ankle_pitch_joint, pc_node: "right leg2", urdf_axis: [0, -1, 0], pc_offset: -140, pc_init_angle: 135, servo_at_q0: 140, q_init_deg: -5, servo_min: 35, servo_max: 215, servo_home: 140, sign: 1}
+  - {servo_id: 11, joint: r_ankle_roll_joint, pc_node: "right leg1", urdf_axis: [1, 0, 0], pc_offset: -120, pc_init_angle: 120, servo_at_q0: 120, q_init_deg: 0, servo_min: 100, servo_max: 190, servo_home: 120, sign: 1}
+  - {servo_id: 12, joint: l_hip_roll_joint, pc_node: "left leg5", urdf_axis: [-1, 0, 0], pc_offset: -122, pc_init_angle: 120, servo_at_q0: 122, q_init_deg: -2, servo_min: 40, servo_max: 140, servo_home: 120, sign: 1}
+  - {servo_id: 13, joint: l_hip_pitch_joint, pc_node: "left leg4", urdf_axis: [0, -1, 0], pc_offset: -165, pc_init_angle: 175, servo_at_q0: 165, q_init_deg: 10, servo_min: 20, servo_max: 220, servo_home: 175, sign: 1}
+  - {servo_id: 14, joint: l_knee_joint, pc_node: "left leg3", urdf_axis: [0, 1, 0], pc_offset: -90, pc_init_angle: 95, servo_at_q0: 90, q_init_deg: 5, servo_min: 10, servo_max: 205, servo_home: 95, sign: 1}
+  - {servo_id: 15, joint: l_ankle_pitch_joint, pc_node: "left leg2", urdf_axis: [0, 1, 0], pc_offset: -100, pc_init_angle: 105, servo_at_q0: 100, q_init_deg: 5, servo_min: 25, servo_max: 205, servo_home: 100, sign: 1}
+  - {servo_id: 16, joint: l_ankle_roll_joint, pc_node: "left leg1", urdf_axis: [1, 0, 0], pc_offset: -120, pc_init_angle: 120, servo_at_q0: 120, q_init_deg: 0, servo_min: 50, servo_max: 140, servo_home: 120, sign: 1}
+  - {servo_id: 17, joint: r_hand_joint, pc_node: "right hand1", urdf_axis: [-1, 0, 0], pc_offset: -120, pc_init_angle: 120, servo_at_q0: 120, q_init_deg: 0, servo_min: 95, servo_max: 125, servo_home: 120, sign: 1}
+  - {servo_id: 18, joint: l_hand_joint, pc_node: "left hand1", urdf_axis: [1, 0, 0], pc_offset: -120, pc_init_angle: 120, servo_at_q0: 120, q_init_deg: 0, servo_min: 95, servo_max: 125, servo_home: 120, sign: 1}
+  - {servo_id: 19, joint: head_yaw_joint, pc_node: "head2", urdf_axis: [0, 0, -1], pc_offset: -120, pc_init_angle: 120, servo_at_q0: 120, q_init_deg: 0, servo_min: 75, servo_max: 165, servo_home: 120, sign: 1}
+  - {servo_id: 20, joint: head_pitch_joint, pc_node: "head1", urdf_axis: [0, 1, 0], pc_offset: -135, pc_init_angle: 120, servo_at_q0: 135, q_init_deg: -15, servo_min: 105, servo_max: 155, servo_home: 120, sign: 1}

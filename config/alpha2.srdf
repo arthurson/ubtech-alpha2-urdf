@@ -1,0 +1,186 @@
+<?xml version="1.0"?>
+<robot name="alpha2">
+  <group name="right_arm">
+    <chain base_link="base_link" tip_link="r_hand_link" />
+  </group>
+  <group name="left_arm">
+    <chain base_link="base_link" tip_link="l_hand_link" />
+  </group>
+  <group name="right_leg">
+    <chain base_link="base_link" tip_link="r_ankle_roll_link" />
+  </group>
+  <group name="left_leg">
+    <chain base_link="base_link" tip_link="l_ankle_roll_link" />
+  </group>
+  <group name="head">
+    <joint name="head_yaw_joint" />
+    <joint name="head_pitch_joint" />
+  </group>
+  <group name="arms">
+    <group name="right_arm" />
+    <group name="left_arm" />
+  </group>
+  <group name="legs">
+    <group name="right_leg" />
+    <group name="left_leg" />
+  </group>
+  <group name="whole_body">
+    <group name="right_arm" />
+    <group name="left_arm" />
+    <group name="right_leg" />
+    <group name="left_leg" />
+    <group name="head" />
+  </group>
+  <group_state name="zero" group="whole_body">
+    <joint name="r_shoulder_pitch_joint" value="0.00000" />
+    <joint name="r_shoulder_roll_joint" value="0.00000" />
+    <joint name="r_elbow_joint" value="0.00000" />
+    <joint name="r_hand_joint" value="0.00000" />
+    <joint name="l_shoulder_pitch_joint" value="0.00000" />
+    <joint name="l_shoulder_roll_joint" value="0.00000" />
+    <joint name="l_elbow_joint" value="0.00000" />
+    <joint name="l_hand_joint" value="0.00000" />
+    <joint name="r_hip_roll_joint" value="0.00000" />
+    <joint name="r_hip_pitch_joint" value="0.00000" />
+    <joint name="r_knee_joint" value="0.00000" />
+    <joint name="r_ankle_pitch_joint" value="0.00000" />
+    <joint name="r_ankle_roll_joint" value="0.00000" />
+    <joint name="l_hip_roll_joint" value="0.00000" />
+    <joint name="l_hip_pitch_joint" value="0.00000" />
+    <joint name="l_knee_joint" value="0.00000" />
+    <joint name="l_ankle_pitch_joint" value="0.00000" />
+    <joint name="l_ankle_roll_joint" value="0.00000" />
+    <joint name="head_yaw_joint" value="0.00000" />
+    <joint name="head_pitch_joint" value="0.00000" />
+  </group_state>
+  <group_state name="default_stance" group="whole_body">
+    <joint name="r_shoulder_pitch_joint" value="-0.17453" />
+    <joint name="r_shoulder_roll_joint" value="-1.57080" />
+    <joint name="r_elbow_joint" value="0.08727" />
+    <joint name="r_hand_joint" value="0.00000" />
+    <joint name="l_shoulder_pitch_joint" value="0.17453" />
+    <joint name="l_shoulder_roll_joint" value="1.57080" />
+    <joint name="l_elbow_joint" value="-0.26180" />
+    <joint name="l_hand_joint" value="0.00000" />
+    <joint name="r_hip_roll_joint" value="0.00000" />
+    <joint name="r_hip_pitch_joint" value="-0.17453" />
+    <joint name="r_knee_joint" value="-0.08727" />
+    <joint name="r_ankle_pitch_joint" value="-0.08727" />
+    <joint name="r_ankle_roll_joint" value="0.00000" />
+    <joint name="l_hip_roll_joint" value="-0.03491" />
+    <joint name="l_hip_pitch_joint" value="0.17453" />
+    <joint name="l_knee_joint" value="0.08727" />
+    <joint name="l_ankle_pitch_joint" value="0.08727" />
+    <joint name="l_ankle_roll_joint" value="0.00000" />
+    <joint name="head_yaw_joint" value="0.00000" />
+    <joint name="head_pitch_joint" value="-0.26180" />
+  </group_state>
+  <disable_collisions link1="base_link" link2="head_yaw_link" reason="Adjacent" />
+  <disable_collisions link1="base_link" link2="l_hip_roll_link" reason="Adjacent" />
+  <disable_collisions link1="base_link" link2="l_shoulder_pitch_link" reason="Adjacent" />
+  <disable_collisions link1="base_link" link2="r_hip_roll_link" reason="Adjacent" />
+  <disable_collisions link1="base_link" link2="r_shoulder_pitch_link" reason="Adjacent" />
+  <disable_collisions link1="head_pitch_link" link2="head_yaw_link" reason="Adjacent" />
+  <disable_collisions link1="l_ankle_pitch_link" link2="l_ankle_roll_link" reason="Adjacent" />
+  <disable_collisions link1="l_ankle_pitch_link" link2="l_knee_link" reason="Adjacent" />
+  <disable_collisions link1="l_elbow_link" link2="l_hand_link" reason="Adjacent" />
+  <disable_collisions link1="l_elbow_link" link2="l_shoulder_roll_link" reason="Adjacent" />
+  <disable_collisions link1="l_hip_pitch_link" link2="l_hip_roll_link" reason="Adjacent" />
+  <disable_collisions link1="l_hip_pitch_link" link2="l_knee_link" reason="Adjacent" />
+  <disable_collisions link1="l_shoulder_pitch_link" link2="l_shoulder_roll_link" reason="Adjacent" />
+  <disable_collisions link1="r_ankle_pitch_link" link2="r_ankle_roll_link" reason="Adjacent" />
+  <disable_collisions link1="r_ankle_pitch_link" link2="r_knee_link" reason="Adjacent" />
+  <disable_collisions link1="r_elbow_link" link2="r_hand_link" reason="Adjacent" />
+  <disable_collisions link1="r_elbow_link" link2="r_shoulder_roll_link" reason="Adjacent" />
+  <disable_collisions link1="r_hip_pitch_link" link2="r_hip_roll_link" reason="Adjacent" />
+  <disable_collisions link1="r_hip_pitch_link" link2="r_knee_link" reason="Adjacent" />
+  <disable_collisions link1="r_shoulder_pitch_link" link2="r_shoulder_roll_link" reason="Adjacent" />
+  <disable_collisions link1="base_link" link2="l_shoulder_roll_link" reason="Default" />
+  <disable_collisions link1="base_link" link2="r_shoulder_roll_link" reason="Default" />
+  <disable_collisions link1="l_ankle_roll_link" link2="l_knee_link" reason="Default" />
+  <disable_collisions link1="l_elbow_link" link2="l_hip_pitch_link" reason="Default" />
+  <disable_collisions link1="l_elbow_link" link2="l_hip_roll_link" reason="Default" />
+  <disable_collisions link1="base_link" link2="l_elbow_link" reason="Never" />
+  <disable_collisions link1="base_link" link2="l_hand_link" reason="Never" />
+  <disable_collisions link1="base_link" link2="r_elbow_link" reason="Never" />
+  <disable_collisions link1="base_link" link2="r_hand_link" reason="Never" />
+  <disable_collisions link1="head_pitch_link" link2="l_hand_link" reason="Never" />
+  <disable_collisions link1="head_pitch_link" link2="l_hip_pitch_link" reason="Never" />
+  <disable_collisions link1="head_pitch_link" link2="l_hip_roll_link" reason="Never" />
+  <disable_collisions link1="head_pitch_link" link2="l_knee_link" reason="Never" />
+  <disable_collisions link1="head_pitch_link" link2="l_shoulder_pitch_link" reason="Never" />
+  <disable_collisions link1="head_pitch_link" link2="l_shoulder_roll_link" reason="Never" />
+  <disable_collisions link1="head_pitch_link" link2="r_elbow_link" reason="Never" />
+  <disable_collisions link1="head_pitch_link" link2="r_hand_link" reason="Never" />
+  <disable_collisions link1="head_pitch_link" link2="r_hip_pitch_link" reason="Never" />
+  <disable_collisions link1="head_pitch_link" link2="r_hip_roll_link" reason="Never" />
+  <disable_collisions link1="head_pitch_link" link2="r_knee_link" reason="Never" />
+  <disable_collisions link1="head_yaw_link" link2="l_elbow_link" reason="Never" />
+  <disable_collisions link1="head_yaw_link" link2="l_hand_link" reason="Never" />
+  <disable_collisions link1="head_yaw_link" link2="l_hip_pitch_link" reason="Never" />
+  <disable_collisions link1="head_yaw_link" link2="l_hip_roll_link" reason="Never" />
+  <disable_collisions link1="head_yaw_link" link2="l_knee_link" reason="Never" />
+  <disable_collisions link1="head_yaw_link" link2="l_shoulder_pitch_link" reason="Never" />
+  <disable_collisions link1="head_yaw_link" link2="l_shoulder_roll_link" reason="Never" />
+  <disable_collisions link1="head_yaw_link" link2="r_elbow_link" reason="Never" />
+  <disable_collisions link1="head_yaw_link" link2="r_hand_link" reason="Never" />
+  <disable_collisions link1="head_yaw_link" link2="r_hip_pitch_link" reason="Never" />
+  <disable_collisions link1="head_yaw_link" link2="r_hip_roll_link" reason="Never" />
+  <disable_collisions link1="head_yaw_link" link2="r_knee_link" reason="Never" />
+  <disable_collisions link1="head_yaw_link" link2="r_shoulder_pitch_link" reason="Never" />
+  <disable_collisions link1="head_yaw_link" link2="r_shoulder_roll_link" reason="Never" />
+  <disable_collisions link1="l_ankle_pitch_link" link2="l_hip_pitch_link" reason="Never" />
+  <disable_collisions link1="l_ankle_pitch_link" link2="r_elbow_link" reason="Never" />
+  <disable_collisions link1="l_ankle_pitch_link" link2="r_hand_link" reason="Never" />
+  <disable_collisions link1="l_elbow_link" link2="l_shoulder_pitch_link" reason="Never" />
+  <disable_collisions link1="l_elbow_link" link2="r_elbow_link" reason="Never" />
+  <disable_collisions link1="l_elbow_link" link2="r_hand_link" reason="Never" />
+  <disable_collisions link1="l_elbow_link" link2="r_hip_pitch_link" reason="Never" />
+  <disable_collisions link1="l_elbow_link" link2="r_hip_roll_link" reason="Never" />
+  <disable_collisions link1="l_elbow_link" link2="r_knee_link" reason="Never" />
+  <disable_collisions link1="l_elbow_link" link2="r_shoulder_pitch_link" reason="Never" />
+  <disable_collisions link1="l_elbow_link" link2="r_shoulder_roll_link" reason="Never" />
+  <disable_collisions link1="l_hand_link" link2="l_shoulder_pitch_link" reason="Never" />
+  <disable_collisions link1="l_hand_link" link2="l_shoulder_roll_link" reason="Never" />
+  <disable_collisions link1="l_hand_link" link2="r_ankle_pitch_link" reason="Never" />
+  <disable_collisions link1="l_hand_link" link2="r_elbow_link" reason="Never" />
+  <disable_collisions link1="l_hand_link" link2="r_hand_link" reason="Never" />
+  <disable_collisions link1="l_hand_link" link2="r_hip_pitch_link" reason="Never" />
+  <disable_collisions link1="l_hand_link" link2="r_hip_roll_link" reason="Never" />
+  <disable_collisions link1="l_hand_link" link2="r_knee_link" reason="Never" />
+  <disable_collisions link1="l_hand_link" link2="r_shoulder_pitch_link" reason="Never" />
+  <disable_collisions link1="l_hand_link" link2="r_shoulder_roll_link" reason="Never" />
+  <disable_collisions link1="l_hip_pitch_link" link2="l_shoulder_pitch_link" reason="Never" />
+  <disable_collisions link1="l_hip_pitch_link" link2="r_elbow_link" reason="Never" />
+  <disable_collisions link1="l_hip_pitch_link" link2="r_hand_link" reason="Never" />
+  <disable_collisions link1="l_hip_pitch_link" link2="r_shoulder_pitch_link" reason="Never" />
+  <disable_collisions link1="l_hip_pitch_link" link2="r_shoulder_roll_link" reason="Never" />
+  <disable_collisions link1="l_hip_roll_link" link2="l_shoulder_pitch_link" reason="Never" />
+  <disable_collisions link1="l_hip_roll_link" link2="r_elbow_link" reason="Never" />
+  <disable_collisions link1="l_hip_roll_link" link2="r_hand_link" reason="Never" />
+  <disable_collisions link1="l_hip_roll_link" link2="r_shoulder_pitch_link" reason="Never" />
+  <disable_collisions link1="l_hip_roll_link" link2="r_shoulder_roll_link" reason="Never" />
+  <disable_collisions link1="l_knee_link" link2="r_elbow_link" reason="Never" />
+  <disable_collisions link1="l_knee_link" link2="r_hand_link" reason="Never" />
+  <disable_collisions link1="l_knee_link" link2="r_shoulder_pitch_link" reason="Never" />
+  <disable_collisions link1="l_knee_link" link2="r_shoulder_roll_link" reason="Never" />
+  <disable_collisions link1="l_shoulder_pitch_link" link2="r_elbow_link" reason="Never" />
+  <disable_collisions link1="l_shoulder_pitch_link" link2="r_hand_link" reason="Never" />
+  <disable_collisions link1="l_shoulder_pitch_link" link2="r_hip_pitch_link" reason="Never" />
+  <disable_collisions link1="l_shoulder_pitch_link" link2="r_hip_roll_link" reason="Never" />
+  <disable_collisions link1="l_shoulder_pitch_link" link2="r_knee_link" reason="Never" />
+  <disable_collisions link1="l_shoulder_pitch_link" link2="r_shoulder_pitch_link" reason="Never" />
+  <disable_collisions link1="l_shoulder_pitch_link" link2="r_shoulder_roll_link" reason="Never" />
+  <disable_collisions link1="l_shoulder_roll_link" link2="r_elbow_link" reason="Never" />
+  <disable_collisions link1="l_shoulder_roll_link" link2="r_hand_link" reason="Never" />
+  <disable_collisions link1="l_shoulder_roll_link" link2="r_hip_pitch_link" reason="Never" />
+  <disable_collisions link1="l_shoulder_roll_link" link2="r_hip_roll_link" reason="Never" />
+  <disable_collisions link1="l_shoulder_roll_link" link2="r_knee_link" reason="Never" />
+  <disable_collisions link1="l_shoulder_roll_link" link2="r_shoulder_pitch_link" reason="Never" />
+  <disable_collisions link1="l_shoulder_roll_link" link2="r_shoulder_roll_link" reason="Never" />
+  <disable_collisions link1="r_elbow_link" link2="r_shoulder_pitch_link" reason="Never" />
+  <disable_collisions link1="r_hand_link" link2="r_shoulder_pitch_link" reason="Never" />
+  <disable_collisions link1="r_hand_link" link2="r_shoulder_roll_link" reason="Never" />
+  <disable_collisions link1="r_hip_pitch_link" link2="r_shoulder_pitch_link" reason="Never" />
+  <disable_collisions link1="r_hip_roll_link" link2="r_shoulder_pitch_link" reason="Never" />
+</robot>
