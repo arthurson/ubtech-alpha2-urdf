@@ -490,13 +490,13 @@
       <geometry><mesh filename="package://alpha2_description/meshes/collision/head_pitch_link.stl"/></geometry>
     </collision>
   </link>
-  <!-- servo 20 (頭上下); PC-software node "head1"; InitAngle=120, Offset=-135 -->
+  <!-- servo 20 (頭上下); PC-software node "head1"; InitAngle=120, Offset=-135 ; URDF zero overridden: q = servo - 120 (user: servo 19/20 at 120 = level) -->
   <joint name="head_pitch_joint" type="revolute">
     <parent link="head_yaw_link"/>
     <child link="head_pitch_link"/>
     <origin xyz="-0.00621756 3.48091e-08 -0.000771606" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
-    <limit lower="-0.52360" upper="0.34907" effort="1.5" velocity="5.0"/>
+    <limit lower="-0.26180" upper="0.61087" effort="1.5" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
 

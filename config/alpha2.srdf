@@ -73,7 +73,7 @@
     <joint name="l_ankle_pitch_joint" value="0.08727" />
     <joint name="l_ankle_roll_joint" value="0.00000" />
     <joint name="head_yaw_joint" value="0.00000" />
-    <joint name="head_pitch_joint" value="-0.26180" />
+    <joint name="head_pitch_joint" value="0.00000" />
   </group_state>
   <disable_collisions link1="base_link" link2="head_yaw_link" reason="Adjacent" />
   <disable_collisions link1="base_link" link2="l_hip_roll_link" reason="Adjacent" />
@@ -104,6 +104,7 @@
   <disable_collisions link1="base_link" link2="l_hand_link" reason="Never" />
   <disable_collisions link1="base_link" link2="r_elbow_link" reason="Never" />
   <disable_collisions link1="base_link" link2="r_hand_link" reason="Never" />
+  <disable_collisions link1="head_pitch_link" link2="l_elbow_link" reason="Never" />
   <disable_collisions link1="head_pitch_link" link2="l_hand_link" reason="Never" />
   <disable_collisions link1="head_pitch_link" link2="l_hip_pitch_link" reason="Never" />
   <disable_collisions link1="head_pitch_link" link2="l_hip_roll_link" reason="Never" />
