@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!-- MASS MODEL: total 2.3 kg = 20 servos (IDs 1-6,17-20: 40.3 g; IDs 7-16: 52.8 g; modelled as point masses at each joint pivot, in the child link) + 3x18650 cells (50 g, upright, rear of body, assumed position) + remaining mass (shell, mainboards, wiring) distributed by convex-hull volume. -->
+<!-- MASS MODEL: total 2.3 kg = 20 servos (IDs 2,3,5,6,17-20: 40.3 g, 12 kg*cm; IDs 1,4,7-16: 52.8 g, 20 kg*cm; modelled as point masses at each joint pivot, in the child link) + 3x18650 cells (50 g, upright, rear of body, assumed position) + remaining mass (shell, mainboards, wiring) distributed by convex-hull volume. -->
 <!-- COLLISION: each link uses a convex decomposition (CoACD, up to 8 convex pieces per link, from the visual mesh) instead of a single convex hull. -->
 <!-- Alpha 2 (UBTech) humanoid. Generated from alpha2_21parts OBJ meshes + Alpha2_PC_Programming alpha2.FBX/alpha2.xml.
      Frame: ROS REP-103 (x forward, y left, z up), SI units. Zero pose = standing pose of the PC-software model (arms down).
@@ -7,9 +7,9 @@
 <robot name="alpha2">
   <link name="base_link">
     <inertial>
-      <origin xyz="-0.00695734 6.2272e-05 0.0537448" rpy="0 0 0"/>
-      <mass value="0.42377"/>
-      <inertia ixx="6.0572e-04" ixy="-7.8223e-07" ixz="4.9743e-05" iyy="5.5233e-04" iyz="-2.4678e-07" izz="4.8452e-04"/>
+      <origin xyz="-0.00709738 6.18141e-05 0.0538055" rpy="0 0 0"/>
+      <mass value="0.41816"/>
+      <inertia ixx="5.9534e-04" ixy="-7.6981e-07" ixz="4.9203e-05" iyy="5.4347e-04" iyz="-2.4015e-07" izz="4.7651e-04"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -50,9 +50,9 @@
   </link>
   <link name="r_shoulder_pitch_link">
     <inertial>
-      <origin xyz="-9.69007e-05 0.00168751 -7.31857e-05" rpy="0 0 0"/>
-      <mass value="0.05261"/>
-      <inertia ixx="2.7041e-06" ixy="7.1916e-10" ixz="-1.9766e-09" iyy="2.0923e-06" iyz="4.5496e-09" izz="3.3369e-06"/>
+      <origin xyz="-7.69907e-05 0.00134078 -5.81484e-05" rpy="0 0 0"/>
+      <mass value="0.06486"/>
+      <inertia ixx="2.6789e-06" ixy="2.4358e-09" ixz="-2.0112e-09" iyy="2.0496e-06" iyz="5.7640e-09" izz="3.2987e-06"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -97,14 +97,14 @@
     <child link="r_shoulder_pitch_link"/>
     <origin xyz="0.00853421 -0.0751493 0.0823553" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
-    <limit lower="-2.18166" upper="1.83260" effort="1.5" velocity="5.0"/>
+    <limit lower="-2.18166" upper="1.83260" effort="1.9613" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
   <link name="r_shoulder_roll_link">
     <inertial>
-      <origin xyz="0.000179782 -0.000686967 -0.0122808" rpy="0 0 0"/>
-      <mass value="0.07270"/>
-      <inertia ixx="3.7248e-05" ixy="1.6026e-08" ixz="2.0979e-08" iyy="3.6873e-05" iyz="-1.8396e-06" izz="6.0601e-06"/>
+      <origin xyz="0.00017772 -0.000679088 -0.01214" rpy="0 0 0"/>
+      <mass value="0.07204"/>
+      <inertia ixx="3.6608e-05" ixy="1.5798e-08" ixz="2.2352e-08" iyy="3.6240e-05" iyz="-1.8088e-06" izz="5.9363e-06"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -149,14 +149,14 @@
     <child link="r_shoulder_roll_link"/>
     <origin xyz="-0.000936512 -0.000282395 -0.000471802" rpy="0 0 0"/>
     <axis xyz="1 0 0"/>
-    <limit lower="-2.79253" upper="0.00000" effort="1.5" velocity="5.0"/>
+    <limit lower="-2.79253" upper="0.00000" effort="1.1768" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
   <link name="r_elbow_link">
     <inertial>
-      <origin xyz="-0.000214272 -0.000327578 -0.0300119" rpy="0 0 0"/>
-      <mass value="0.09679"/>
-      <inertia ixx="1.2699e-04" ixy="-1.3189e-08" ixz="-6.3118e-07" iyy="1.2786e-04" iyz="-1.9389e-06" izz="1.4446e-05"/>
+      <origin xyz="-0.000212421 -0.000324748 -0.0297526" rpy="0 0 0"/>
+      <mass value="0.09563"/>
+      <inertia ixx="1.2512e-04" ixy="-1.2976e-08" ixz="-6.2351e-07" iyy="1.2598e-04" iyz="-1.9072e-06" izz="1.4150e-05"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -201,14 +201,14 @@
     <child link="r_elbow_link"/>
     <origin xyz="0.000452387 -0.00483327 -0.0579653" rpy="0 0 0"/>
     <axis xyz="0 -1 0"/>
-    <limit lower="-1.04720" upper="1.22173" effort="1.5" velocity="5.0"/>
+    <limit lower="-1.04720" upper="1.22173" effort="1.1768" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
   <link name="r_hand_link">
     <inertial>
-      <origin xyz="-2.11402e-10 0.000757251 -0.00167969" rpy="0 0 0"/>
-      <mass value="0.04764"/>
-      <inertia ixx="2.5262e-06" ixy="1.8442e-14" ixz="1.3892e-13" iyy="2.0373e-06" iyz="4.6415e-07" izz="9.6990e-07"/>
+      <origin xyz="-2.07724e-10 0.000744077 -0.00165047" rpy="0 0 0"/>
+      <mass value="0.04749"/>
+      <inertia ixx="2.4772e-06" ixy="1.8194e-14" ixz="1.3578e-13" iyy="1.9978e-06" iyz="4.5567e-07" izz="9.5048e-07"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -253,14 +253,14 @@
     <child link="r_hand_link"/>
     <origin xyz="-0.00276682 0.000360121 -0.0558557" rpy="0 0 0"/>
     <axis xyz="-1 0 0"/>
-    <limit lower="-0.43633" upper="0.08727" effort="1.5" velocity="5.0"/>
+    <limit lower="-0.43633" upper="0.08727" effort="1.1768" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
   <link name="l_shoulder_pitch_link">
     <inertial>
-      <origin xyz="-9.58837e-05 -0.00168757 0.000229636" rpy="0 0 0"/>
-      <mass value="0.05261"/>
-      <inertia ixx="2.7122e-06" ixy="-4.1326e-10" ixz="3.0346e-09" iyy="2.1004e-06" iyz="8.3426e-08" izz="3.3369e-06"/>
+      <origin xyz="-7.61827e-05 -0.00134083 0.000182453" rpy="0 0 0"/>
+      <mass value="0.06486"/>
+      <inertia ixx="2.6873e-06" ixy="-2.1180e-09" ixz="3.2055e-09" iyy="2.0580e-06" iyz="8.5819e-08" izz="3.2987e-06"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -305,14 +305,14 @@
     <child link="l_shoulder_pitch_link"/>
     <origin xyz="0.00852983 0.0751493 0.0810614" rpy="0 0 0"/>
     <axis xyz="0 -1 0"/>
-    <limit lower="-1.83260" upper="2.18166" effort="1.5" velocity="5.0"/>
+    <limit lower="-1.83260" upper="2.18166" effort="1.9613" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
   <link name="l_shoulder_roll_link">
     <inertial>
-      <origin xyz="0.000179737 0.000686976 -0.0122806" rpy="0 0 0"/>
-      <mass value="0.07270"/>
-      <inertia ixx="3.7248e-05" ixy="-1.6007e-08" ixz="2.0962e-08" iyy="3.6873e-05" iyz="1.8397e-06" izz="6.0601e-06"/>
+      <origin xyz="0.000177676 0.000679097 -0.0121398" rpy="0 0 0"/>
+      <mass value="0.07204"/>
+      <inertia ixx="3.6608e-05" ixy="-1.5780e-08" ixz="2.2335e-08" iyy="3.6240e-05" iyz="1.8089e-06" izz="5.9363e-06"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -357,14 +357,14 @@
     <child link="l_shoulder_roll_link"/>
     <origin xyz="-0.000932146 0.000282394 0.000822052" rpy="0 0 0"/>
     <axis xyz="1 0 0"/>
-    <limit lower="0.00000" upper="2.79253" effort="1.5" velocity="5.0"/>
+    <limit lower="0.00000" upper="2.79253" effort="1.1768" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
   <link name="l_elbow_link">
     <inertial>
-      <origin xyz="-0.000214255 0.00032756 -0.0300119" rpy="0 0 0"/>
-      <mass value="0.09679"/>
-      <inertia ixx="1.2699e-04" ixy="1.3193e-08" ixz="-6.3114e-07" iyy="1.2786e-04" iyz="1.9390e-06" izz="1.4446e-05"/>
+      <origin xyz="-0.000212404 0.00032473 -0.0297526" rpy="0 0 0"/>
+      <mass value="0.09563"/>
+      <inertia ixx="1.2512e-04" ixy="1.2980e-08" ixz="-6.2347e-07" iyy="1.2598e-04" iyz="1.9073e-06" izz="1.4150e-05"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -409,14 +409,14 @@
     <child link="l_elbow_link"/>
     <origin xyz="0.000452416 0.00483327 -0.0579653" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
-    <limit lower="-1.39626" upper="0.87266" effort="1.5" velocity="5.0"/>
+    <limit lower="-1.39626" upper="0.87266" effort="1.1768" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
   <link name="l_hand_link">
     <inertial>
-      <origin xyz="0.00329525 -0.000757255 -0.00166766" rpy="0 0 0"/>
-      <mass value="0.04764"/>
-      <inertia ixx="2.5156e-06" ixy="6.5294e-07" ixz="1.4379e-06" iyy="4.8681e-06" iyz="-4.6176e-07" izz="3.8111e-06"/>
+      <origin xyz="0.00323792 -0.000744081 -0.00163865" rpy="0 0 0"/>
+      <mass value="0.04749"/>
+      <inertia ixx="2.4668e-06" ixy="6.4158e-07" ixz="1.4129e-06" iyy="4.7794e-06" iyz="-4.5332e-07" izz="3.7423e-06"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -461,14 +461,14 @@
     <child link="l_hand_link"/>
     <origin xyz="-0.0241628 -0.000360123 -0.0559338" rpy="0 0 0"/>
     <axis xyz="1 0 0"/>
-    <limit lower="-0.43633" upper="0.08727" effort="1.5" velocity="5.0"/>
+    <limit lower="-0.43633" upper="0.08727" effort="1.1768" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
   <link name="r_hip_roll_link">
     <inertial>
-      <origin xyz="0.00293013 -1.29545e-06 -0.00697382" rpy="0 0 0"/>
-      <mass value="0.07747"/>
-      <inertia ixx="1.7554e-05" ixy="5.7944e-10" ixz="3.3897e-06" iyy="1.8977e-05" iyz="1.6107e-11" izz="7.1847e-06"/>
+      <origin xyz="0.00288892 -1.27723e-06 -0.00687574" rpy="0 0 0"/>
+      <mass value="0.07696"/>
+      <inertia ixx="1.7246e-05" ixy="5.7161e-10" ixz="3.3420e-06" iyy="1.8649e-05" iyz="6.1354e-12" izz="7.0466e-06"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -513,14 +513,14 @@
     <child link="r_hip_roll_link"/>
     <origin xyz="1.52588e-08 -0.0353277 0.00188553" rpy="0 0 0"/>
     <axis xyz="-1 0 0"/>
-    <limit lower="-0.34907" upper="1.39626" effort="1.5" velocity="5.0"/>
+    <limit lower="-0.34907" upper="1.39626" effort="1.9613" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
   <link name="r_hip_pitch_link">
     <inertial>
-      <origin xyz="0.0013449 0.0042168 -0.0136744" rpy="0 0 0"/>
-      <mass value="0.09681"/>
-      <inertia ixx="4.7328e-05" ixy="-6.9466e-07" ixz="2.4771e-06" iyy="4.9695e-05" iyz="6.9381e-06" izz="1.7177e-05"/>
+      <origin xyz="0.00132972 0.00416921 -0.0135201" rpy="0 0 0"/>
+      <mass value="0.09591"/>
+      <inertia ixx="4.6577e-05" ixy="-6.8649e-07" ixz="2.4460e-06" iyy="4.8878e-05" iyz="6.8576e-06" izz="1.6846e-05"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -565,14 +565,14 @@
     <child link="r_hip_pitch_link"/>
     <origin xyz="0.00972791 -0.00802065 -0.0438724" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
-    <limit lower="-0.95993" upper="2.53073" effort="1.5" velocity="5.0"/>
+    <limit lower="-0.95993" upper="2.53073" effort="1.9613" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
   <link name="r_knee_link">
     <inertial>
-      <origin xyz="0.00079019 0.00484693 -0.0172073" rpy="0 0 0"/>
-      <mass value="0.10587"/>
-      <inertia ixx="7.5406e-05" ixy="-4.0426e-07" ixz="1.5768e-06" iyy="6.5065e-05" iyz="8.7855e-06" izz="2.1814e-05"/>
+      <origin xyz="0.000782027 0.00479686 -0.0170295" rpy="0 0 0"/>
+      <mass value="0.10478"/>
+      <inertia ixx="7.4202e-05" ixy="-4.0008e-07" ixz="1.5590e-06" iyy="6.4049e-05" iyz="8.6947e-06" izz="2.1393e-05"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -617,14 +617,14 @@
     <child link="r_knee_link"/>
     <origin xyz="-0.0117411 0 -0.0525105" rpy="0 0 0"/>
     <axis xyz="0 -1 0"/>
-    <limit lower="-2.00713" upper="1.39626" effort="1.5" velocity="5.0"/>
+    <limit lower="-2.00713" upper="1.39626" effort="1.9613" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
   <link name="r_ankle_pitch_link">
     <inertial>
-      <origin xyz="-0.000219723 0.0022855 -0.00886757" rpy="0 0 0"/>
-      <mass value="0.08919"/>
-      <inertia ixx="3.2163e-05" ixy="1.4539e-07" ixz="-4.3003e-07" iyy="2.4535e-05" iyz="1.4269e-06" izz="1.3860e-05"/>
+      <origin xyz="-0.000217034 0.00225753 -0.00875904" rpy="0 0 0"/>
+      <mass value="0.08844"/>
+      <inertia ixx="3.1593e-05" ixy="1.4295e-07" ixz="-4.2330e-07" iyy="2.4116e-05" iyz="1.4193e-06" izz="1.3581e-05"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -669,14 +669,14 @@
     <child link="r_ankle_pitch_link"/>
     <origin xyz="5.32532e-06 0 -0.0591983" rpy="0 0 0"/>
     <axis xyz="0 -1 0"/>
-    <limit lower="-1.83260" upper="1.30900" effort="1.5" velocity="5.0"/>
+    <limit lower="-1.83260" upper="1.30900" effort="1.9613" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
   <link name="r_ankle_roll_link">
     <inertial>
-      <origin xyz="0.000326272 -0.0100259 -0.00758217" rpy="0 0 0"/>
-      <mass value="0.14069"/>
-      <inertia ixx="5.9503e-05" ixy="1.1368e-06" ixz="4.8165e-07" iyy="1.0262e-04" iyz="-7.0862e-06" izz="1.3503e-04"/>
+      <origin xyz="0.000323729 -0.00994776 -0.00752308" rpy="0 0 0"/>
+      <mass value="0.13889"/>
+      <inertia ixx="5.8453e-05" ixy="1.1170e-06" ixz="4.7443e-07" iyy="1.0058e-04" iyz="-7.0226e-06" izz="1.3237e-04"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -721,14 +721,14 @@
     <child link="r_ankle_roll_link"/>
     <origin xyz="0.00200788 0.0168256 -0.0369769" rpy="0 0 0"/>
     <axis xyz="1 0 0"/>
-    <limit lower="-0.34907" upper="1.22173" effort="1.5" velocity="5.0"/>
+    <limit lower="-0.34907" upper="1.22173" effort="1.9613" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
   <link name="l_hip_roll_link">
     <inertial>
-      <origin xyz="0.00293011 1.33522e-06 -0.00697379" rpy="0 0 0"/>
-      <mass value="0.07747"/>
-      <inertia ixx="1.7553e-05" ixy="-5.9611e-10" ixz="3.3897e-06" iyy="1.8977e-05" iyz="-5.8296e-11" izz="7.1846e-06"/>
+      <origin xyz="0.0028889 1.31644e-06 -0.00687571" rpy="0 0 0"/>
+      <mass value="0.07696"/>
+      <inertia ixx="1.7245e-05" ixy="-5.8806e-10" ixz="3.3420e-06" iyy="1.8649e-05" iyz="-4.7164e-11" izz="7.0465e-06"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -773,14 +773,14 @@
     <child link="l_hip_roll_link"/>
     <origin xyz="7.62939e-09 0.0353277 0.00188553" rpy="0 0 0"/>
     <axis xyz="-1 0 0"/>
-    <limit lower="-1.43117" upper="0.31416" effort="1.5" velocity="5.0"/>
+    <limit lower="-1.43117" upper="0.31416" effort="1.9613" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
   <link name="l_hip_pitch_link">
     <inertial>
-      <origin xyz="0.00134489 -0.0042168 -0.0136745" rpy="0 0 0"/>
-      <mass value="0.09681"/>
-      <inertia ixx="4.7328e-05" ixy="6.9467e-07" ixz="2.4771e-06" iyy="4.9694e-05" iyz="-6.9381e-06" izz="1.7177e-05"/>
+      <origin xyz="0.00132971 -0.00416921 -0.0135202" rpy="0 0 0"/>
+      <mass value="0.09591"/>
+      <inertia ixx="4.6577e-05" ixy="6.8650e-07" ixz="2.4460e-06" iyy="4.8877e-05" iyz="-6.8576e-06" izz="1.6846e-05"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -825,14 +825,14 @@
     <child link="l_hip_pitch_link"/>
     <origin xyz="0.00972792 0.00802064 -0.0438723" rpy="0 0 0"/>
     <axis xyz="0 -1 0"/>
-    <limit lower="-2.53073" upper="0.95993" effort="1.5" velocity="5.0"/>
+    <limit lower="-2.53073" upper="0.95993" effort="1.9613" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
   <link name="l_knee_link">
     <inertial>
-      <origin xyz="0.00079021 -0.00484695 -0.0172073" rpy="0 0 0"/>
-      <mass value="0.10587"/>
-      <inertia ixx="7.5406e-05" ixy="4.0427e-07" ixz="1.5769e-06" iyy="6.5065e-05" iyz="-8.7855e-06" izz="2.1814e-05"/>
+      <origin xyz="0.000782047 -0.00479688 -0.0170295" rpy="0 0 0"/>
+      <mass value="0.10478"/>
+      <inertia ixx="7.4202e-05" ixy="4.0009e-07" ixz="1.5591e-06" iyy="6.4049e-05" iyz="-8.6947e-06" izz="2.1393e-05"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -877,14 +877,14 @@
     <child link="l_knee_link"/>
     <origin xyz="-0.0117411 1.39965e-09 -0.0525105" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
-    <limit lower="-1.39626" upper="2.00713" effort="1.5" velocity="5.0"/>
+    <limit lower="-1.39626" upper="2.00713" effort="1.9613" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
   <link name="l_ankle_pitch_link">
     <inertial>
-      <origin xyz="-0.000219719 -0.00228551 -0.00879294" rpy="0 0 0"/>
-      <mass value="0.08919"/>
-      <inertia ixx="3.1992e-05" ixy="-1.4538e-07" ixz="-4.2791e-07" iyy="2.4364e-05" iyz="-1.4048e-06" izz="1.3860e-05"/>
+      <origin xyz="-0.00021703 -0.00225754 -0.00868533" rpy="0 0 0"/>
+      <mass value="0.08844"/>
+      <inertia ixx="3.1424e-05" ixy="-1.4294e-07" ixz="-4.2120e-07" iyy="2.3947e-05" iyz="-1.3975e-06" izz="1.3581e-05"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -929,14 +929,14 @@
     <child link="l_ankle_pitch_link"/>
     <origin xyz="5.35583e-06 -6.38468e-13 -0.0593814" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
-    <limit lower="-1.30900" upper="1.83260" effort="1.5" velocity="5.0"/>
+    <limit lower="-1.30900" upper="1.83260" effort="1.9613" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
   <link name="l_ankle_roll_link">
     <inertial>
-      <origin xyz="0.000327938 0.0100278 -0.00758019" rpy="0 0 0"/>
-      <mass value="0.14066"/>
-      <inertia ixx="5.9495e-05" ixy="-1.1337e-06" ixz="4.8455e-07" iyy="1.0253e-04" iyz="7.0896e-06" izz="1.3495e-04"/>
+      <origin xyz="0.000325382 0.00994963 -0.0075211" rpy="0 0 0"/>
+      <mass value="0.13886"/>
+      <inertia ixx="5.8445e-05" ixy="-1.1140e-06" ixz="4.7729e-07" iyy="1.0049e-04" iyz="7.0259e-06" izz="1.3229e-04"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -981,14 +981,14 @@
     <child link="l_ankle_roll_link"/>
     <origin xyz="0.00200786 -0.0168256 -0.0367939" rpy="0 0 0"/>
     <axis xyz="1 0 0"/>
-    <limit lower="-1.22173" upper="0.34907" effort="1.5" velocity="5.0"/>
+    <limit lower="-1.22173" upper="0.34907" effort="1.9613" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
   <link name="head_yaw_link">
     <inertial>
-      <origin xyz="-4.99536e-10 -2.09224e-05 8.70789e-10" rpy="0 0 0"/>
-      <mass value="0.05123"/>
-      <inertia ixx="1.7989e-06" ixy="3.4591e-13" ixz="3.5406e-13" iyy="1.7930e-06" iyz="-3.6802e-13" izz="1.7989e-06"/>
+      <origin xyz="-4.91445e-10 -2.05835e-05 8.56684e-10" rpy="0 0 0"/>
+      <mass value="0.05101"/>
+      <inertia ixx="1.7620e-06" ixy="3.3881e-13" ixz="3.4680e-13" iyy="1.7562e-06" iyz="-3.6046e-13" izz="1.7620e-06"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -1005,14 +1005,14 @@
     <child link="head_yaw_link"/>
     <origin xyz="0.0100771 0.00165642 0.115073" rpy="0 0 0"/>
     <axis xyz="0 0 -1"/>
-    <limit lower="-0.78540" upper="0.78540" effort="1.5" velocity="5.0"/>
+    <limit lower="-0.78540" upper="0.78540" effort="1.1768" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
   <link name="head_pitch_link">
     <inertial>
-      <origin xyz="0.00142943 -0.0016621 0.038033" rpy="0 0 0"/>
-      <mass value="0.26548"/>
-      <inertia ixx="3.7061e-04" ixy="2.4509e-06" ixz="2.7567e-06" iyy="3.5697e-04" iyz="-1.5211e-05" izz="2.6951e-04"/>
+      <origin xyz="0.0014249 -0.00165684 0.0379125" rpy="0 0 0"/>
+      <mass value="0.26086"/>
+      <inertia ixx="3.6421e-04" ixy="2.4026e-06" ixz="2.6554e-06" iyy="3.5084e-04" iyz="-1.4847e-05" izz="2.6399e-04"/>
     </inertial>
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -1053,7 +1053,7 @@
     <child link="head_pitch_link"/>
     <origin xyz="-0.00621756 3.48091e-08 -0.000771606" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
-    <limit lower="-0.26180" upper="0.61087" effort="1.5" velocity="5.0"/>
+    <limit lower="-0.26180" upper="0.61087" effort="1.1768" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
 

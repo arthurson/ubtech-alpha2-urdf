@@ -1,12 +1,16 @@
 """Stand test for the Alpha 2 in MuJoCo.  pip install mujoco numpy
-Servo model: position actuators (kp, kv, +-1.5 N*m) + joint armature + implicitfast integrator.
+Servo model: position actuators (kp, kv, per-servo torque limit) + joint armature + implicitfast integrator.
 Armature is REQUIRED: the lightest links have principal inertia ~8e-7 kg*m^2, which is numerically
 unstable with servo stiffness unless reflected rotor inertia (armature) is added."""
 import os, re, sys, numpy as np, mujoco
 HERE = os.path.dirname(os.path.abspath(__file__)); PKG = os.path.dirname(HERE)
-KP, KV, ARMATURE, FORCE = 20.0, 0.5, 0.005, 1.5
+KP, KV, ARMATURE = 20.0, 0.5, 0.005
+TORQUE = {}   # per-servo stall torque from config/servo_map.yaml (12 kg*cm light / 20 kg*cm heavy servos)
+for _l in open(os.path.join(PKG, 'config', 'servo_map.yaml')):
+    _m = re.search(r'joint: (\w+).*?torque_nm: ([\d.]+)', _l)
+    if _m: TORQUE[_m.group(1)] = float(_m.group(2))
 
-def load(kp=KP, kv=KV, armature=ARMATURE, force=FORCE):
+def load(kp=KP, kv=KV, armature=ARMATURE):
     spec = mujoco.MjSpec.from_file(os.path.join(PKG, 'urdf', 'alpha2_mujoco.urdf'))
     spec.option.timestep = 0.002
     spec.option.integrator = mujoco.mjtIntegrator.mjINT_IMPLICITFAST
@@ -20,7 +24,7 @@ def load(kp=KP, kv=KV, armature=ARMATURE, force=FORCE):
             a = spec.add_actuator(); a.name = 'act_' + j.name; a.target = j.name
             a.trntype = mujoco.mjtTrn.mjTRN_JOINT; a.gainprm[0] = kp
             a.biastype = mujoco.mjtBias.mjBIAS_AFFINE; a.biasprm[1] = -kp; a.biasprm[2] = -kv
-            a.forcelimited = mujoco.mjtLimited.mjLIMITED_TRUE; a.forcerange = [-force, force]
+            a.forcelimited = mujoco.mjtLimited.mjLIMITED_TRUE; a.forcerange = [-TORQUE[j.name], TORQUE[j.name]]
             a.ctrllimited = mujoco.mjtLimited.mjLIMITED_TRUE; a.ctrlrange = list(j.range)
     return spec.compile()
 

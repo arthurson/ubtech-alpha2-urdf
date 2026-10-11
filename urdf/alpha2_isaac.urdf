@@ -1,0 +1,1115 @@
+<?xml version="1.0"?>
+<!-- MASS MODEL: total 2.3 kg = 20 servos (IDs 2,3,5,6,17-20: 40.3 g, 12 kg*cm; IDs 1,4,7-16: 52.8 g, 20 kg*cm; modelled as point masses at each joint pivot, in the child link) + 3x18650 cells (50 g, upright, rear of body, assumed position) + remaining mass (shell, mainboards, wiring) distributed by convex-hull volume. -->
+<!-- COLLISION: each link uses a convex decomposition (CoACD, up to 8 convex pieces per link, from the visual mesh) instead of a single convex hull. -->
+<!-- Alpha 2 (UBTech) humanoid. Generated from alpha2_21parts OBJ meshes + Alpha2_PC_Programming alpha2.FBX/alpha2.xml.
+     Frame: ROS REP-103 (x forward, y left, z up), SI units. Zero pose = standing pose of the PC-software model (arms down).
+     Every link frame is axis-aligned with base_link at q=0 and sits on its servo pivot. Inertials are ESTIMATES (see README). -->
+<robot name="alpha2">
+  <!-- Isaac Sim copy of alpha2.urdf: mesh paths are relative to this file (no package:// URIs). Geometry, joints, masses and inertias are identical. -->
+  <link name="base_link">
+    <inertial>
+      <origin xyz="-0.00709738 6.18141e-05 0.0538055" rpy="0 0 0"/>
+      <mass value="0.41816"/>
+      <inertia ixx="5.9534e-04" ixy="-7.6981e-07" ixz="4.9203e-05" iyy="5.4347e-04" iyz="-2.4015e-07" izz="4.7651e-04"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/visual/base_link.obj"/></geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/base_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/base_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/base_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/base_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/base_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/base_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/base_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/base_link_7.stl"/></geometry>
+    </collision>
+  </link>
+  <link name="r_shoulder_pitch_link">
+    <inertial>
+      <origin xyz="-7.69907e-05 0.00134078 -5.81484e-05" rpy="0 0 0"/>
+      <mass value="0.06486"/>
+      <inertia ixx="2.6789e-06" ixy="2.4358e-09" ixz="-2.0112e-09" iyy="2.0496e-06" iyz="5.7640e-09" izz="3.2987e-06"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/visual/r_shoulder_pitch_link.obj"/></geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_shoulder_pitch_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_shoulder_pitch_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_shoulder_pitch_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_shoulder_pitch_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_shoulder_pitch_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_shoulder_pitch_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_shoulder_pitch_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_shoulder_pitch_link_7.stl"/></geometry>
+    </collision>
+  </link>
+  <!-- servo 1 (右肩上下); PC-software node "right hand4"; InitAngle=120, Offset=-130 -->
+  <joint name="r_shoulder_pitch_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="r_shoulder_pitch_link"/>
+    <origin xyz="0.00853421 -0.0751493 0.0823553" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-2.18166" upper="1.83260" effort="1.9613" velocity="5.0"/>
+    <dynamics damping="0.05" friction="0.01"/>
+  </joint>
+  <link name="r_shoulder_roll_link">
+    <inertial>
+      <origin xyz="0.00017772 -0.000679088 -0.01214" rpy="0 0 0"/>
+      <mass value="0.07204"/>
+      <inertia ixx="3.6608e-05" ixy="1.5798e-08" ixz="2.2352e-08" iyy="3.6240e-05" iyz="-1.8088e-06" izz="5.9363e-06"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/visual/r_shoulder_roll_link.obj"/></geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_shoulder_roll_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_shoulder_roll_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_shoulder_roll_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_shoulder_roll_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_shoulder_roll_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_shoulder_roll_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_shoulder_roll_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_shoulder_roll_link_7.stl"/></geometry>
+    </collision>
+  </link>
+  <!-- servo 2 (右肩左右); PC-software node "right hand3"; InitAngle=120, Offset=-210 -->
+  <joint name="r_shoulder_roll_joint" type="revolute">
+    <parent link="r_shoulder_pitch_link"/>
+    <child link="r_shoulder_roll_link"/>
+    <origin xyz="-0.000936512 -0.000282395 -0.000471802" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-2.79253" upper="0.00000" effort="1.1768" velocity="5.0"/>
+    <dynamics damping="0.05" friction="0.01"/>
+  </joint>
+  <link name="r_elbow_link">
+    <inertial>
+      <origin xyz="-0.000212421 -0.000324748 -0.0297526" rpy="0 0 0"/>
+      <mass value="0.09563"/>
+      <inertia ixx="1.2512e-04" ixy="-1.2976e-08" ixz="-6.2351e-07" iyy="1.2598e-04" iyz="-1.9072e-06" izz="1.4150e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/visual/r_elbow_link.obj"/></geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_elbow_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_elbow_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_elbow_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_elbow_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_elbow_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_elbow_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_elbow_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_elbow_link_7.stl"/></geometry>
+    </collision>
+  </link>
+  <!-- servo 3 (右肘); PC-software node "right hand2"; InitAngle=120, Offset=-115 -->
+  <joint name="r_elbow_joint" type="revolute">
+    <parent link="r_shoulder_roll_link"/>
+    <child link="r_elbow_link"/>
+    <origin xyz="0.000452387 -0.00483327 -0.0579653" rpy="0 0 0"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="-1.04720" upper="1.22173" effort="1.1768" velocity="5.0"/>
+    <dynamics damping="0.05" friction="0.01"/>
+  </joint>
+  <link name="r_hand_link">
+    <inertial>
+      <origin xyz="-2.07724e-10 0.000744077 -0.00165047" rpy="0 0 0"/>
+      <mass value="0.04749"/>
+      <inertia ixx="2.4772e-06" ixy="1.8194e-14" ixz="1.3578e-13" iyy="1.9978e-06" iyz="4.5567e-07" izz="9.5048e-07"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/visual/r_hand_link.obj"/></geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_hand_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_hand_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_hand_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_hand_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_hand_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_hand_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_hand_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_hand_link_7.stl"/></geometry>
+    </collision>
+  </link>
+  <!-- servo 17 (右指); PC-software node "right hand1"; InitAngle=120, Offset=-120 -->
+  <joint name="r_hand_joint" type="revolute">
+    <parent link="r_elbow_link"/>
+    <child link="r_hand_link"/>
+    <origin xyz="-0.00276682 0.000360121 -0.0558557" rpy="0 0 0"/>
+    <axis xyz="-1 0 0"/>
+    <limit lower="-0.43633" upper="0.08727" effort="1.1768" velocity="5.0"/>
+    <dynamics damping="0.05" friction="0.01"/>
+  </joint>
+  <link name="l_shoulder_pitch_link">
+    <inertial>
+      <origin xyz="-7.61827e-05 -0.00134083 0.000182453" rpy="0 0 0"/>
+      <mass value="0.06486"/>
+      <inertia ixx="2.6873e-06" ixy="-2.1180e-09" ixz="3.2055e-09" iyy="2.0580e-06" iyz="8.5819e-08" izz="3.2987e-06"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/visual/l_shoulder_pitch_link.obj"/></geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_shoulder_pitch_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_shoulder_pitch_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_shoulder_pitch_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_shoulder_pitch_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_shoulder_pitch_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_shoulder_pitch_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_shoulder_pitch_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_shoulder_pitch_link_7.stl"/></geometry>
+    </collision>
+  </link>
+  <!-- servo 4 (左肩上下); PC-software node "left hand4"; InitAngle=120, Offset=-110 -->
+  <joint name="l_shoulder_pitch_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="l_shoulder_pitch_link"/>
+    <origin xyz="0.00852983 0.0751493 0.0810614" rpy="0 0 0"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="-1.83260" upper="2.18166" effort="1.9613" velocity="5.0"/>
+    <dynamics damping="0.05" friction="0.01"/>
+  </joint>
+  <link name="l_shoulder_roll_link">
+    <inertial>
+      <origin xyz="0.000177676 0.000679097 -0.0121398" rpy="0 0 0"/>
+      <mass value="0.07204"/>
+      <inertia ixx="3.6608e-05" ixy="-1.5780e-08" ixz="2.2335e-08" iyy="3.6240e-05" iyz="1.8089e-06" izz="5.9363e-06"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/visual/l_shoulder_roll_link.obj"/></geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_shoulder_roll_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_shoulder_roll_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_shoulder_roll_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_shoulder_roll_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_shoulder_roll_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_shoulder_roll_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_shoulder_roll_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_shoulder_roll_link_7.stl"/></geometry>
+    </collision>
+  </link>
+  <!-- servo 5 (左肩左右); PC-software node "left hand3"; InitAngle=120, Offset=-30 -->
+  <joint name="l_shoulder_roll_joint" type="revolute">
+    <parent link="l_shoulder_pitch_link"/>
+    <child link="l_shoulder_roll_link"/>
+    <origin xyz="-0.000932146 0.000282394 0.000822052" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="0.00000" upper="2.79253" effort="1.1768" velocity="5.0"/>
+    <dynamics damping="0.05" friction="0.01"/>
+  </joint>
+  <link name="l_elbow_link">
+    <inertial>
+      <origin xyz="-0.000212404 0.00032473 -0.0297526" rpy="0 0 0"/>
+      <mass value="0.09563"/>
+      <inertia ixx="1.2512e-04" ixy="1.2980e-08" ixz="-6.2347e-07" iyy="1.2598e-04" iyz="1.9073e-06" izz="1.4150e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/visual/l_elbow_link.obj"/></geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_elbow_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_elbow_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_elbow_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_elbow_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_elbow_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_elbow_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_elbow_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_elbow_link_7.stl"/></geometry>
+    </collision>
+  </link>
+  <!-- servo 6 (左肘); PC-software node "left hand2"; InitAngle=120, Offset=-135 -->
+  <joint name="l_elbow_joint" type="revolute">
+    <parent link="l_shoulder_roll_link"/>
+    <child link="l_elbow_link"/>
+    <origin xyz="0.000452416 0.00483327 -0.0579653" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.39626" upper="0.87266" effort="1.1768" velocity="5.0"/>
+    <dynamics damping="0.05" friction="0.01"/>
+  </joint>
+  <link name="l_hand_link">
+    <inertial>
+      <origin xyz="0.00323792 -0.000744081 -0.00163865" rpy="0 0 0"/>
+      <mass value="0.04749"/>
+      <inertia ixx="2.4668e-06" ixy="6.4158e-07" ixz="1.4129e-06" iyy="4.7794e-06" iyz="-4.5332e-07" izz="3.7423e-06"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/visual/l_hand_link.obj"/></geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_hand_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_hand_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_hand_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_hand_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_hand_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_hand_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_hand_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_hand_link_7.stl"/></geometry>
+    </collision>
+  </link>
+  <!-- servo 18 (左指); PC-software node "left hand1"; InitAngle=120, Offset=-120 -->
+  <joint name="l_hand_joint" type="revolute">
+    <parent link="l_elbow_link"/>
+    <child link="l_hand_link"/>
+    <origin xyz="-0.0241628 -0.000360123 -0.0559338" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-0.43633" upper="0.08727" effort="1.1768" velocity="5.0"/>
+    <dynamics damping="0.05" friction="0.01"/>
+  </joint>
+  <link name="r_hip_roll_link">
+    <inertial>
+      <origin xyz="0.00288892 -1.27723e-06 -0.00687574" rpy="0 0 0"/>
+      <mass value="0.07696"/>
+      <inertia ixx="1.7246e-05" ixy="5.7161e-10" ixz="3.3420e-06" iyy="1.8649e-05" iyz="6.1354e-12" izz="7.0466e-06"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/visual/r_hip_roll_link.obj"/></geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_hip_roll_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_hip_roll_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_hip_roll_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_hip_roll_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_hip_roll_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_hip_roll_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_hip_roll_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_hip_roll_link_7.stl"/></geometry>
+    </collision>
+  </link>
+  <!-- servo 7 (右股左右); PC-software node "right leg5"; InitAngle=120, Offset=-120 -->
+  <joint name="r_hip_roll_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="r_hip_roll_link"/>
+    <origin xyz="1.52588e-08 -0.0353277 0.00188553" rpy="0 0 0"/>
+    <axis xyz="-1 0 0"/>
+    <limit lower="-0.34907" upper="1.39626" effort="1.9613" velocity="5.0"/>
+    <dynamics damping="0.05" friction="0.01"/>
+  </joint>
+  <link name="r_hip_pitch_link">
+    <inertial>
+      <origin xyz="0.00132972 0.00416921 -0.0135201" rpy="0 0 0"/>
+      <mass value="0.09591"/>
+      <inertia ixx="4.6577e-05" ixy="-6.8649e-07" ixz="2.4460e-06" iyy="4.8878e-05" iyz="6.8576e-06" izz="1.6846e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/visual/r_hip_pitch_link.obj"/></geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_hip_pitch_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_hip_pitch_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_hip_pitch_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_hip_pitch_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_hip_pitch_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_hip_pitch_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_hip_pitch_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_hip_pitch_link_7.stl"/></geometry>
+    </collision>
+  </link>
+  <!-- servo 8 (右股上下); PC-software node "right leg4"; InitAngle=65, Offset=-75 -->
+  <joint name="r_hip_pitch_joint" type="revolute">
+    <parent link="r_hip_roll_link"/>
+    <child link="r_hip_pitch_link"/>
+    <origin xyz="0.00972791 -0.00802065 -0.0438724" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-0.95993" upper="2.53073" effort="1.9613" velocity="5.0"/>
+    <dynamics damping="0.05" friction="0.01"/>
+  </joint>
+  <link name="r_knee_link">
+    <inertial>
+      <origin xyz="0.000782027 0.00479686 -0.0170295" rpy="0 0 0"/>
+      <mass value="0.10478"/>
+      <inertia ixx="7.4202e-05" ixy="-4.0008e-07" ixz="1.5590e-06" iyy="6.4049e-05" iyz="8.6947e-06" izz="2.1393e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/visual/r_knee_link.obj"/></geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_knee_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_knee_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_knee_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_knee_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_knee_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_knee_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_knee_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_knee_link_7.stl"/></geometry>
+    </collision>
+  </link>
+  <!-- servo 9 (右膝); PC-software node "right leg3"; InitAngle=145, Offset=-150 -->
+  <joint name="r_knee_joint" type="revolute">
+    <parent link="r_hip_pitch_link"/>
+    <child link="r_knee_link"/>
+    <origin xyz="-0.0117411 0 -0.0525105" rpy="0 0 0"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="-2.00713" upper="1.39626" effort="1.9613" velocity="5.0"/>
+    <dynamics damping="0.05" friction="0.01"/>
+  </joint>
+  <link name="r_ankle_pitch_link">
+    <inertial>
+      <origin xyz="-0.000217034 0.00225753 -0.00875904" rpy="0 0 0"/>
+      <mass value="0.08844"/>
+      <inertia ixx="3.1593e-05" ixy="1.4295e-07" ixz="-4.2330e-07" iyy="2.4116e-05" iyz="1.4193e-06" izz="1.3581e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/visual/r_ankle_pitch_link.obj"/></geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_ankle_pitch_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_ankle_pitch_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_ankle_pitch_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_ankle_pitch_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_ankle_pitch_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_ankle_pitch_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_ankle_pitch_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_ankle_pitch_link_7.stl"/></geometry>
+    </collision>
+  </link>
+  <!-- servo 10 (右腳掌上下); PC-software node "right leg2"; InitAngle=135, Offset=-140 -->
+  <joint name="r_ankle_pitch_joint" type="revolute">
+    <parent link="r_knee_link"/>
+    <child link="r_ankle_pitch_link"/>
+    <origin xyz="5.32532e-06 0 -0.0591983" rpy="0 0 0"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="-1.83260" upper="1.30900" effort="1.9613" velocity="5.0"/>
+    <dynamics damping="0.05" friction="0.01"/>
+  </joint>
+  <link name="r_ankle_roll_link">
+    <inertial>
+      <origin xyz="0.000323729 -0.00994776 -0.00752308" rpy="0 0 0"/>
+      <mass value="0.13889"/>
+      <inertia ixx="5.8453e-05" ixy="1.1170e-06" ixz="4.7443e-07" iyy="1.0058e-04" iyz="-7.0226e-06" izz="1.3237e-04"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/visual/r_ankle_roll_link.obj"/></geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_ankle_roll_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_ankle_roll_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_ankle_roll_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_ankle_roll_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_ankle_roll_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_ankle_roll_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_ankle_roll_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/r_ankle_roll_link_7.stl"/></geometry>
+    </collision>
+  </link>
+  <!-- servo 11 (右腳掌左右); PC-software node "right leg1"; InitAngle=120, Offset=-120 -->
+  <joint name="r_ankle_roll_joint" type="revolute">
+    <parent link="r_ankle_pitch_link"/>
+    <child link="r_ankle_roll_link"/>
+    <origin xyz="0.00200788 0.0168256 -0.0369769" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-0.34907" upper="1.22173" effort="1.9613" velocity="5.0"/>
+    <dynamics damping="0.05" friction="0.01"/>
+  </joint>
+  <link name="l_hip_roll_link">
+    <inertial>
+      <origin xyz="0.0028889 1.31644e-06 -0.00687571" rpy="0 0 0"/>
+      <mass value="0.07696"/>
+      <inertia ixx="1.7245e-05" ixy="-5.8806e-10" ixz="3.3420e-06" iyy="1.8649e-05" iyz="-4.7164e-11" izz="7.0465e-06"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/visual/l_hip_roll_link.obj"/></geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_hip_roll_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_hip_roll_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_hip_roll_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_hip_roll_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_hip_roll_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_hip_roll_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_hip_roll_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_hip_roll_link_7.stl"/></geometry>
+    </collision>
+  </link>
+  <!-- servo 12 (左股左右); PC-software node "left leg5"; InitAngle=120, Offset=-122 -->
+  <joint name="l_hip_roll_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="l_hip_roll_link"/>
+    <origin xyz="7.62939e-09 0.0353277 0.00188553" rpy="0 0 0"/>
+    <axis xyz="-1 0 0"/>
+    <limit lower="-1.43117" upper="0.31416" effort="1.9613" velocity="5.0"/>
+    <dynamics damping="0.05" friction="0.01"/>
+  </joint>
+  <link name="l_hip_pitch_link">
+    <inertial>
+      <origin xyz="0.00132971 -0.00416921 -0.0135202" rpy="0 0 0"/>
+      <mass value="0.09591"/>
+      <inertia ixx="4.6577e-05" ixy="6.8650e-07" ixz="2.4460e-06" iyy="4.8877e-05" iyz="-6.8576e-06" izz="1.6846e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/visual/l_hip_pitch_link.obj"/></geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_hip_pitch_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_hip_pitch_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_hip_pitch_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_hip_pitch_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_hip_pitch_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_hip_pitch_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_hip_pitch_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_hip_pitch_link_7.stl"/></geometry>
+    </collision>
+  </link>
+  <!-- servo 13 (左股上下); PC-software node "left leg4"; InitAngle=175, Offset=-165 -->
+  <joint name="l_hip_pitch_joint" type="revolute">
+    <parent link="l_hip_roll_link"/>
+    <child link="l_hip_pitch_link"/>
+    <origin xyz="0.00972792 0.00802064 -0.0438723" rpy="0 0 0"/>
+    <axis xyz="0 -1 0"/>
+    <limit lower="-2.53073" upper="0.95993" effort="1.9613" velocity="5.0"/>
+    <dynamics damping="0.05" friction="0.01"/>
+  </joint>
+  <link name="l_knee_link">
+    <inertial>
+      <origin xyz="0.000782047 -0.00479688 -0.0170295" rpy="0 0 0"/>
+      <mass value="0.10478"/>
+      <inertia ixx="7.4202e-05" ixy="4.0009e-07" ixz="1.5591e-06" iyy="6.4049e-05" iyz="-8.6947e-06" izz="2.1393e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/visual/l_knee_link.obj"/></geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_knee_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_knee_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_knee_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_knee_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_knee_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_knee_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_knee_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_knee_link_7.stl"/></geometry>
+    </collision>
+  </link>
+  <!-- servo 14 (左膝); PC-software node "left leg3"; InitAngle=95, Offset=-90 -->
+  <joint name="l_knee_joint" type="revolute">
+    <parent link="l_hip_pitch_link"/>
+    <child link="l_knee_link"/>
+    <origin xyz="-0.0117411 1.39965e-09 -0.0525105" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.39626" upper="2.00713" effort="1.9613" velocity="5.0"/>
+    <dynamics damping="0.05" friction="0.01"/>
+  </joint>
+  <link name="l_ankle_pitch_link">
+    <inertial>
+      <origin xyz="-0.00021703 -0.00225754 -0.00868533" rpy="0 0 0"/>
+      <mass value="0.08844"/>
+      <inertia ixx="3.1424e-05" ixy="-1.4294e-07" ixz="-4.2120e-07" iyy="2.3947e-05" iyz="-1.3975e-06" izz="1.3581e-05"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/visual/l_ankle_pitch_link.obj"/></geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_ankle_pitch_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_ankle_pitch_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_ankle_pitch_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_ankle_pitch_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_ankle_pitch_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_ankle_pitch_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_ankle_pitch_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_ankle_pitch_link_7.stl"/></geometry>
+    </collision>
+  </link>
+  <!-- servo 15 (左腳掌上下); PC-software node "left leg2"; InitAngle=105, Offset=-100 -->
+  <joint name="l_ankle_pitch_joint" type="revolute">
+    <parent link="l_knee_link"/>
+    <child link="l_ankle_pitch_link"/>
+    <origin xyz="5.35583e-06 -6.38468e-13 -0.0593814" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-1.30900" upper="1.83260" effort="1.9613" velocity="5.0"/>
+    <dynamics damping="0.05" friction="0.01"/>
+  </joint>
+  <link name="l_ankle_roll_link">
+    <inertial>
+      <origin xyz="0.000325382 0.00994963 -0.0075211" rpy="0 0 0"/>
+      <mass value="0.13886"/>
+      <inertia ixx="5.8445e-05" ixy="-1.1140e-06" ixz="4.7729e-07" iyy="1.0049e-04" iyz="7.0259e-06" izz="1.3229e-04"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/visual/l_ankle_roll_link.obj"/></geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_ankle_roll_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_ankle_roll_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_ankle_roll_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_ankle_roll_link_3.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_ankle_roll_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_ankle_roll_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_ankle_roll_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/l_ankle_roll_link_7.stl"/></geometry>
+    </collision>
+  </link>
+  <!-- servo 16 (左腳掌左右); PC-software node "left leg1"; InitAngle=120, Offset=-120 -->
+  <joint name="l_ankle_roll_joint" type="revolute">
+    <parent link="l_ankle_pitch_link"/>
+    <child link="l_ankle_roll_link"/>
+    <origin xyz="0.00200786 -0.0168256 -0.0367939" rpy="0 0 0"/>
+    <axis xyz="1 0 0"/>
+    <limit lower="-1.22173" upper="0.34907" effort="1.9613" velocity="5.0"/>
+    <dynamics damping="0.05" friction="0.01"/>
+  </joint>
+  <link name="head_yaw_link">
+    <inertial>
+      <origin xyz="-4.91445e-10 -2.05835e-05 8.56684e-10" rpy="0 0 0"/>
+      <mass value="0.05101"/>
+      <inertia ixx="1.7620e-06" ixy="3.3881e-13" ixz="3.4680e-13" iyy="1.7562e-06" iyz="-3.6046e-13" izz="1.7620e-06"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/visual/head_yaw_link.obj"/></geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/head_yaw_link_0.stl"/></geometry>
+    </collision>
+  </link>
+  <!-- servo 19 (頭左右); PC-software node "head2"; InitAngle=120, Offset=-120 -->
+  <joint name="head_yaw_joint" type="revolute">
+    <parent link="base_link"/>
+    <child link="head_yaw_link"/>
+    <origin xyz="0.0100771 0.00165642 0.115073" rpy="0 0 0"/>
+    <axis xyz="0 0 -1"/>
+    <limit lower="-0.78540" upper="0.78540" effort="1.1768" velocity="5.0"/>
+    <dynamics damping="0.05" friction="0.01"/>
+  </joint>
+  <link name="head_pitch_link">
+    <inertial>
+      <origin xyz="0.0014249 -0.00165684 0.0379125" rpy="0 0 0"/>
+      <mass value="0.26086"/>
+      <inertia ixx="3.6421e-04" ixy="2.4026e-06" ixz="2.6554e-06" iyy="3.5084e-04" iyz="-1.4847e-05" izz="2.6399e-04"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/visual/head_pitch_link.obj"/></geometry>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/head_pitch_link_0.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/head_pitch_link_1.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/head_pitch_link_2.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/head_pitch_link_4.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/head_pitch_link_5.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/head_pitch_link_6.stl"/></geometry>
+    </collision>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="../meshes/collision/head_pitch_link_7.stl"/></geometry>
+    </collision>
+  </link>
+  <!-- servo 20 (頭上下); PC-software node "head1"; InitAngle=120, Offset=-135 ; URDF zero overridden: q = servo - 120 (user: servo 19/20 at 120 = level) -->
+  <joint name="head_pitch_joint" type="revolute">
+    <parent link="head_yaw_link"/>
+    <child link="head_pitch_link"/>
+    <origin xyz="-0.00621756 3.48091e-08 -0.000771606" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-0.26180" upper="0.61087" effort="1.1768" velocity="5.0"/>
+    <dynamics damping="0.05" friction="0.01"/>
+  </joint>
+
+  <!-- Reference frames (no mass, no geometry). Sole frames: centre of the sole plane of each foot (from the full-resolution visual mesh); hand tips: lowest point of the hand link at the zero pose. -->
+  <link name="r_sole_frame"/>
+  <joint name="r_sole_frame_joint" type="fixed">
+    <parent link="r_ankle_roll_link"/>
+    <child link="r_sole_frame"/>
+    <origin xyz="0.000213 -0.016948 -0.027969" rpy="0 0 0"/>
+  </joint>
+  <link name="l_sole_frame"/>
+  <joint name="l_sole_frame_joint" type="fixed">
+    <parent link="l_ankle_roll_link"/>
+    <child link="l_sole_frame"/>
+    <origin xyz="0.000213 0.016948 -0.027969" rpy="0 0 0"/>
+  </joint>
+  <link name="r_hand_tip"/>
+  <joint name="r_hand_tip_joint" type="fixed">
+    <parent link="r_hand_link"/>
+    <child link="r_hand_tip"/>
+    <origin xyz="-0.000000 0.012449 -0.038605" rpy="0 0 0"/>
+  </joint>
+  <link name="l_hand_tip"/>
+  <joint name="l_hand_tip_joint" type="fixed">
+    <parent link="l_hand_link"/>
+    <child link="l_hand_tip"/>
+    <origin xyz="0.021396 -0.012449 -0.038527" rpy="0 0 0"/>
+  </joint>
+  <!-- base_footprint: point on the ground below base_link in the PC-software default stance (servo = InitAngle, legs slightly bent); height = lowest point of the visual meshes. In the zero pose (straight legs) the feet sit 2 mm above this ground. -->
+  <link name="base_footprint"/>
+  <joint name="base_footprint_joint" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 0.220606" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Camera: the small circle on the front face of the head (lens centre). camera_link: x forward, y left, z up. camera_optical_frame: REP-103 optical (z forward, x right, y down). Intrinsics unknown. -->
+  <link name="camera_link"/>
+  <joint name="camera_joint" type="fixed">
+    <parent link="head_pitch_link"/>
+    <child link="camera_link"/>
+    <origin xyz="0.053 0 0.04937" rpy="0 0 0"/>
+  </joint>
+  <link name="camera_optical_frame"/>
+  <joint name="camera_optical_joint" type="fixed">
+    <parent link="camera_link"/>
+    <child link="camera_optical_frame"/>
+    <origin xyz="0 0 0" rpy="-1.5707963 0 -1.5707963"/>
+  </joint>
+
+  <!-- Accelerometer on the head mainboard, lying flat (axes aligned with the head frame: x fwd, y left, z up). Position ASSUMED = head link centre of mass. No IMU/gyro on this robot. -->
+  <link name="accel_link"/>
+  <joint name="accel_joint" type="fixed">
+    <parent link="head_pitch_link"/>
+    <child link="accel_link"/>
+    <origin xyz="0.00142943 -0.0016621 0.038033" rpy="0 0 0"/>
+  </joint>
+</robot>
