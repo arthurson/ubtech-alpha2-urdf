@@ -5,6 +5,7 @@ unstable with servo stiffness unless reflected rotor inertia (armature) is added
 import os, re, sys, numpy as np, mujoco
 HERE = os.path.dirname(os.path.abspath(__file__)); PKG = os.path.dirname(HERE)
 KP, KV, ARMATURE = 20.0, 0.5, 0.005
+FRICTION = 0.5   # sliding friction of ground/feet; mu = 1.0 grips so hard that hip-roll torque demand reaches 15-37 N*m in dance actions
 TORQUE = {}   # per-servo stall torque from config/servo_map.yaml (12 kg*cm light / 20 kg*cm heavy servos)
 for _l in open(os.path.join(PKG, 'config', 'servo_map.yaml')):
     _m = re.search(r'joint: (\w+).*?torque_nm: ([\d.]+)', _l)
@@ -15,7 +16,7 @@ def load(kp=KP, kv=KV, armature=ARMATURE):
     spec.option.timestep = 0.002
     spec.option.integrator = mujoco.mjtIntegrator.mjINT_IMPLICITFAST
     spec.body('base_link').add_freejoint()
-    spec.worldbody.add_geom(name='ground', type=mujoco.mjtGeom.mjGEOM_PLANE, size=[2, 2, 0.1])
+    spec.worldbody.add_geom(name='ground', type=mujoco.mjtGeom.mjGEOM_PLANE, size=[2, 2, 0.1], friction=[FRICTION, 0.005, 0.0001])
     for b in ('r_shoulder_roll_link', 'l_shoulder_roll_link'):      # source models overlap by 3-5 mm here
         spec.add_exclude(bodyname1='base_link', bodyname2=b)
     for j in spec.joints:

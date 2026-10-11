@@ -1129,6 +1129,6 @@
   <!-- Gazebo extensions (ignored by ROS/RViz/MoveIt): keep camera_link and accel_link (sensor mounts) as separate links; the other frames are lumped into their parents by sdformat (kept as SDF frames); foot friction. -->
   <gazebo reference="camera_joint"><preserveFixedJoint>true</preserveFixedJoint></gazebo>
   <gazebo reference="accel_joint"><preserveFixedJoint>true</preserveFixedJoint></gazebo>
-  <gazebo reference="r_ankle_roll_link"><mu1>1.0</mu1><mu2>1.0</mu2></gazebo>
-  <gazebo reference="l_ankle_roll_link"><mu1>1.0</mu1><mu2>1.0</mu2></gazebo>
+  <gazebo reference="r_ankle_roll_link"><mu1>0.5</mu1><mu2>0.5</mu2></gazebo>
+  <gazebo reference="l_ankle_roll_link"><mu1>0.5</mu1><mu2>0.5</mu2></gazebo>
 </robot>
