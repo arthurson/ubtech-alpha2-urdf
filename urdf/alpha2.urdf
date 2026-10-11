@@ -1091,7 +1091,14 @@
   </joint>
 
   <!-- Camera: the small circle on the front face of the head (lens centre). camera_link: x forward, y left, z up. camera_optical_frame: REP-103 optical (z forward, x right, y down). Intrinsics unknown. -->
-  <link name="camera_link"/>
+  <link name="camera_link">
+    <!-- negligible inertial (10 mg): Gazebo drops massless links, and this one carries a sensor -->
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1e-05"/>
+      <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+    </inertial>
+  </link>
   <joint name="camera_joint" type="fixed">
     <parent link="head_pitch_link"/>
     <child link="camera_link"/>
@@ -1105,10 +1112,23 @@
   </joint>
 
   <!-- Accelerometer on the head mainboard, lying flat (axes aligned with the head frame: x fwd, y left, z up). Position ASSUMED = head link centre of mass. No IMU/gyro on this robot. -->
-  <link name="accel_link"/>
+  <link name="accel_link">
+    <!-- negligible inertial (10 mg): Gazebo drops massless links, and this one carries a sensor -->
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1e-05"/>
+      <inertia ixx="1e-09" ixy="0" ixz="0" iyy="1e-09" iyz="0" izz="1e-09"/>
+    </inertial>
+  </link>
   <joint name="accel_joint" type="fixed">
     <parent link="head_pitch_link"/>
     <child link="accel_link"/>
     <origin xyz="0.00142943 -0.0016621 0.038033" rpy="0 0 0"/>
   </joint>
+
+  <!-- Gazebo extensions (ignored by ROS/RViz/MoveIt): keep camera_link and accel_link (sensor mounts) as separate links; the other frames are lumped into their parents by sdformat (kept as SDF frames); foot friction. -->
+  <gazebo reference="camera_joint"><preserveFixedJoint>true</preserveFixedJoint></gazebo>
+  <gazebo reference="accel_joint"><preserveFixedJoint>true</preserveFixedJoint></gazebo>
+  <gazebo reference="r_ankle_roll_link"><mu1>1.0</mu1><mu2>1.0</mu2></gazebo>
+  <gazebo reference="l_ankle_roll_link"><mu1>1.0</mu1><mu2>1.0</mu2></gazebo>
 </robot>

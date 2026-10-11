@@ -2,6 +2,7 @@
 # Rule used by the PC software 3D view:  rotation_deg = servo_angle_deg + pc_offset   (about the xml <Axis>, relative to the FBX/URDF zero pose).
 # URDF:  q_rad = radians(servo_angle_deg + pc_offset);  servo_angle_deg = degrees(q_rad) - pc_offset.   Servo travel min/max/home: measured on the robot, from ubtech-open-alpha2 app-core.js SERVO_CALIBRATION (identical to ubtech-open-lynx).
 # servo_at_q0 = -pc_offset.  q_init = radians(pc_init_angle + pc_offset) is the PC-software default stance.
+# torque_kgcm / torque_nm = servo stall torque (confirmed). velocity limit in the URDF (5 rad/s) is a placeholder.
 # urdf_offset (if present) overrides pc_offset for the URDF: servo 20 (head pitch) -> q = servo - 120, because on the real robot servo 19/20 at 120 = head level/centred (PC software Offset -135 would tilt the head up 15 deg at 120).
 joints:
   - {servo_id: 1, joint: r_shoulder_pitch_joint, pc_node: "right hand4", urdf_axis: [0, 1, 0], pc_offset: -130, pc_init_angle: 120, servo_at_q0: 130, q_init_deg: -10, servo_mass_g: 52.8, torque_kgcm: 20, torque_nm: 1.9613, servo_min: 5, servo_max: 235, servo_home: 120, sign: 1}
