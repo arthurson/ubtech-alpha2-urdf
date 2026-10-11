@@ -47,3 +47,13 @@ Not run (no GPU in the build environment). `urdf/alpha2_isaac.urdf` (relative me
 
 ## Friction (simulation)
 Foot/ground friction was set to mu = 0.5 (Gazebo ankle mu1/mu2 and ground, MuJoCo stand_test FRICTION) after the 202-action tests: with mu = 1.0 the required hip-roll torque reached 15-37 N*m, with mu = 0.5 it falls to ~1-4 N*m. The real floor/foot friction is unknown; measure it (e.g. incline test) and change it.
+
+## Comparison with published specs
+- Published (UBTECH spec quoted in retail listings): H 438 x W 218 x D 122 mm; ~5 lb (about 2.27 kg) in press/CNET; the Hello Alpha manual page shows about 2.4 kg (OCR text, partly garbled). Model: height 437 mm; width 205 mm (zero pose, arms straight down); depth 128 mm (= foot length); mass 2.3 kg (maintainer-stated).
+- Servo torque: the manual lists 20 kg*cm and 8 kg*cm; the Alpha 1S UBT-12HC servo (42 g, 44 x 22.5 x 29 mm) is quoted at 8 kg*cm @ 6.5 V and 12 kg*cm @ 8.5 V. The URDF uses the maintainer's 12 / 20 kg*cm stall values; if the light servos are really driven at the lower voltage their stall torque would be 8 kg*cm (0.78 N*m).
+
+## Stability over the 202 official actions (MuJoCo, mu 0.5, open-loop position servos, 12/20 kg*cm limits)
+- 194 actions stay upright, 8 entries fall (7 distinct actions): body being hollowed out 4.4 s, stretch forward 4.7 s, FrontStand 4.9 s, right side bow with left leg kick 5.6 s, risus1 5.7 s, london bridge is falling down (two files) 20.2 s, Sirius 35.5 s.
+- The falls do not depend on friction (mu 0.3-1.2) or on cell/board mass; moving the servo mass to the link centre changes Sirius (falls at 9.6 s) and the right-side-bow action (stays up). Smooth motion over the whole (s+e) slot instead of move-then-hold makes Sirius and the right-side-bow action stay up; the other five still fall.
+- A COM/ZMP-margin statistic computed from contact points was NOT reliable (it flags every action) and is not used as evidence.
+- Which of these actions the real robot performs without falling is unknown: if it does, that points to a model/timing problem.
