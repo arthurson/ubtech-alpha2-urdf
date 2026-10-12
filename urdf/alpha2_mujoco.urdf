@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!-- MASS MODEL: total 2.3 kg = 20 servos (IDs 2,3,5,6,17-20: 40.3 g, 12 kg*cm; IDs 1,4,7-16: 52.8 g, 20 kg*cm; modelled as point masses at each joint pivot, in the child link) + 3x18650 cells (50 g, upright, rear of body, assumed position) + remaining mass (shell, mainboards, wiring) distributed by convex-hull volume. -->
+<!-- MASS MODEL: total 2.3 kg = 20 servos (IDs 2,3,5,6,17-20: 40.3 g, 8 kg*cm stall; IDs 1,4,7-16: 52.8 g, 20 kg*cm; modelled as point masses at each joint pivot, in the child link) + 3x18650 cells (50 g, upright, rear of body, assumed position) + remaining mass (shell, mainboards, wiring) distributed by convex-hull volume. -->
 <!-- COLLISION: each link uses a convex decomposition (CoACD, up to 8 convex pieces per link, from the visual mesh) instead of a single convex hull. -->
 <!-- Alpha 2 (UBTech) humanoid. Generated from alpha2_21parts OBJ meshes + Alpha2_PC_Programming alpha2.FBX/alpha2.xml.
      Frame: ROS REP-103 (x forward, y left, z up), SI units. Zero pose = standing pose of the PC-software model (arms down).
@@ -139,7 +139,7 @@
     <child link="r_shoulder_roll_link"/>
     <origin xyz="-0.000936512 -0.000282395 -0.000471802" rpy="0 0 0"/>
     <axis xyz="1 0 0"/>
-    <limit lower="-2.79253" upper="0.00000" effort="1.1768" velocity="5.0"/>
+    <limit lower="-2.79253" upper="0.00000" effort="0.7845" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
   <link name="r_elbow_link">
@@ -187,7 +187,7 @@
     <child link="r_elbow_link"/>
     <origin xyz="0.000452387 -0.00483327 -0.0579653" rpy="0 0 0"/>
     <axis xyz="0 -1 0"/>
-    <limit lower="-1.04720" upper="1.22173" effort="1.1768" velocity="5.0"/>
+    <limit lower="-1.04720" upper="1.22173" effort="0.7845" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
   <link name="r_hand_link">
@@ -235,7 +235,7 @@
     <child link="r_hand_link"/>
     <origin xyz="-0.00276682 0.000360121 -0.0558557" rpy="0 0 0"/>
     <axis xyz="-1 0 0"/>
-    <limit lower="-0.43633" upper="0.08727" effort="1.1768" velocity="5.0"/>
+    <limit lower="-0.43633" upper="0.08727" effort="0.7845" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
   <link name="l_shoulder_pitch_link">
@@ -331,7 +331,7 @@
     <child link="l_shoulder_roll_link"/>
     <origin xyz="-0.000932146 0.000282394 0.000822052" rpy="0 0 0"/>
     <axis xyz="1 0 0"/>
-    <limit lower="0.00000" upper="2.79253" effort="1.1768" velocity="5.0"/>
+    <limit lower="0.00000" upper="2.79253" effort="0.7845" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
   <link name="l_elbow_link">
@@ -379,7 +379,7 @@
     <child link="l_elbow_link"/>
     <origin xyz="0.000452416 0.00483327 -0.0579653" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
-    <limit lower="-1.39626" upper="0.87266" effort="1.1768" velocity="5.0"/>
+    <limit lower="-1.39626" upper="0.87266" effort="0.7845" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
   <link name="l_hand_link">
@@ -427,7 +427,7 @@
     <child link="l_hand_link"/>
     <origin xyz="-0.0241628 -0.000360123 -0.0559338" rpy="0 0 0"/>
     <axis xyz="1 0 0"/>
-    <limit lower="-0.43633" upper="0.08727" effort="1.1768" velocity="5.0"/>
+    <limit lower="-0.43633" upper="0.08727" effort="0.7845" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
   <link name="r_hip_roll_link">
@@ -927,7 +927,7 @@
     <child link="head_yaw_link"/>
     <origin xyz="0.0100771 0.00165642 0.115073" rpy="0 0 0"/>
     <axis xyz="0 0 -1"/>
-    <limit lower="-0.78540" upper="0.78540" effort="1.1768" velocity="5.0"/>
+    <limit lower="-0.78540" upper="0.78540" effort="0.7845" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
   <link name="head_pitch_link">
@@ -971,7 +971,7 @@
     <child link="head_pitch_link"/>
     <origin xyz="-0.00621756 3.48091e-08 -0.000771606" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
-    <limit lower="-0.26180" upper="0.61087" effort="1.1768" velocity="5.0"/>
+    <limit lower="-0.26180" upper="0.61087" effort="0.7845" velocity="5.0"/>
     <dynamics damping="0.05" friction="0.01"/>
   </joint>
 
@@ -981,4 +981,6 @@
   <!-- Camera: the small circle on the front face of the head (lens centre). camera_link: x forward, y left, z up. camera_optical_frame: REP-103 optical (z forward, x right, y down). Intrinsics unknown. -->
 
   <!-- Accelerometer on the head mainboard, lying flat (axes aligned with the head frame: x fwd, y left, z up). Position ASSUMED = head link centre of mass. No IMU/gyro on this robot. -->
+
+  <!-- Gazebo extensions (ignored by ROS/RViz/MoveIt): keep camera_link and accel_link (sensor mounts) as separate links; the other frames are lumped into their parents by sdformat (kept as SDF frames); foot friction. -->
 </robot>

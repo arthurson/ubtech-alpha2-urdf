@@ -22,19 +22,19 @@
         <joint_name>r_shoulder_pitch_joint</joint_name><p_gain>20.0</p_gain><i_gain>0</i_gain><d_gain>0.5</d_gain><cmd_max>1.9613</cmd_max><cmd_min>-1.9613</cmd_min>
       </plugin>
       <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
-        <joint_name>r_shoulder_roll_joint</joint_name><p_gain>20.0</p_gain><i_gain>0</i_gain><d_gain>0.5</d_gain><cmd_max>1.1768</cmd_max><cmd_min>-1.1768</cmd_min>
+        <joint_name>r_shoulder_roll_joint</joint_name><p_gain>20.0</p_gain><i_gain>0</i_gain><d_gain>0.5</d_gain><cmd_max>0.7845</cmd_max><cmd_min>-0.7845</cmd_min>
       </plugin>
       <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
-        <joint_name>r_elbow_joint</joint_name><p_gain>20.0</p_gain><i_gain>0</i_gain><d_gain>0.5</d_gain><cmd_max>1.1768</cmd_max><cmd_min>-1.1768</cmd_min>
+        <joint_name>r_elbow_joint</joint_name><p_gain>20.0</p_gain><i_gain>0</i_gain><d_gain>0.5</d_gain><cmd_max>0.7845</cmd_max><cmd_min>-0.7845</cmd_min>
       </plugin>
       <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
         <joint_name>l_shoulder_pitch_joint</joint_name><p_gain>20.0</p_gain><i_gain>0</i_gain><d_gain>0.5</d_gain><cmd_max>1.9613</cmd_max><cmd_min>-1.9613</cmd_min>
       </plugin>
       <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
-        <joint_name>l_shoulder_roll_joint</joint_name><p_gain>20.0</p_gain><i_gain>0</i_gain><d_gain>0.5</d_gain><cmd_max>1.1768</cmd_max><cmd_min>-1.1768</cmd_min>
+        <joint_name>l_shoulder_roll_joint</joint_name><p_gain>20.0</p_gain><i_gain>0</i_gain><d_gain>0.5</d_gain><cmd_max>0.7845</cmd_max><cmd_min>-0.7845</cmd_min>
       </plugin>
       <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
-        <joint_name>l_elbow_joint</joint_name><p_gain>20.0</p_gain><i_gain>0</i_gain><d_gain>0.5</d_gain><cmd_max>1.1768</cmd_max><cmd_min>-1.1768</cmd_min>
+        <joint_name>l_elbow_joint</joint_name><p_gain>20.0</p_gain><i_gain>0</i_gain><d_gain>0.5</d_gain><cmd_max>0.7845</cmd_max><cmd_min>-0.7845</cmd_min>
       </plugin>
       <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
         <joint_name>r_hip_roll_joint</joint_name><p_gain>20.0</p_gain><i_gain>0</i_gain><d_gain>0.5</d_gain><cmd_max>1.9613</cmd_max><cmd_min>-1.9613</cmd_min>
@@ -67,16 +67,16 @@
         <joint_name>l_ankle_roll_joint</joint_name><p_gain>20.0</p_gain><i_gain>0</i_gain><d_gain>0.5</d_gain><cmd_max>1.9613</cmd_max><cmd_min>-1.9613</cmd_min>
       </plugin>
       <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
-        <joint_name>r_hand_joint</joint_name><p_gain>20.0</p_gain><i_gain>0</i_gain><d_gain>0.5</d_gain><cmd_max>1.1768</cmd_max><cmd_min>-1.1768</cmd_min>
+        <joint_name>r_hand_joint</joint_name><p_gain>20.0</p_gain><i_gain>0</i_gain><d_gain>0.5</d_gain><cmd_max>0.7845</cmd_max><cmd_min>-0.7845</cmd_min>
       </plugin>
       <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
-        <joint_name>l_hand_joint</joint_name><p_gain>20.0</p_gain><i_gain>0</i_gain><d_gain>0.5</d_gain><cmd_max>1.1768</cmd_max><cmd_min>-1.1768</cmd_min>
+        <joint_name>l_hand_joint</joint_name><p_gain>20.0</p_gain><i_gain>0</i_gain><d_gain>0.5</d_gain><cmd_max>0.7845</cmd_max><cmd_min>-0.7845</cmd_min>
       </plugin>
       <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
-        <joint_name>head_yaw_joint</joint_name><p_gain>20.0</p_gain><i_gain>0</i_gain><d_gain>0.5</d_gain><cmd_max>1.1768</cmd_max><cmd_min>-1.1768</cmd_min>
+        <joint_name>head_yaw_joint</joint_name><p_gain>20.0</p_gain><i_gain>0</i_gain><d_gain>0.5</d_gain><cmd_max>0.7845</cmd_max><cmd_min>-0.7845</cmd_min>
       </plugin>
       <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
-        <joint_name>head_pitch_joint</joint_name><p_gain>20.0</p_gain><i_gain>0</i_gain><d_gain>0.5</d_gain><cmd_max>1.1768</cmd_max><cmd_min>-1.1768</cmd_min>
+        <joint_name>head_pitch_joint</joint_name><p_gain>20.0</p_gain><i_gain>0</i_gain><d_gain>0.5</d_gain><cmd_max>0.7845</cmd_max><cmd_min>-0.7845</cmd_min>
       </plugin>
     </include>
   </world>

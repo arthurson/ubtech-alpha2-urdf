@@ -1,0 +1,24 @@
+# Servo travel envelope: union of the measured SERVO_CALIBRATION range and the range actually commanded by the 202 official actions.
+# NOT used by the URDF (the maintainer decided to keep the measured limits); use it for simulation of the official actions.
+# q_min/q_max in degrees use the URDF zero (q = servo + offset).
+envelope:
+  - {servo_id: 1, calibrated: [5, 235], used_by_actions: [0, 217], envelope: [0, 235], q_min_deg: -130, q_max_deg: 105, frames_outside_calibration: 29}
+  - {servo_id: 2, calibrated: [50, 210], used_by_actions: [48, 225], envelope: [48, 225], q_min_deg: -162, q_max_deg: 15, frames_outside_calibration: 116}
+  - {servo_id: 3, calibrated: [55, 185], used_by_actions: [47, 192], envelope: [47, 192], q_min_deg: -68, q_max_deg: 77, frames_outside_calibration: 71}
+  - {servo_id: 4, calibrated: [5, 235], used_by_actions: [23, 240], envelope: [5, 240], q_min_deg: -105, q_max_deg: 130, frames_outside_calibration: 37}
+  - {servo_id: 5, calibrated: [30, 190], used_by_actions: [17, 192], envelope: [17, 192], q_min_deg: -13, q_max_deg: 162, frames_outside_calibration: 167}
+  - {servo_id: 6, calibrated: [55, 185], used_by_actions: [41, 191], envelope: [41, 191], q_min_deg: -94, q_max_deg: 56, frames_outside_calibration: 62}
+  - {servo_id: 7, calibrated: [100, 200], used_by_actions: [100, 205], envelope: [100, 205], q_min_deg: -20, q_max_deg: 85, frames_outside_calibration: 4}
+  - {servo_id: 8, calibrated: [20, 220], used_by_actions: [14, 190], envelope: [14, 220], q_min_deg: -61, q_max_deg: 145, frames_outside_calibration: 41}
+  - {servo_id: 9, calibrated: [35, 230], used_by_actions: [25, 212], envelope: [25, 230], q_min_deg: -125, q_max_deg: 80, frames_outside_calibration: 28}
+  - {servo_id: 10, calibrated: [35, 215], used_by_actions: [57, 213], envelope: [35, 215], q_min_deg: -105, q_max_deg: 75, frames_outside_calibration: 0}
+  - {servo_id: 11, calibrated: [100, 190], used_by_actions: [100, 198], envelope: [100, 198], q_min_deg: -20, q_max_deg: 78, frames_outside_calibration: 1}
+  - {servo_id: 12, calibrated: [40, 140], used_by_actions: [35, 140], envelope: [35, 140], q_min_deg: -87, q_max_deg: 18, frames_outside_calibration: 4}
+  - {servo_id: 13, calibrated: [20, 220], used_by_actions: [79, 226], envelope: [20, 226], q_min_deg: -145, q_max_deg: 61, frames_outside_calibration: 28}
+  - {servo_id: 14, calibrated: [10, 205], used_by_actions: [27, 215], envelope: [10, 215], q_min_deg: -80, q_max_deg: 125, frames_outside_calibration: 33}
+  - {servo_id: 15, calibrated: [25, 205], used_by_actions: [26, 182], envelope: [25, 205], q_min_deg: -75, q_max_deg: 105, frames_outside_calibration: 0}
+  - {servo_id: 16, calibrated: [50, 140], used_by_actions: [46, 138], envelope: [46, 140], q_min_deg: -74, q_max_deg: 20, frames_outside_calibration: 1}
+  - {servo_id: 17, calibrated: [95, 125], used_by_actions: [81, 130], envelope: [81, 130], q_min_deg: -39, q_max_deg: 10, frames_outside_calibration: 17}
+  - {servo_id: 18, calibrated: [95, 125], used_by_actions: [87, 130], envelope: [87, 130], q_min_deg: -33, q_max_deg: 10, frames_outside_calibration: 22}
+  - {servo_id: 19, calibrated: [75, 165], used_by_actions: [68, 176], envelope: [68, 176], q_min_deg: -52, q_max_deg: 56, frames_outside_calibration: 61}
+  - {servo_id: 20, calibrated: [105, 155], used_by_actions: [96, 149], envelope: [96, 155], q_min_deg: -24, q_max_deg: 35, frames_outside_calibration: 126}
