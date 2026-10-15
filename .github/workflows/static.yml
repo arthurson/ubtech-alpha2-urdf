@@ -22,6 +22,7 @@ jobs:
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: web
+          # 整個 repo（mesh 要跟埋，ubx-player.html 經 ../meshes 讀 OBJ）
+          path: .
       - id: deployment
         uses: actions/deploy-pages@v4

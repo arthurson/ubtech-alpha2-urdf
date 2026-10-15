@@ -122,6 +122,7 @@ for cname, jnames in CHAINS.items():
             "origin": uj["origin"], "axis": uj["axis"],
             "offset": off, "qlim": uj["qlim"],
             "srg": [sm["servo_min"], sm["servo_max"]],
+            "home": sm["servo_home"],
         })
     out["chains"][cname] = items
     tj, _ = TIPS[cname]
@@ -131,6 +132,21 @@ for cname, jnames in CHAINS.items():
         out["tips"][cname] = [0, 0, 0.06]  # head top marker above pitch link
 out["wrists"] = {"r_arm": joints["r_hand_joint"]["origin"],
                  "l_arm": joints["l_hand_joint"]["origin"]}
+# finger joints (servo 17/18, driven for mesh display; tiny motion)
+out["handJoints"] = {}
+for jn, sid in (("r_hand_joint", 17), ("l_hand_joint", 18)):
+    sm = [r for r in smap if r["servo_id"] == sid][0]
+    out["handJoints"][str(sid)] = {
+        "joint": jn, "origin": joints[jn]["origin"], "axis": joints[jn]["axis"],
+        "offset": sm.get("urdf_offset", sm["pc_offset"]),
+        "parent": "r_arm" if sid == 17 else "l_arm",
+    }
+# mesh link names (meshes/visual/<link>.obj), one per joint child + base + hands
+links = ["base_link"]
+for cname, jnames in CHAINS.items():
+    links += [jn.replace("_joint", "_link") for jn in jnames]
+links += ["r_hand_link", "l_hand_link"]
+out["links"] = links
 # hand (finger) servos: fixed closed value display only
 for sid in (17, 18):
     sm = [r for r in smap if r["servo_id"] == sid][0]
