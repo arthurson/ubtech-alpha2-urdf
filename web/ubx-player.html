@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alpha2 UBX 播放器（URDF 火柴人）</title>
+<style>
+  body{font-family:system-ui,"Microsoft JhengHei",sans-serif;max-width:860px;margin:0 auto;padding:12px;background:#f6f6f8;color:#222}
+  h1{font-size:20px}
+  .card{background:#fff;border:1px solid #ddd;border-radius:10px;padding:12px;margin:10px 0}
+  button{padding:8px 14px;font-size:15px;border-radius:8px;border:1px solid #999;background:#fff;cursor:pointer;margin:4px 4px 4px 0}
+  button.primary{background:#2563eb;color:#fff;border-color:#2563eb}
+  button:disabled{opacity:.5}
+  select,input[type=file]{font-size:14px;max-width:100%}
+  input[type=range]{width:100%}
+  canvas{width:100%;background:#fff;border:1px solid #ddd;border-radius:8px}
+  .mono{font-variant-numeric:tabular-nums}
+  #log{background:#111;color:#0f0;font-size:12px;padding:8px;border-radius:8px;height:110px;overflow-y:auto;white-space:pre-wrap}
+  small{color:#666}
+</style>
+</head>
+<body>
+<h1>🕺 Alpha2 UBX 播放器 <small>純靜態頁，URDF 火柴人即時播 `.ubx`</small></h1>
+<p>揀一個 <code>.ubx</code> 檔（部機 <code>/sdcard/actions/</code> 抄出嚟嗰啲），呢頁即 parse 即播全身火柴人。相容官方 202 招格式（parse 序；多 track 檔極少數段次序或同真機鏈播唔同，動作內容一樣）。<br>
+<small>開法：GitHub Pages / <code>python -m http.server</code> / 直接雙擊都得（雙擊開要用下面揀檔掣入 sample）。</small></p>
+
+<div class="card">
+<input type="file" id="file" accept=".ubx">
+<button onclick="loadSample()">📦 試播內置 sample（3 格）</button>
+<div id="info" class="mono"></div>
+</div>
+
+<div class="card">
+<button class="primary" id="playBtn" onclick="togglePlay()" disabled>▶ 播</button>
+<button onclick="stop()">⏹ 停</button>
+<label>速度 <select id="spd" onchange="setSpeed()">
+<option value="0.5">0.5x</option><option value="0.67">0.67x</option>
+<option value="1" selected>1x</option><option value="1.5">1.5x</option><option value="2">2x</option>
+</select></label>
+<label>慢鏡 <input type="range" id="slow" min="1" max="8" step="1" value="1" style="width:120px" onchange="setSpeed()"> <span id="slowv">1x</span></label>
+<div class="mono"><span id="tcur">0.0</span>s / <span id="ttot">0.0</span>s · 第 <span id="fcur">-</span> / <span id="ftot">-</span> 格</div>
+<input type="range" id="scrub" min="0" max="1000" value="0">
+<canvas id="cv" width="840" height="340"></canvas>
+<div class="mono" id="pose"></div>
+</div>
+
+<div class="card"><h3>Log</h3><div id="log"></div></div>
+<p><small>FK 參數由 <code>urdf/alpha2.urdf</code> + <code>config/servo_map.yaml</code> 經 <code>web/tools/extract_fk_params.py</code> 生成（<code>fk-params.js</code>）；解析跟 <code>web/ubx-parse.js</code>（同 openalpha2 嘅 <code>ubx_to_traj.py</code> 逐 byte 對過）。q = (servo + offset)°，20 號頭用 urdf_offset −120。</small></p>
+
+<script src="fk-params.js"></script>
+<script src="ubx-parse.js"></script>
+<script>
+// ---- 3x3 數學（同 ik-demo 一套）----
+function rotAxis(ax,q){var n=Math.hypot(ax[0],ax[1],ax[2]);var x=ax[0]/n,y=ax[1]/n,z=ax[2]/n;
+  var c=Math.cos(q),s=Math.sin(q),C=1-c;
+  return [[c+x*x*C,x*y*C-z*s,x*z*C+y*s],[y*x*C+z*s,c+y*y*C,y*z*C-x*s],[z*x*C-y*s,z*y*C+x*s,c+z*z*C]];}
+function mDot(R,v){return [R[0][0]*v[0]+R[0][1]*v[1]+R[0][2]*v[2],R[1][0]*v[0]+R[1][1]*v[1]+R[1][2]*v[2],R[2][0]*v[0]+R[2][1]*v[1]+R[2][2]*v[2]];}
+function mMul(A,B){var C=[[0,0,0],[0,0,0],[0,0,0]];for(var i=0;i<3;i++)for(var j=0;j<3;j++){var s=0;for(var k=0;k<3;k++)s+=A[i][k]*B[k][j];C[i][j]=s;}return C;}
+function vAdd(a,b){return [a[0]+b[0],a[1]+b[1],a[2]+b[2]];}
+
+// chain FK：回各關節位（base frame, m）。wrist/tip 另外加。
+function fkChain(items, q, extra) {
+  var R=[[1,0,0],[0,1,0],[0,0,1]], pts=[[0,0,0]], p=[0,0,0];
+  for (var i=0;i<items.length;i++){
+    p=vAdd(p,mDot(R,items[i].origin)); R=mMul(R,rotAxis(items[i].axis,q[i]));
+    pts.push(p.slice());
+    if(extra&&extra[i]){ p=vAdd(p,mDot(R,extra[i])); pts.push(p.slice()); }
+  }
+  return {pts:pts, R:R};
+}
+function chainQ(items, angles20){
+  return items.map(function(j){return (angles20[j.servo-1]+j.offset)*Math.PI/180;});
+}
+// 全身關節點：base + 每條 chain 嘅點列
+function fullPose(angles20){
+  var P={};
+  ['r_arm','l_arm','r_leg','l_leg','head'].forEach(function(c){
+    var items=FK.chains[c], q=chainQ(items,angles20);
+    var extra=null;
+    if(c==='r_arm'||c==='l_arm') extra={2:FK.wrists[c]};
+    var r=fkChain(items,q,extra);
+    // tip
+    var tip=vAdd(r.pts[r.pts.length-1],mDot(r.R,FK.tips[c]));
+    r.pts.push(tip); r.pts.shift(); // 掉第0個 base 原點佔位，剩返真關節點
+    P[c]=r.pts;
+  });
+  // 軀幹：base -> 頸（head_yaw origin，base frame 定點）
+  P.neck=FK.chains.head[0].origin.slice();
+  P.base=[0,0,0];
+  return P;
+}
+
+// ---- 播放狀態 ----
+var TRAJ=null, playing=false, t0ms=0, pauseMs=0, speed=1, slowDiv=1, rafId=0, scrubbing=false;
+function $(id){return document.getElementById(id);}
+function log(s){var el=$('log');el.textContent+=s+'\n';el.scrollTop=el.scrollHeight;}
+function effSpeed(){return speed/slowDiv;}
+
+function setFile(name, buf){
+  try{
+    var t0=performance.now();
+    TRAJ=UbxParse.parse(new Uint8Array(buf));
+    log(name+'：'+TRAJ.frames.length+' 格，'+TRAJ.durationMs+'ms，'+TRAJ.tracks+' track（parse '+Math.round(performance.now()-t0)+'ms）');
+    if(!TRAJ.frames.length){log('⛔ 無舵機幀');return;}
+    $('ttot').textContent=(TRAJ.durationMs/1000).toFixed(1);
+    $('ftot').textContent=TRAJ.frames.length;
+    $('info').textContent=name+'｜'+TRAJ.frames.length+' 格｜'+(TRAJ.durationMs/1000).toFixed(1)+'s';
+    $('playBtn').disabled=false;
+    stop(); seek(0);
+  }catch(e){log('⛔ 解唔到：'+e.message+'（唔係原裝 .ubx？）');}
+}
+$('file').addEventListener('change',function(ev){
+  var f=ev.target.files[0]; if(!f) return;
+  var rd=new FileReader();
+  rd.onload=function(){setFile(f.name,rd.result);};
+  rd.readAsArrayBuffer(f);
+});
+function loadSample(){
+  fetch('tools/test-action.ubx').then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status+'（雙擊開 file:// 請改用上面揀檔掣）');
+    return r.arrayBuffer();
+  }).then(function(b){setFile('test-action.ubx (sample)',b);})
+    .catch(function(e){log('⛔ 載唔到 sample：'+e.message);});
+}
+function setSpeed(){
+  speed=parseFloat($('spd').value)||1;
+  slowDiv=parseInt($('slow').value,10)||1;
+  $('slowv').textContent=slowDiv+'x';
+  if(playing){pauseMs=clock(); t0ms=performance.now();}
+}
+function clock(){ // 已播時間（ms，已計速度）
+  return pauseMs+(performance.now()-t0ms)*effSpeed();
+}
+function seek(ms){
+  pauseMs=Math.max(0,Math.min(TRAJ?TRAJ.durationMs:0,ms));
+  t0ms=performance.now(); curIdx=0;
+  drawAt(pauseMs);
+}
+function togglePlay(){
+  if(!TRAJ) return;
+  if(playing){pauseMs=clock();t0ms=performance.now();playing=false;$('playBtn').textContent='▶ 播';}
+  else{
+    if(pauseMs>=(TRAJ.durationMs-1)) pauseMs=0; // 播完再撳由頭嚟
+    t0ms=performance.now();playing=true;$('playBtn').textContent='⏸ 停一停';
+    var step=function(){
+      if(!playing) return;
+      var now=clock();
+      if(now>=TRAJ.durationMs){stop();return;}
+      drawAt(now);
+      rafId=requestAnimationFrame(step);
+    };
+    rafId=requestAnimationFrame(step);
+  }
+}
+function stop(){
+  playing=false;cancelAnimationFrame(rafId);
+  var b=$('playBtn');if(b){b.textContent='▶ 播';}
+}
+// 當前位姿：slot 內 move 期由上格線性過渡到今格，之後 hold（同真機 cmd3 語義）
+// clock 已經按速度縮放，所以直接用 raw ms 計。
+var curIdx=0;
+function poseAt(ms){
+  var F=TRAJ.frames;
+  if(ms<F[curIdx].t) curIdx=0;
+  while(curIdx+1<F.length&&F[curIdx+1].t<=ms) curIdx++;
+  var i=curIdx, cur=F[i], prev=i>0?F[i-1]:cur;
+  var k=cur.move>0?Math.min(1,Math.max(0,(ms-cur.t)/cur.move)):1;
+  var a=[];
+  for(var j=0;j<20;j++) a.push(Math.round(prev.a[j]+(cur.a[j]-prev.a[j])*k));
+  return {a:a, idx:i};
+}
+function drawAt(ms){
+  var r=poseAt(ms), P=fullPose(r.a);
+  var g=$('cv').getContext('2d');g.clearRect(0,0,840,340);
+  function front(p){return [210+p[1]*600, 200-p[2]*600];}   // y→橫，z→直
+  function side(p){return [630+p[0]*600, 200-p[2]*600];}    // x→橫，z→直
+  g.strokeStyle='#ccc';g.strokeRect(0,0,420,340);g.strokeRect(420,0,420,340);
+  g.fillStyle='#000';g.fillText('正面 Y-Z',8,14);g.fillText('側面 X-Z',428,14);
+  function limb(pts){
+    [[front,0],[side,420]].forEach(function(v){
+      var fn=v[0],dx=v[1];
+      g.strokeStyle='#2563eb';g.lineWidth=4;g.beginPath();
+      pts.forEach(function(p,i){var q=fn(p);if(!i)g.moveTo(q[0]+dx,q[1]);else g.lineTo(q[0]+dx,q[1]);});
+      g.stroke();
+      g.fillStyle='#111';
+      pts.forEach(function(p){var q=fn(p);g.beginPath();g.arc(q[0]+dx,q[1],3.5,0,7);g.fill();});
+    });
+  }
+  var neck=P.neck, base=P.base;
+  // 軀幹 base->頸
+  limb([base,neck]);
+  // 頭：h = [yaw點, pitch點, 頂]
+  var h=P.head; limb([neck,h[0],h[1],h[2]]);
+  // 手：肩->肘->腕->尖；腳：髖->膝->踝-> sole
+  ['r_arm','l_arm'].forEach(function(c){limb(P[c]);});
+  ['r_leg','l_leg'].forEach(function(c){limb(P[c]);});
+  $('tcur').textContent=(ms/1000).toFixed(1);
+  $('fcur').textContent=(r.idx+1);
+  if(!scrubbing) $('scrub').value=Math.round(ms/(TRAJ.durationMs||1)*1000);
+  $('pose').textContent='s1-10: '+r.a.slice(0,10).join(',')+' … s11-20: '+r.a.slice(10).join(',');
+}
+$('scrub').addEventListener('pointerdown',function(){scrubbing=true;});
+$('scrub').addEventListener('pointerup',function(){scrubbing=false;});
+$('scrub').addEventListener('input',function(){
+  if(!TRAJ) return;
+  seek($('scrub').value/1000*TRAJ.durationMs);
+});
+log('就緒。揀 .ubx 開播；火柴人係 URDF FK 即計（q=(servo+offset)°）。');
+</script>
+</body>
+</html>
