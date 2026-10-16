@@ -267,6 +267,12 @@ function audioTick(now){
     if(now>=V[i].t&&now<stopT){act={ev:V[i],stop:stopT};break;}
   }
   var songEl=document.getElementById('song');
+  // 唔㩒 ▶ 唔出聲：揀檔/seek 只顯示歌名，唔起播
+  if(!playing){
+    if(!el.paused) el.pause();
+    if(songEl) songEl.textContent=act?('🎵 '+act.ev.music+'（撳 ▶ 先播）'):'🎵 （呢格無歌）';
+    return;
+  }
   if(!act){
     if(!el.paused) el.pause();
     audioKey=null;
@@ -346,7 +352,7 @@ function seek(ms){
   pauseMs=Math.max(0,Math.min(TRAJ?endMs:0,ms));
   t0ms=performance.now(); curIdx=0;
   if(audioEl&&!audioEl.paused) audioEl.pause();
-  audioKey=null;
+  audioKey=null; // 下次起播重新對位，唔用舊 offset
   drawAt(pauseMs); audioTick(pauseMs);
 }
 function togglePlay(){
