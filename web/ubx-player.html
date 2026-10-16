@@ -23,7 +23,7 @@
   .sv button{padding:1px 7px;font-size:12px;margin:0}
   .sv small{color:#888}
   .sv input[type=range]{width:100%;margin:2px 0}
-  #bottombar{left:322px;right:274px;bottom:10px}
+  #bottombar{left:10px;width:302px;bottom:10px}
   #logbox{left:322px;bottom:118px;display:none;max-width:430px;max-height:30vh;overflow:auto;position:fixed;z-index:10;background:rgba(255,255,255,.95);border:1px solid #ddd;border-radius:12px;padding:10px}
   button{padding:8px 14px;font-size:15px;border-radius:8px;border:1px solid #999;background:#fff;cursor:pointer;margin:2px}
   button.primary{background:#2563eb;color:#fff;border-color:#2563eb}
@@ -47,42 +47,42 @@
 <canvas id="gl"></canvas>
 
 <div class="hud" id="leftpanel">
-<h1>🕺 Alpha2 UBX</h1>
-<input type="file" id="file" accept=".ubx" title="由部機 /sdcard/actions/ 抄出嚟嘅 .ubx">
-<select id="actionSel"><option value="">…載入緊動作清單…</option></select>
+<h1><span>🕺 Alpha2 UBX</span> <button id="langBtn" onclick="toggleLang()" title="中文 / English">EN</button></h1>
+<input type="file" id="file" accept=".ubx" data-i18n-title="file_title" title="由部機 /sdcard/actions/ 抄出嚟嘅 .ubx">
+<select id="actionSel"><option value="">…</option></select>
 <div>
-<button class="primary" id="playBtn" onclick="togglePlay()" disabled>▶ 播</button>
-<button onclick="stop()">⏹ 停</button>
+<button class="primary" id="playBtn" onclick="togglePlay()" disabled>▶</button>
+<button onclick="stop()" data-i18n="stop">⏹ 停</button>
 <button onclick="var e=document.getElementById('logbox');e.style.display=e.style.display==='block'?'none':'block'" title="log">📝</button>
 </div>
 <div>
-<label>速度 <select id="spd" onchange="setSpeed()">
+<label><span data-i18n="speed">速度</span> <select id="spd" onchange="setSpeed()">
 <option value="0.5">0.5x</option><option value="0.67">0.67x</option>
 <option value="1" selected>1x</option><option value="1.5">1.5x</option><option value="2">2x</option>
 </select></label>
-<label>慢鏡 <input type="range" id="slow" min="1" max="8" step="1" value="1" style="width:80px" onchange="setSpeed()"> <span id="slowv">1x</span></label>
+<label><span data-i18n="slow">慢鏡</span> <input type="range" id="slow" min="1" max="8" step="1" value="1" style="width:80px" onchange="setSpeed()"> <span id="slowv">1x</span></label>
 </div>
-<div id="loadbar" title="mesh 載入進度（首次 44MB）"><div id="loadfill"></div></div>
-<div id="info" class="mono">揀動作開播（滑鼠拖轉視角、碌 zoom）</div>
+<div id="loadbar" data-i18n-title="mesh_title" title="mesh 載入進度（首次 44MB）"><div id="loadfill"></div></div>
+<div id="info" class="mono" data-i18n="info_idle">揀動作開播（滑鼠拖轉視角、碌 zoom）</div>
 <div id="dbgstat" class="mono" style="color:#b45309"></div>
 </div>
 
 <div class="hud" id="rightpanel">
-<h2>視角</h2>
+<h2 data-i18n="views">視角</h2>
 <div id="views">
-<button onclick="setView('front')" title="前面">前</button>
-<button onclick="setView('back')" title="後面">後</button>
-<button onclick="setView('left')" title="左面">左</button>
-<button onclick="setView('right')" title="右面">右</button>
-<button onclick="setView('top')" title="頂面">頂</button>
-<button onclick="setView('home')" title="預設角度">⌂</button>
+<button onclick="setView('front')" data-i18n="v_front" data-i18n-title="t_front" title="前面">前</button>
+<button onclick="setView('back')" data-i18n="v_back" data-i18n-title="t_back" title="後面">後</button>
+<button onclick="setView('left')" data-i18n="v_left" data-i18n-title="t_left" title="左面">左</button>
+<button onclick="setView('right')" data-i18n="v_right" data-i18n-title="t_right" title="右面">右</button>
+<button onclick="setView('top')" data-i18n="v_top" data-i18n-title="t_top" title="頂面">頂</button>
+<button onclick="setView('home')" title="Default view">⌂</button>
 </div>
-<h2>舵機 <button onclick="servosHome()" title="全部回中">回中</button></h2>
+<h2><span data-i18n="servos">舵機</span> <button onclick="servosHome()" data-i18n="home_all">回中</button></h2>
 <div id="servos"></div>
 </div>
 
 <div class="hud" id="bottombar">
-<span class="mono"><span id="tcur">0.0</span>s / <span id="ttot">0.0</span>s · 第 <span id="fcur">-</span> / <span id="ftot">-</span> 格 · <span id="song"></span></span>
+<span class="mono"><span id="tcur">0.0</span>s / <span id="ttot">0.0</span>s · <span data-i18n="frame">第</span> <span id="fcur">-</span> / <span id="ftot">-</span> <span data-i18n="frames">格</span> · <span id="song"></span></span>
 <input type="range" id="scrub" min="0" max="1000" value="0">
 <div class="mono" id="pose" style="font-size:12px"></div>
 </div>
@@ -105,6 +105,54 @@ function mMul(A,B){var C=[[0,0,0],[0,0,0],[0,0,0]];for(var i=0;i<3;i++)for(var j
 function vAdd(a,b){return [a[0]+b[0],a[1]+b[1],a[2]+b[2]];}
 var I3=function(){return [[1,0,0],[0,1,0],[0,0,1]];};
 var D2R=Math.PI/180;
+
+// ---- 中英切換 ----
+var I18N={
+  stop:{zh:'⏹ 停',en:'⏹ Stop'},
+  play:{zh:'▶ 播',en:'▶ Play'},
+  pause:{zh:'⏸ 停一停',en:'⏸ Pause'},
+  speed:{zh:'速度',en:'Speed'},
+  slow:{zh:'慢鏡',en:'Slow-mo'},
+  views:{zh:'視角',en:'Views'},
+  v_front:{zh:'前',en:'F'}, v_back:{zh:'後',en:'B'}, v_left:{zh:'左',en:'L'},
+  v_right:{zh:'右',en:'R'}, v_top:{zh:'頂',en:'T'},
+  t_front:{zh:'前面',en:'Front'}, t_back:{zh:'後面',en:'Back'}, t_left:{zh:'左面',en:'Left'},
+  t_right:{zh:'右面',en:'Right'}, t_top:{zh:'頂面',en:'Top'},
+  servos:{zh:'舵機',en:'Servos'},
+  home_all:{zh:'回中',en:'Center'},
+  home_one:{zh:'中',en:'C'},
+  home_title:{zh:'回中 ',en:'Center '},
+  frame:{zh:'第',en:'Frame '},
+  frames:{zh:'格',en:'frames'},
+  info_idle:{zh:'揀動作開播（滑鼠拖轉視角、碌 zoom）',en:'Pick an action (drag to orbit, wheel to zoom)'},
+  file_title:{zh:'由部機 /sdcard/actions/ 抄出嚟嘅 .ubx',en:'.ubx copied from robot /sdcard/actions/'},
+  mesh_title:{zh:'mesh 載入進度（首次 44MB）',en:'mesh loading progress (44MB first time)'},
+  song_none:{zh:'🎵 （呢格無歌）',en:'🎵 (no music here)'},
+  song_tap:{zh:'撳 ▶ 先播',en:'press ▶ to play'},
+  song_missing:{zh:'（repo 無呢首歌，得動作）',en:'(song not in repo, motion only)'},
+  act_loading:{zh:'…載入緊動作清單…',en:'…loading action list…'},
+  act_pick:{zh:'揀動作',en:'Pick action'},
+  act_count:{zh:'招',en:'actions'},
+  act_none:{zh:'（無內置清單，用上面揀檔）',en:'(no built-in list, use file picker above)'},
+  all_home_log:{zh:'全部回中',en:'All servos centered'}
+};
+var uiLang='zh';
+try{uiLang=localStorage.getItem('ubx_lang')||'zh';}catch(e){}
+function T(k){var e=I18N[k];if(!e)return k;return uiLang==='zh'?e.zh:e.en;}
+function toggleLang(){
+  uiLang=uiLang==='zh'?'en':'zh';
+  try{localStorage.setItem('ubx_lang',uiLang);}catch(e){}
+  applyLang();
+}
+function applyLang(){
+  document.documentElement.lang=uiLang==='zh'?'zh-Hant':'en';
+  document.querySelectorAll('[data-i18n]').forEach(function(el){el.textContent=T(el.getAttribute('data-i18n'));});
+  document.querySelectorAll('[data-i18n-title]').forEach(function(el){el.title=T(el.getAttribute('data-i18n-title'));});
+  document.getElementById('langBtn').textContent=uiLang==='zh'?'EN':'中文';
+  buildActions(); buildServos();
+  document.getElementById('playBtn').textContent=playing?T('pause'):T('play');
+  if(TRAJ){drawAt(pauseMs);audioTick(pauseMs);}
+}
 
 // 每條 link 嘅 frame：{p（base frame pivot）, R（link orientation）}
 function linkFrames(angles20){
@@ -308,19 +356,19 @@ function audioTick(now){
   // 唔㩒 ▶ 唔出聲：揀檔/seek 只顯示歌名，唔起播
   if(!playing){
     if(!el.paused) el.pause();
-    if(songEl) songEl.textContent=act?('🎵 '+act.ev.music+'（撳 ▶ 先播）'):'🎵 （呢格無歌）';
+    if(songEl) songEl.textContent=act?('🎵 '+act.ev.music+'（'+T('song_tap')+'）'):T('song_none');
     return;
   }
   if(!act){
     if(!el.paused) el.pause();
     audioKey=null;
-    if(songEl) songEl.textContent='🎵 （呢格無歌）';
+    if(songEl) songEl.textContent=T('song_none');
     return;
   }
   var key=act.ev.t+'|'+act.ev.music;
   var stem=(TRAJ.name||'').replace(/\.ubx$/i,'');
   var url=songUrl(stem,act.ev.music);
-  if(songEl) songEl.textContent='🎵 '+(act.ev.music||'(配樂)')+(url?'':'（repo 無呢首歌，得動作）');
+  if(songEl) songEl.textContent='🎵 '+(act.ev.music||'(配樂)')+(url?'':' '+T('song_missing'));
   if(!url||deadSrc[url]){if(!el.paused)el.pause();audioKey=null;return;}
   if(audioKey!==key||el.src.indexOf(encodeURIComponent(act.ev.music||''))<0){
     el.src=url;
@@ -351,24 +399,41 @@ document.getElementById('file').addEventListener('change',function(ev){
     return r.json();
   }).then(function(m){
     MANIFEST=m;
-    function label(f){
-      var n=m.names&&m.names[f.replace(/\.ubx$/,'')];
-      if(n&&n.zh) return n.zh+' / '+n.en;
-      return f.replace(/\.ubx$/,'');
-    }
-    sel.innerHTML='<option value="">揀動作（'+m.count+' 招）…</option>'+m.files.map(function(f){
-      return '<option value="'+f+'">'+label(f)+'</option>';
-    }).join('');
-    sel.addEventListener('change',function(){
-      if(!sel.value) return;
-      fetch('../actions/'+encodeURIComponent(sel.value)).then(function(r){
-        if(!r.ok) throw new Error('HTTP '+r.status);
-        return r.arrayBuffer();
-      }).then(function(b){setFile(sel.value,b);})
-        .catch(function(e){log('⛔ 動作載唔到：'+e.message);});
-    });
-  }).catch(function(){sel.innerHTML='<option value="">（無內置清單，用上面揀檔）</option>';});
+    buildActions();
+  }).catch(function(){
+    var sel=document.getElementById('actionSel');
+    sel.innerHTML='<option value="">'+T('act_none')+'</option>';
+  });
 })();
+function actionLabel(f){
+  var m=MANIFEST;
+  var n=m&&m.names&&m.names[f.replace(/\.ubx$/,'')];
+  if(n&&n.zh) return (uiLang==='zh'?n.zh+' / '+n.en:n.en+' / '+n.zh);
+  return f.replace(/\.ubx$/,'');
+}
+function buildActions(){
+  var sel=document.getElementById('actionSel');
+  if(!sel) return;
+  var cur=sel.value;
+  var m=MANIFEST;
+  if(!m){
+    if(!cur) sel.innerHTML='<option value="">'+T('act_loading')+'</option>';
+    return;
+  }
+  sel.innerHTML='<option value="">'+T('act_pick')+'（'+m.count+' '+T('act_count')+'）…</option>'
+    +m.files.map(function(f){
+      return '<option value="'+f+'">'+actionLabel(f)+'</option>';
+    }).join('');
+  sel.value=cur;
+  sel.onchange=function(){
+    if(!sel.value) return;
+    fetch('../actions/'+encodeURIComponent(sel.value)).then(function(r){
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.arrayBuffer();
+    }).then(function(b){setFile(sel.value,b);})
+      .catch(function(e){log('⛔ 動作載唔到：'+e.message);});
+  };
+}
 function setSpeed(){
   speed=parseFloat($('spd').value)||1;
   slowDiv=parseInt($('slow').value,10)||1;
@@ -377,7 +442,7 @@ function setSpeed(){
   if(audioEl&&!audioEl.paused){try{audioEl.playbackRate=effSpeed();}catch(e){}}
 }
 window.setSpeed=setSpeed;
-window.togglePlay=togglePlay; window.stop=stop;
+window.togglePlay=togglePlay; window.stop=stop; window.toggleLang=toggleLang;
 function clock(){return pauseMs+(performance.now()-t0ms)*effSpeed();}
 function seek(ms){
   pauseMs=Math.max(0,Math.min(TRAJ?endMs:0,ms));
@@ -390,13 +455,13 @@ function seek(ms){
 function togglePlay(){
   if(!TRAJ) return;
   if(playing){
-    pauseMs=clock();t0ms=performance.now();playing=false;$('playBtn').textContent='▶ 播';
+    pauseMs=clock();t0ms=performance.now();playing=false;$('playBtn').textContent=T('play');
     if(audioEl&&!audioEl.paused) audioEl.pause();
   }
   else{
     if(pauseMs>=(endMs-1)) pauseMs=0;
     manualAngles=null; // 播片跟 .ubx，唔跟手動位
-    t0ms=performance.now();playing=true;$('playBtn').textContent='⏸ 停一停';
+    t0ms=performance.now();playing=true;$('playBtn').textContent=T('pause');
     var step=function(){
       if(!playing) return;
       var now=clock();
@@ -408,7 +473,7 @@ function togglePlay(){
   }
 }
 function stop(){
-  playing=false;$('playBtn').textContent='▶ 播';
+  playing=false;$('playBtn').textContent=T('play');
   if(audioEl&&!audioEl.paused) audioEl.pause();
   audioKey=null;
 }
@@ -442,22 +507,22 @@ var SERVO_NAMES={1:['右肩上下','R Shoulder Pitch'],2:['右肩左右','R Shou
 15:['左腳掌上下','L Ankle Pitch'],16:['左腳掌左右','L Ankle Roll'],
 17:['右指','R Hand'],18:['左指','L Hand'],19:['頭左右','Head Yaw'],20:['頭上下','Head Pitch']};
 var servoInfo={}, manualAngles=null;
-(function(){
-  Object.keys(FK.chains).forEach(function(c){
-    FK.chains[c].forEach(function(j){servoInfo[j.servo]={min:j.srg[0],max:j.srg[1],home:j.home};});
-  });
-  servoInfo[17]={min:FK.hands['17'].servo_min,max:FK.hands['17'].servo_max,home:120};
-  servoInfo[18]={min:FK.hands['18'].servo_min,max:FK.hands['18'].servo_max,home:120};
+function sName(id){return uiLang==='zh'?SERVO_NAMES[id][0]:SERVO_NAMES[id][1];}
+function buildServos(){
+  // 重建（轉語言用）：留返而家啲 slider 值
+  var cur={};
+  for(var id=1;id<=20;id++){var ex=document.getElementById('sv'+id);if(ex)cur[id]=ex.value;}
   var box=document.getElementById('servos'), h='';
-  for(var id=1;id<=20;id++){
-    var nm=SERVO_NAMES[id], inf=servoInfo[id];
-    h+='<div class="sv"><div class="t"><span>#'+id+' '+nm[0]+'</span>'
-      +'<b id="svv'+id+'">'+inf.home+'</b><button onclick="servoHome('+id+')" title="回中 '+inf.home+'">中</button></div>'
-      +'<input type="range" id="sv'+id+'" min="'+inf.min+'" max="'+inf.max+'" step="1" value="'+inf.home+'">'
-      +'<small>'+inf.min+' – '+inf.max+'（中 '+inf.home+'）</small></div>';
+  for(var k=1;k<=20;k++){
+    var nm=sName(k), inf=servoInfo[k];
+    var v=(cur[k]!==undefined)?cur[k]:inf.home;
+    h+='<div class="sv"><div class="t"><span>#'+k+' '+nm+'</span>'
+      +'<b id="svv'+k+'">'+v+'</b><button onclick="servoHome('+k+')" title="'+T('home_title')+inf.home+'">'+T('home_one')+'</button></div>'
+      +'<input type="range" id="sv'+k+'" min="'+inf.min+'" max="'+inf.max+'" step="1" value="'+v+'">'
+      +'<small>'+inf.min+' – '+inf.max+(uiLang==='zh'?'（中 '+inf.home+'）':'(home '+inf.home+')')+'</small></div>';
   }
   box.innerHTML=h;
-  for(var k=1;k<=20;k++)(function(kk){
+  for(var m=1;m<=20;m++)(function(kk){
     document.getElementById('sv'+kk).addEventListener('input',function(){
       pausePlayback();
       if(!manualAngles) manualAngles=readServos();
@@ -465,7 +530,15 @@ var servoInfo={}, manualAngles=null;
       document.getElementById('svv'+kk).textContent=manualAngles[kk-1];
       renderManual();
     });
-  })(k);
+  })(m);
+  if(manualAngles) syncServos(manualAngles);
+}
+(function(){
+  Object.keys(FK.chains).forEach(function(c){
+    FK.chains[c].forEach(function(j){servoInfo[j.servo]={min:j.srg[0],max:j.srg[1],home:j.home};});
+  });
+  servoInfo[17]={min:FK.hands['17'].servo_min,max:FK.hands['17'].servo_max,home:120};
+  servoInfo[18]={min:FK.hands['18'].servo_min,max:FK.hands['18'].servo_max,home:120};
 })();
 function readServos(){var a=[];for(var i=1;i<=20;i++)a.push(parseInt(document.getElementById('sv'+i).value,10));return a;}
 function syncServos(a){
@@ -478,11 +551,11 @@ function syncServos(a){
 function renderManual(){
   if(!manualAngles) return;
   poseMesh(manualAngles);
-  $('pose').textContent='手動：'+manualAngles.join(',');
+  $('pose').textContent=(uiLang==='zh'?'手動：':'Manual: ')+manualAngles.join(',');
 }
 function pausePlayback(){
   if(!playing) return;
-  pauseMs=clock();t0ms=performance.now();playing=false;$('playBtn').textContent='▶ 播';
+  pauseMs=clock();t0ms=performance.now();playing=false;$('playBtn').textContent=T('play');
   if(audioEl&&!audioEl.paused) audioEl.pause();
 }
 function servoHome(id){
@@ -501,7 +574,7 @@ function servosHome(){
     document.getElementById('sv'+id).value=servoInfo[id].home;
     document.getElementById('svv'+id).textContent=servoInfo[id].home;
   }
-  log('全部回中');
+  log(T('all_home_log'));
   renderManual();
 }
 window.servoHome=servoHome; window.servosHome=servosHome;
@@ -520,6 +593,7 @@ Object.keys(FK.chains).forEach(function(c){
 });
 var lastAngles=HOME20.slice();
 poseMesh(HOME20);
+applyLang();
 log('就緒。mesh 載入中（21 件）… 揀 .ubx 開播。');
 </script>
 </body>
