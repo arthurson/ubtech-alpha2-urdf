@@ -716,6 +716,10 @@ try{
   if(location.protocol!=='file:'){
     var ob=document.getElementById('offlinebox');
     if(ob) ob.style.display='none';
+  } else {
+    // file:// 離線：揀 actions 資料夾就有齊 dropdown，單揀 .ubx 嗰個重覆，收埋
+    var sf=document.getElementById('file');
+    if(sf) sf.style.display='none';
   }
 }catch(e){}
 log('就緒。mesh 載入中（21 件）… 揀 .ubx 開播。');
