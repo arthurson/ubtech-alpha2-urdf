@@ -1,5 +1,7 @@
 # alpha2_description
 
+> Language: English (this file) | [繁體中文](README_zh-Hant.md)
+
 Standard URDF of the UBTech Alpha 2 (20 revolute joints, 21 links), built from
 `alpha2_21parts.zip` (OBJ parts) and the PC software's `alpha2.FBX` / `alpha2.xml`.
 
