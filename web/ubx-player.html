@@ -25,14 +25,14 @@
   .sv button{padding:1px 7px;font-size:12px;margin:0}
   .sv small{color:#888}
   .sv input[type=range]{width:100%;margin:2px 0}
-  #logbox{left:322px;bottom:10px;display:none;max-width:430px;max-height:30vh;overflow:auto;position:fixed;z-index:10;background:rgba(255,255,255,.95);border:1px solid #ddd;border-radius:12px;padding:10px}
+  #log{font-size:12px;padding:8px;border:1px solid #ddd;border-radius:8px;max-height:18vh;overflow-y:auto;white-space:pre-wrap;background:#fff;color:#222}
   button{padding:8px 14px;font-size:15px;border-radius:8px;border:1px solid #999;background:#fff;cursor:pointer;margin:2px}
   button.primary{background:#2563eb;color:#fff;border-color:#2563eb}
   button:disabled{opacity:.5}
   select,input[type=file]{font-size:14px;max-width:100%}
   input[type=range]{width:100%}
   .mono{font-variant-numeric:tabular-nums}
-  #log{background:#111;color:#0f0;font-size:12px;padding:8px;border-radius:8px;height:110px;overflow-y:auto;white-space:pre-wrap}
+  #log{font-size:12px;padding:8px;border:1px solid #ddd;border-radius:8px;max-height:18vh;overflow-y:auto;white-space:pre-wrap;background:#fff;color:#222}
   #loadbar{height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;margin-top:6px;min-width:200px;flex:1}
   #loadfill{height:100%;width:0%;background:#2563eb}
   small{color:#666}
@@ -54,25 +54,16 @@
 <div>
 <button class="primary" id="playBtn" onclick="togglePlay()" disabled>▶</button>
 <button onclick="stop()" data-i18n="stop">⏹ 停</button>
-<button onclick="var e=document.getElementById('logbox');e.style.display=e.style.display==='block'?'none':'block'" title="log">📝</button>
 </div>
 <div>
-<label><span data-i18n="speed">速度</span> <select id="spd" onchange="setSpeed()">
-<option value="0.5">0.5x</option><option value="0.67">0.67x</option>
-<option value="1" selected>1x</option><option value="1.5">1.5x</option><option value="2">2x</option>
-</select></label>
-<label><span data-i18n="slow">慢鏡</span> <input type="range" id="slow" min="1" max="8" step="1" value="1" style="width:80px" onchange="setSpeed()"> <span id="slowv">1x</span></label>
-<label><span data-i18n="trim">微調</span> <select id="trimSel" onchange="setTrim()">
-<option value="zero" data-i18n="trim_zero" selected>歸零（q=servo−120）</option>
-<option value="official" data-i18n="trim_official">官方 offset</option>
-</select></label>
+<label><span data-i18n="speed">速度</span> <input type="range" id="spd" min="0.5" max="2" step="0.01" value="1" style="width:110px" oninput="setSpeed()"> <span id="spdv">1x</span></label>
 </div>
 <div id="loadbar" data-i18n-title="mesh_title" title="mesh 載入進度（首次 44MB）"><div id="loadfill"></div></div>
 <div id="info" class="mono" data-i18n="info_idle">揀動作開播（滑鼠拖轉視角、碌 zoom）</div>
 <div id="dbgstat" class="mono" style="color:#b45309"></div>
 <div class="mono"><span id="tcur">0.0</span>s / <span id="ttot">0.0</span>s · <span data-i18n="frame">第</span> <span id="fcur">-</span> / <span id="ftot">-</span> <span data-i18n="frames">格</span> · <span id="song"></span></div>
-<input type="range" id="scrub" min="0" max="1000" value="0">
 <div class="mono" id="pose"></div>
+<div id="log"></div>
 </div>
 
 <div class="hud" id="rightpanel">
@@ -88,8 +79,6 @@
 <h2><span data-i18n="servos">舵機</span> <button onclick="servosHome()" data-i18n="home_all">回中</button></h2>
 <div id="servos"></div>
 </div>
-
-<div id="logbox"><div id="log"></div></div>
 
 <script src="fk-params.js"></script>
 <script src="ubx-parse.js"></script>
@@ -114,7 +103,6 @@ var I18N={
   play:{zh:'▶ 播',en:'▶ Play'},
   pause:{zh:'⏸ 停一停',en:'⏸ Pause'},
   speed:{zh:'速度',en:'Speed'},
-  slow:{zh:'慢鏡',en:'Slow-mo'},
   views:{zh:'視角',en:'Views'},
   v_front:{zh:'前',en:'F'}, v_back:{zh:'後',en:'B'}, v_left:{zh:'左',en:'L'},
   v_right:{zh:'右',en:'R'}, v_top:{zh:'頂',en:'T'},
@@ -136,10 +124,7 @@ var I18N={
   act_pick:{zh:'揀動作',en:'Pick action'},
   act_count:{zh:'招',en:'actions'},
   act_none:{zh:'（無內置清單，用上面揀檔）',en:'(no built-in list, use file picker above)'},
-  all_home_log:{zh:'全部回中',en:'All servos centered'},
-  trim:{zh:'微調',en:'Trim'},
-  trim_zero:{zh:'歸零（q=servo−120）',en:'Zeroed (q=servo−120)'},
-  trim_official:{zh:'官方 offset',en:'Official offsets'}
+  all_home_log:{zh:'全部回中',en:'All servos centered'}
 };
 var uiLang='zh';
 try{uiLang=localStorage.getItem('ubx_lang')||'zh';}catch(e){}
@@ -159,32 +144,22 @@ function applyLang(){
   if(TRAJ){drawAt(pauseMs);audioTick(pauseMs);}
 }
 
-// 微調：置零 = 全部舵機 q = servo−120（home 一字企直，左右對稱；淨係呢頁顯示用，
-// URDF 原數據唔郁）。官方 = servo_map 原 offset（同 MuJoCo 對過嗰套）。
-var trimMode='zero';
-try{trimMode=localStorage.getItem('ubx_trim')||'zero';}catch(e){}
-function effOffset(j){return trimMode==='zero'?-120:j.offset;}
-function setTrim(){
-  trimMode=document.getElementById('trimSel').value;
-  try{localStorage.setItem('ubx_trim',trimMode);}catch(e){}
-  if(TRAJ)drawAt(pauseMs);else if(lastAngles)poseMesh(lastAngles);
-}
-window.setTrim=setTrim;
 // 每條 link 嘅 frame：{p（base frame pivot）, R（link orientation）}
+// 用 servo_map 原 offset（q = servo + offset），同 MuJoCo 對過嗰套
 function linkFrames(angles20){
   var F={base_link:{p:[0,0,0],R:I3()}};
   Object.keys(FK.chains).forEach(function(c){
     var items=FK.chains[c], R=I3(), p=[0,0,0];
     for(var i=0;i<items.length;i++){
       var j=items[i];
-      p=vAdd(p,mDot(R,j.origin)); R=mMul(R,rotAxis(j.axis,(angles20[j.servo-1]+effOffset(j))*D2R));
+      p=vAdd(p,mDot(R,j.origin)); R=mMul(R,rotAxis(j.axis,(angles20[j.servo-1]+j.offset)*D2R));
       F[j.joint.replace(/_joint$/,'_link')]={p:p.slice(),R:R.map(function(r){return r.slice();})};
     }
     P_end[c]={p:p,R:R};
   });
   [['17','r_elbow_link','r_hand_link'],['18','l_elbow_link','l_hand_link']].forEach(function(t){
     var hj=FK.handJoints[t[0]], el=F[t[1]];
-    var q=(angles20[+t[0]-1]+(trimMode==='zero'?-120:hj.offset))*D2R;
+    var q=(angles20[+t[0]-1]+hj.offset)*D2R;
     var R=mMul(el.R,rotAxis(hj.axis,q));
     F[t[2]]={p:vAdd(el.p,mDot(el.R,hj.origin)),R:R};
   });
@@ -319,10 +294,10 @@ function poseMesh(angles20){
 }
 
 // ---- 播放狀態（同 stick 版同一套 clock）----
-var TRAJ=null, playing=false, t0ms=0, pauseMs=0, speed=1, slowDiv=1, curIdx=0, scrubbing=false;
+var TRAJ=null, playing=false, t0ms=0, pauseMs=0, speed=1, curIdx=0;
 function $(id){return document.getElementById(id);}
 function log(s){var el=$('log');el.textContent+=s+'\n';el.scrollTop=el.scrollHeight;}
-function effSpeed(){return speed/slowDiv;}
+function effSpeed(){return speed;}
 function setFile(name,buf){
   try{
     var t0=performance.now();
@@ -452,9 +427,9 @@ function buildActions(){
   };
 }
 function setSpeed(){
-  speed=parseFloat($('spd').value)||1;
-  slowDiv=parseInt($('slow').value,10)||1;
-  $('slowv').textContent=slowDiv+'x';
+  speed=parseFloat(document.getElementById('spd').value)||1;
+  if(speed<0.5)speed=0.5; if(speed>2)speed=2;
+  document.getElementById('spdv').textContent=(Math.round(speed*100)/100)+'x';
   if(playing){pauseMs=clock();t0ms=performance.now();}
   if(audioEl&&!audioEl.paused){try{audioEl.playbackRate=effSpeed();}catch(e){}}
 }
@@ -466,7 +441,7 @@ function seek(ms){
   t0ms=performance.now(); curIdx=0;
   if(audioEl&&!audioEl.paused) audioEl.pause();
   audioKey=null; // 下次起播重新對位，唔用舊 offset
-  manualAngles=null; // scrub 返去跟 .ubx
+  manualAngles=null; // 播片跟 .ubx，唔跟手動位
   drawAt(pauseMs); audioTick(pauseMs);
 }
 function togglePlay(){
@@ -512,7 +487,6 @@ function drawAt(ms){
   syncServos(r.a);
   $('tcur').textContent=(ms/1000).toFixed(1);
   $('fcur').textContent=(r.idx+1);
-  if(!scrubbing) $('scrub').value=Math.round(ms/(TRAJ.durationMs||1)*1000);
   $('pose').textContent='s1-10: '+r.a.slice(0,10).join(',')+' … s11-20: '+r.a.slice(10).join(',');
 }
 // ---- 右邊 20 軸 slider：郁佢哋 = 手動擺 pose（自動停播），畀 FK 即畫 ----
@@ -595,12 +569,6 @@ function servosHome(){
   renderManual();
 }
 window.servoHome=servoHome; window.servosHome=servosHome;
-document.getElementById('scrub').addEventListener('pointerdown',function(){scrubbing=true;});
-document.getElementById('scrub').addEventListener('pointerup',function(){scrubbing=false;});
-document.getElementById('scrub').addEventListener('input',function(){
-  if(!TRAJ) return;
-  seek($('scrub').value/1000*TRAJ.durationMs);
-});
 initGL();
 loadMeshes(function(){ poseMesh(lastAngles); });
 // 預設企直位（各舵機 servo_home）
@@ -610,7 +578,6 @@ Object.keys(FK.chains).forEach(function(c){
 });
 var lastAngles=HOME20.slice();
 poseMesh(HOME20);
-document.getElementById('trimSel').value=trimMode;
 applyLang();
 log('就緒。mesh 載入中（21 件）… 揀 .ubx 開播。');
 </script>
