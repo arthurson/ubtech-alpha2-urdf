@@ -13,7 +13,7 @@
   button:disabled{opacity:.5}
   select,input[type=file]{font-size:14px;max-width:100%}
   input[type=range]{width:100%}
-  #gl{width:100%;height:480px;background:#0b0e14;border-radius:8px;display:block}
+  #gl{width:100%;height:480px;background:#eef1f4;border-radius:8px;display:block}
   .mono{font-variant-numeric:tabular-nums}
   #log{background:#111;color:#0f0;font-size:12px;padding:8px;border-radius:8px;height:110px;overflow-y:auto;white-space:pre-wrap}
   #loadbar{height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;margin-top:6px}
@@ -117,7 +117,8 @@ function initGL(){
   renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true});
   renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
   scene=new THREE.Scene();
-  scene.background=new THREE.Color(0x0b0e14);
+  scene.background=new THREE.Color(0xeef1f4); // 明亮底，白色機身睇得清
+  camera=new THREE.PerspectiveCamera(45,840/480,0.01,10);
   camera=new THREE.PerspectiveCamera(45,840/480,0.01,10);
   camera.position.set(0.35,0.14,-0.62); // 機頭前方(three -Z)高少少望返
   controls=new OrbitControls(camera,renderer.domElement);
@@ -129,10 +130,10 @@ function initGL(){
     0,-1,0,0, 0,0,1,0, -1,0,0,0, 0,0,0,1));
   scene.add(root);
   window.__root=root;
-  scene.add(new THREE.HemisphereLight(0xffffff,0x334155,1.1));
-  var dl=new THREE.DirectionalLight(0xffffff,1.6);
+  scene.add(new THREE.HemisphereLight(0xffffff,0x9aa5b1,1.0));
+  var dl=new THREE.DirectionalLight(0xffffff,1.4);
   dl.position.set(0.6,-0.4,1.2); scene.add(dl);
-  var grid=new THREE.GridHelper(2,20,0x475569,0x1e293b);
+  var grid=new THREE.GridHelper(2,20,0x64748b,0xc3ccd6);
   grid.position.y=-0.235; scene.add(grid);
   FK.links.forEach(function(ln){
     var g=new THREE.Group(); g.visible=false;
@@ -304,8 +305,13 @@ document.getElementById('file').addEventListener('change',function(ev){
     return r.json();
   }).then(function(m){
     MANIFEST=m;
+    function label(f){
+      var n=m.names&&m.names[f.replace(/\.ubx$/,'')];
+      if(n&&n.zh) return n.zh+' / '+n.en;
+      return f.replace(/\.ubx$/,'');
+    }
     sel.innerHTML='<option value="">揀動作（'+m.count+' 招）…</option>'+m.files.map(function(f){
-      return '<option value="'+f+'">'+f.replace(/\.ubx$/,'')+'</option>';
+      return '<option value="'+f+'">'+label(f)+'</option>';
     }).join('');
     sel.addEventListener('change',function(){
       if(!sel.value) return;

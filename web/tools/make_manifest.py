@@ -20,7 +20,11 @@ for f in names:
                        if x.lower().endswith((".mp3", ".wav", ".ogg", ".m4a")))
         if songs:
             music[stem] = songs
+# 中英文名（actions/names.json，由 openalpha2 xiaozhi_actions.json 抄一次過嚟）
+npath = os.path.join(ADIR, "names.json")
+anames = json.load(open(npath, encoding="utf-8")) if os.path.isfile(npath) else {}
 with open(OUT, "w", encoding="utf-8") as f:
-    json.dump({"count": len(names), "files": names, "music": music}, f,
+    json.dump({"count": len(names), "files": names, "music": music,
+               "names": {s[:-4]: anames.get(s[:-4], {}) for s in names}}, f,
               ensure_ascii=False)
 print("wrote", OUT, len(names), "actions,", len(music), "with music")
