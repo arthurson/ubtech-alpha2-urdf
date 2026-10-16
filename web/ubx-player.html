@@ -49,14 +49,11 @@
 <div class="hud" id="leftpanel">
 <h1><span>🕺 Alpha2 UBX</span> <button id="langBtn" onclick="toggleLang()" title="中文 / English">EN</button></h1>
 <input type="file" id="file" accept=".ubx" data-i18n-title="file_title" title="由部機 /sdcard/actions/ 抄出嚟嘅 .ubx">
-<details id="offlinebox" open style="font-size:12px;border:1px dashed #999;border-radius:8px;padding:6px 8px">
-<summary data-i18n="off_title">離線 / file:// 用：揀本地資料夾（免上網）</summary>
-<div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">
+<div id="offlinebox" style="font-size:12px;border:1px dashed #999;border-radius:8px;padding:6px 8px;display:flex;flex-direction:column;gap:4px">
 <label>📁 meshes <input type="file" id="meshDir" webkitdirectory multiple></label>
 <label>📁 actions <input type="file" id="actDir" webkitdirectory multiple></label>
 <div id="offstat" class="mono" style="color:#065f46"></div>
 </div>
-</details>
 <select id="actionSel"><option value="">…</option></select>
 <div>
 <button class="primary" id="playBtn" onclick="togglePlay()" disabled>▶</button>
@@ -132,7 +129,6 @@ var I18N={
   act_count:{zh:'招',en:'actions'},
   act_none:{zh:'（無內置清單，用上面揀檔）',en:'(no built-in list, use file picker above)'},
   all_home_log:{zh:'全部回中',en:'All servos centered'},
-  off_title:{zh:'離線 / file:// 用：揀本地資料夾（免上網）',en:'Offline / file://: pick local folders (no internet needed)'},
 };
 var uiLang='zh';
 try{uiLang=localStorage.getItem('ubx_lang')||'zh';}catch(e){}
