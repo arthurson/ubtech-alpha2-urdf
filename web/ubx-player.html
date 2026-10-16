@@ -11,8 +11,10 @@
   .hud{position:fixed;z-index:10;background:rgba(255,255,255,.93);border:1px solid #ddd;
     border-radius:12px;padding:10px 12px;box-shadow:0 2px 12px rgba(0,0,0,.12);
     backdrop-filter:blur(6px);font-size:14px}
-  #leftpanel{top:10px;left:10px;width:300px;display:flex;gap:8px;flex-direction:column}
+  #leftpanel{top:10px;left:10px;width:302px;max-height:calc(100vh - 20px);overflow-y:auto;
+    display:flex;gap:8px;flex-direction:column}
   #leftpanel h1{font-size:17px;margin:0}
+  #pose{white-space:nowrap;overflow-x:auto;font-size:11px}
   #rightpanel{top:10px;right:10px;width:252px;max-height:calc(100vh - 20px);overflow-y:auto}
   #rightpanel h2{font-size:14px;margin:6px 0 2px}
   #views{display:flex;gap:2px;flex-wrap:wrap}
@@ -23,8 +25,7 @@
   .sv button{padding:1px 7px;font-size:12px;margin:0}
   .sv small{color:#888}
   .sv input[type=range]{width:100%;margin:2px 0}
-  #bottombar{left:10px;width:302px;bottom:10px}
-  #logbox{left:322px;bottom:118px;display:none;max-width:430px;max-height:30vh;overflow:auto;position:fixed;z-index:10;background:rgba(255,255,255,.95);border:1px solid #ddd;border-radius:12px;padding:10px}
+  #logbox{left:322px;bottom:10px;display:none;max-width:430px;max-height:30vh;overflow:auto;position:fixed;z-index:10;background:rgba(255,255,255,.95);border:1px solid #ddd;border-radius:12px;padding:10px}
   button{padding:8px 14px;font-size:15px;border-radius:8px;border:1px solid #999;background:#fff;cursor:pointer;margin:2px}
   button.primary{background:#2563eb;color:#fff;border-color:#2563eb}
   button:disabled{opacity:.5}
@@ -61,10 +62,17 @@
 <option value="1" selected>1x</option><option value="1.5">1.5x</option><option value="2">2x</option>
 </select></label>
 <label><span data-i18n="slow">慢鏡</span> <input type="range" id="slow" min="1" max="8" step="1" value="1" style="width:80px" onchange="setSpeed()"> <span id="slowv">1x</span></label>
+<label><span data-i18n="trim">微調</span> <select id="trimSel" onchange="setTrim()">
+<option value="zero" data-i18n="trim_zero" selected>歸零（q=servo−120）</option>
+<option value="official" data-i18n="trim_official">官方 offset</option>
+</select></label>
 </div>
 <div id="loadbar" data-i18n-title="mesh_title" title="mesh 載入進度（首次 44MB）"><div id="loadfill"></div></div>
 <div id="info" class="mono" data-i18n="info_idle">揀動作開播（滑鼠拖轉視角、碌 zoom）</div>
 <div id="dbgstat" class="mono" style="color:#b45309"></div>
+<div class="mono"><span id="tcur">0.0</span>s / <span id="ttot">0.0</span>s · <span data-i18n="frame">第</span> <span id="fcur">-</span> / <span id="ftot">-</span> <span data-i18n="frames">格</span> · <span id="song"></span></div>
+<input type="range" id="scrub" min="0" max="1000" value="0">
+<div class="mono" id="pose"></div>
 </div>
 
 <div class="hud" id="rightpanel">
@@ -79,12 +87,6 @@
 </div>
 <h2><span data-i18n="servos">舵機</span> <button onclick="servosHome()" data-i18n="home_all">回中</button></h2>
 <div id="servos"></div>
-</div>
-
-<div class="hud" id="bottombar">
-<span class="mono"><span id="tcur">0.0</span>s / <span id="ttot">0.0</span>s · <span data-i18n="frame">第</span> <span id="fcur">-</span> / <span id="ftot">-</span> <span data-i18n="frames">格</span> · <span id="song"></span></span>
-<input type="range" id="scrub" min="0" max="1000" value="0">
-<div class="mono" id="pose" style="font-size:12px"></div>
 </div>
 
 <div id="logbox"><div id="log"></div></div>
@@ -134,7 +136,10 @@ var I18N={
   act_pick:{zh:'揀動作',en:'Pick action'},
   act_count:{zh:'招',en:'actions'},
   act_none:{zh:'（無內置清單，用上面揀檔）',en:'(no built-in list, use file picker above)'},
-  all_home_log:{zh:'全部回中',en:'All servos centered'}
+  all_home_log:{zh:'全部回中',en:'All servos centered'},
+  trim:{zh:'微調',en:'Trim'},
+  trim_zero:{zh:'歸零（q=servo−120）',en:'Zeroed (q=servo−120)'},
+  trim_official:{zh:'官方 offset',en:'Official offsets'}
 };
 var uiLang='zh';
 try{uiLang=localStorage.getItem('ubx_lang')||'zh';}catch(e){}
@@ -154,6 +159,17 @@ function applyLang(){
   if(TRAJ){drawAt(pauseMs);audioTick(pauseMs);}
 }
 
+// 微調：置零 = 全部舵機 q = servo−120（home 一字企直，左右對稱；淨係呢頁顯示用，
+// URDF 原數據唔郁）。官方 = servo_map 原 offset（同 MuJoCo 對過嗰套）。
+var trimMode='zero';
+try{trimMode=localStorage.getItem('ubx_trim')||'zero';}catch(e){}
+function effOffset(j){return trimMode==='zero'?-120:j.offset;}
+function setTrim(){
+  trimMode=document.getElementById('trimSel').value;
+  try{localStorage.setItem('ubx_trim',trimMode);}catch(e){}
+  if(TRAJ)drawAt(pauseMs);else if(lastAngles)poseMesh(lastAngles);
+}
+window.setTrim=setTrim;
 // 每條 link 嘅 frame：{p（base frame pivot）, R（link orientation）}
 function linkFrames(angles20){
   var F={base_link:{p:[0,0,0],R:I3()}};
@@ -161,14 +177,14 @@ function linkFrames(angles20){
     var items=FK.chains[c], R=I3(), p=[0,0,0];
     for(var i=0;i<items.length;i++){
       var j=items[i];
-      p=vAdd(p,mDot(R,j.origin)); R=mMul(R,rotAxis(j.axis,(angles20[j.servo-1]+j.offset)*D2R));
+      p=vAdd(p,mDot(R,j.origin)); R=mMul(R,rotAxis(j.axis,(angles20[j.servo-1]+effOffset(j))*D2R));
       F[j.joint.replace(/_joint$/,'_link')]={p:p.slice(),R:R.map(function(r){return r.slice();})};
     }
     P_end[c]={p:p,R:R};
   });
   [['17','r_elbow_link','r_hand_link'],['18','l_elbow_link','l_hand_link']].forEach(function(t){
     var hj=FK.handJoints[t[0]], el=F[t[1]];
-    var q=(angles20[+t[0]-1]+hj.offset)*D2R;
+    var q=(angles20[+t[0]-1]+(trimMode==='zero'?-120:hj.offset))*D2R;
     var R=mMul(el.R,rotAxis(hj.axis,q));
     F[t[2]]={p:vAdd(el.p,mDot(el.R,hj.origin)),R:R};
   });
@@ -195,7 +211,7 @@ function initGL(){
   scene.background=new THREE.Color(0xeef1f4); // 明亮底，白色機身睇得清
   camera=new THREE.PerspectiveCamera(45,840/480,0.01,10);
   camera=new THREE.PerspectiveCamera(45,840/480,0.01,10);
-  camera.position.set(0.35,0.14,-0.62); // 機頭前方(three -Z)高少少望返
+  camera.position.set(0,0.10,-0.75); // 置中正面，左右唔會透視一大一細
   controls=new OrbitControls(camera,renderer.domElement);
   controls.target.set(0,-0.01,0);
   controls.enableDamping=true;
@@ -233,7 +249,7 @@ function resize(){
 }
 // 視角預設（three 座標：機頭向 -Z，y 上）——robot_viewer 嗰套 ±X ±Y ±Z 掣
 var VIEWS={front:[0,0.06,-0.85],back:[0,0.06,0.85],left:[-0.85,0.06,0],right:[0.85,0.06,0],
-  top:[0,1.05,-0.01],home:[0.35,0.14,-0.62]};
+  top:[0,1.05,-0.01],home:[0,0.10,-0.75]}; // 置中，唔用側 angle，唔係透視會一邊大一邊細
 function setView(k){
   var v=VIEWS[k]||VIEWS.home;
   camera.position.set(v[0],v[1],v[2]);
@@ -408,7 +424,8 @@ document.getElementById('file').addEventListener('change',function(ev){
 function actionLabel(f){
   var m=MANIFEST;
   var n=m&&m.names&&m.names[f.replace(/\.ubx$/,'')];
-  if(n&&n.zh) return (uiLang==='zh'?n.zh+' / '+n.en:n.en+' / '+n.zh);
+  // 當前語言只出一個名，唔中英並排
+  if(n&&n.zh) return uiLang==='zh'?n.zh:n.en;
   return f.replace(/\.ubx$/,'');
 }
 function buildActions(){
@@ -593,6 +610,7 @@ Object.keys(FK.chains).forEach(function(c){
 });
 var lastAngles=HOME20.slice();
 poseMesh(HOME20);
+document.getElementById('trimSel').value=trimMode;
 applyLang();
 log('就緒。mesh 載入中（21 件）… 揀 .ubx 開播。');
 </script>
