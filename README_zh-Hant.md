@@ -22,6 +22,11 @@ UBTECH Alpha 2 嘅標準 URDF（20 粒轉向關節、21 條 link），由
 - `camera_link`／`camera_optical_frame`：頭正面細圓圈鏡頭中心（head_pitch_link 入面 x=0.053、z=0.04937）；內參未知。部機無 IMU，得頭主板上一粒平放嘅加速度計：`accel_link`（釘死喺 head_pitch_link，軸同頭 frame 同向，位置當咗頭 link 質心）。
 - 電池模型（base_link inertial）：3 粒直立 18650（18.3 x 65 mm，每粒 50 g）喺背脊排一橫，中心 x=−0.026、y=−0.0183／0／+0.0183、z=0.062（base_link 入面）。位置係估唔係量；知實數請改 base_link inertial 註解／數值。
 
+## 網頁 UBX 播放器
+- 瀏覽器開 https://arthurson.github.io/ubtech-alpha2-urdf/web/ubx-player.html：揀 `actions/` 入面 202 招任何一招（中英文名，有配樂）或上載自己嘅 `.ubx`；成副 URDF mesh 3D 即時播（拉轉視角、碌 zoom，前／後／左／右／頂預設，0.5x–2x 速度，逐粒舵機 slider）。
+- FK 由 `servo_map.yaml` 計（offset，逐粒關節同 MuJoCo 對過，誤差 < 1e-13 mm）；`.ubx` 解析同 reference 實現逐 byte 對過。
+- 無後端、無 build：`web/` 下面靜態檔（three.js 行 CDN）。本地用喺 repo root 起 `python -m http.server`，唔好雙擊 `file://`。
+
 ## 授權
 GPL-3.0-only（見 `LICENSE`；`package.xml` license 欄）。覆蓋呢度生出嚟嘅檔（URDF、SRDF、config、launch、本包 script）。mesh 幾何嚟自 maintainer 提供嘅 UBTECH Alpha 2 PC 軟件模型／散件，本包唔授予該第三方素材任何權利。
 

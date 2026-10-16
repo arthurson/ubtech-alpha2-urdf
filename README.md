@@ -22,6 +22,11 @@ Standard URDF of the UBTech Alpha 2 (20 revolute joints, 21 links), built from
 - `camera_link` / `camera_optical_frame`: lens centre of the small circle on the front face of the head (x=0.053, z=0.04937 in head_pitch_link); intrinsics unknown. The robot has no IMU, only an accelerometer on the head mainboard lying flat: `accel_link` (fixed to head_pitch_link, axes aligned with the head frame, position assumed at the head link centre of mass).
 - Battery model (base_link inertial): 3 upright 18650 cells (18.3 x 65 mm, 50 g each) in a row across the back of the body, centres at x=-0.026, y=-0.0183/0/+0.0183, z=0.062 in base_link. The positions are assumed, not measured; change them in the base_link inertial comment/values if you know better.
 
+## Web UBX player
+- Open https://arthurson.github.io/ubtech-alpha2-urdf/web/ubx-player.html in a browser: pick any of the 202 bundled actions in `actions/` (bilingual names, with music) or upload your own `.ubx`; the full URDF meshes play it back in 3D (orbit/zoom, front/back/left/right/top presets, 0.5x-2x speed, per-servo sliders).
+- FK is computed from `servo_map.yaml` (offsets, verified joint-for-joint against MuJoCo to 1e-13 mm); the `.ubx` parser is checked byte-for-byte against the reference implementation.
+- No backend, no build step: static files under `web/` (three.js via CDN). For local use serve the repo root (`python -m http.server`) — do not open via `file://`.
+
 ## License
 GPL-3.0-only (see `LICENSE`; `package.xml` license field). This covers the files generated here (URDF, SRDF, config, launch, scripts of this package). The mesh geometry is derived from the UBTECH Alpha 2 PC-software model / part exports supplied by the maintainer; this package does not grant any rights to that third-party material.
 

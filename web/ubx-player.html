@@ -15,8 +15,10 @@
     display:flex;gap:8px;flex-direction:column}
   #leftpanel h1{font-size:17px;margin:0}
   #pose{white-space:nowrap;overflow-x:auto;font-size:11px}
-  #rightpanel{top:10px;right:10px;width:252px;max-height:calc(100vh - 20px);overflow-y:auto}
+  #rightpanel{top:10px;right:10px;width:480px;max-height:calc(100vh - 20px);overflow-y:auto}
   #rightpanel h2{font-size:14px;margin:6px 0 2px}
+  #servos{display:flex;gap:10px}
+  #servos .svcol{flex:1;min-width:0}
   #views{display:flex;gap:2px;flex-wrap:wrap}
   #views button{margin:1px;padding:6px 8px;font-size:13px;flex:1}
   .sv{border-top:1px solid #eee;padding:4px 0;font-size:12px}
@@ -58,6 +60,17 @@
 <div>
 <label><span data-i18n="speed">速度</span> <input type="range" id="spd" min="0.5" max="2" step="0.01" value="1" style="width:110px" oninput="setSpeed()"> <span id="spdv">1x</span></label>
 </div>
+<div>
+<h2 style="font-size:14px;margin:6px 0 2px"><span data-i18n="views">視角</span></h2>
+<div id="views">
+<button onclick="setView('front')" data-i18n="v_front" data-i18n-title="t_front" title="前面">前</button>
+<button onclick="setView('back')" data-i18n="v_back" data-i18n-title="t_back" title="後面">後</button>
+<button onclick="setView('left')" data-i18n="v_left" data-i18n-title="t_left" title="左面">左</button>
+<button onclick="setView('right')" data-i18n="v_right" data-i18n-title="t_right" title="右面">右</button>
+<button onclick="setView('top')" data-i18n="v_top" data-i18n-title="t_top" title="頂面">頂</button>
+<button onclick="setView('home')" title="Default view">⌂</button>
+</div>
+</div>
 <div id="loadbar" data-i18n-title="mesh_title" title="mesh 載入進度（首次 44MB）"><div id="loadfill"></div></div>
 <div id="info" class="mono" data-i18n="info_idle">揀動作開播（滑鼠拖轉視角、碌 zoom）</div>
 <div id="dbgstat" class="mono" style="color:#b45309"></div>
@@ -68,17 +81,8 @@
 </div>
 
 <div class="hud" id="rightpanel">
-<h2 data-i18n="views">視角</h2>
-<div id="views">
-<button onclick="setView('front')" data-i18n="v_front" data-i18n-title="t_front" title="前面">前</button>
-<button onclick="setView('back')" data-i18n="v_back" data-i18n-title="t_back" title="後面">後</button>
-<button onclick="setView('left')" data-i18n="v_left" data-i18n-title="t_left" title="左面">左</button>
-<button onclick="setView('right')" data-i18n="v_right" data-i18n-title="t_right" title="右面">右</button>
-<button onclick="setView('top')" data-i18n="v_top" data-i18n-title="t_top" title="頂面">頂</button>
-<button onclick="setView('home')" title="Default view">⌂</button>
-</div>
 <h2><span data-i18n="servos">舵機</span> <button onclick="servosHome()" data-i18n="home_all">回中</button></h2>
-<div id="servos"></div>
+<div id="servos"><div class="svcol" id="svcol1"></div><div class="svcol" id="svcol2"></div></div>
 </div>
 
 <script src="fk-params.js"></script>
@@ -505,16 +509,17 @@ function buildServos(){
   // 重建（轉語言用）：留返而家啲 slider 值
   var cur={};
   for(var id=1;id<=20;id++){var ex=document.getElementById('sv'+id);if(ex)cur[id]=ex.value;}
-  var box=document.getElementById('servos'), h='';
+  var c1=document.getElementById('svcol1'), c2=document.getElementById('svcol2'), h1='', h2='';
   for(var k=1;k<=20;k++){
     var nm=sName(k), inf=servoInfo[k];
     var v=(cur[k]!==undefined)?cur[k]:inf.home;
-    h+='<div class="sv"><div class="t"><span>#'+k+' '+nm+'</span>'
+    var h='<div class="sv"><div class="t"><span>#'+k+' '+nm+'</span>'
       +'<b id="svv'+k+'">'+v+'</b><button onclick="servoHome('+k+')" title="'+T('home_title')+inf.home+'">'+T('home_one')+'</button></div>'
       +'<input type="range" id="sv'+k+'" min="'+inf.min+'" max="'+inf.max+'" step="1" value="'+v+'">'
       +'<small>'+inf.min+' – '+inf.max+(uiLang==='zh'?'（中 '+inf.home+'）':'(home '+inf.home+')')+'</small></div>';
+    if(k<=10) h1+=h; else h2+=h;
   }
-  box.innerHTML=h;
+  c1.innerHTML=h1; c2.innerHTML=h2;
   for(var m=1;m<=20;m++)(function(kk){
     document.getElementById('sv'+kk).addEventListener('input',function(){
       pausePlayback();
