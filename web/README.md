@@ -7,6 +7,10 @@
   `python -m http.server` 開（唔好雙擊 `file://`），Pages 版直頭得。
 - FK 同 MuJoCo 對過：5 組位（home／全零／隨機／真 `.ubx` 兩格）21 條 link
   誤差全部 < 1e-13 mm，即係同 URDF 運動學一模一樣。
+- 配樂同步：`.ubx` 入面嘅 voice 幀（歌名＋起止）照真機獨立 clock 排播，
+  起新歌打斷舊歌，`playbackRate` 跟速度選擇；歌檔嚟自 `actions/<id>/`，
+  清單見 `actions/manifest.json`（`make_manifest.py` 生）。慢鏡模式音樂會
+  照比例慢（browser 有上下限，極端值未必跟足，1x 對同步最準）。
 - 無後端、無 build step：`fk-params.js`（URDF FK 參數）＋`ubx-parse.js`（`.ubx` 解析）＋本檔三個掟埋同一目錄就得。
 - `tools/test-action.ubx` 係內置 3 格 sample（同 `tools/make_test_ubx.py` 生出嚟嗰個一模一樣）。
 

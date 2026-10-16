@@ -50,7 +50,7 @@
 <option value="1" selected>1x</option><option value="1.5">1.5x</option><option value="2">2x</option>
 </select></label>
 <label>慢鏡 <input type="range" id="slow" min="1" max="8" step="1" value="1" style="width:120px" onchange="setSpeed()"> <span id="slowv">1x</span></label>
-<div class="mono"><span id="tcur">0.0</span>s / <span id="ttot">0.0</span>s · 第 <span id="fcur">-</span> / <span id="ftot">-</span> 格</div>
+<div class="mono"><span id="tcur">0.0</span>s / <span id="ttot">0.0</span>s · 第 <span id="fcur">-</span> / <span id="ftot">-</span> 格 · <span id="song"></span></div>
 <input type="range" id="scrub" min="0" max="1000" value="0">
 <canvas id="gl"></canvas>
 <div class="mono" id="pose"></div>
@@ -222,15 +222,74 @@ function setFile(name,buf){
   try{
     var t0=performance.now();
     TRAJ=UbxParse.parse(new Uint8Array(buf));
-    log(name+'：'+TRAJ.frames.length+' 格，'+TRAJ.durationMs+'ms，'+TRAJ.tracks+' track（parse '+Math.round(performance.now()-t0)+'ms）');
+    TRAJ.name=name;
+    log(name+'：'+TRAJ.frames.length+' 格，'+TRAJ.durationMs+'ms，'+TRAJ.tracks+' track'
+      +(TRAJ.voice.length?'，'+TRAJ.voice.length+' 首歌':'，無歌')+'（parse '+Math.round(performance.now()-t0)+'ms）');
     if(!TRAJ.frames.length){log('⛔ 無舵機幀');return;}
-    $('ttot').textContent=(TRAJ.durationMs/1000).toFixed(1);
+    endMs=TRAJ.durationMs;
+    TRAJ.voice.forEach(function(v){
+      // 歌可以長過動作（真機播到 bound 先停），但最多延 60s，唔係條軸無限長
+      endMs=Math.max(endMs,Math.min(v.t+v.bound,TRAJ.durationMs+60000));
+    });
+    $('ttot').textContent=(endMs/1000).toFixed(1);
     $('ftot').textContent=TRAJ.frames.length;
     $('info').textContent=name+'｜'+TRAJ.frames.length+' 格｜'+(TRAJ.durationMs/1000).toFixed(1)+'s';
     $('playBtn').disabled=false;
     stop(); seek(0);
   }catch(e){log('⛔ 解唔到：'+e.message+'（唔係原裝 .ubx？）');}
 }
+// ---- 配樂（同真機一樣：獨立 clock 由 0 並行起，起新歌打斷舊歌）----
+var audioEl=null, audioKey=null, MANIFEST=null;
+var endMs=0; // 全片長（含歌尾），seek/停播用；setFile 計
+function audioElGet(){
+  if(!audioEl){audioEl=new Audio();audioEl.preload='auto';}
+  return audioEl;
+}
+// voice event 歌名 -> 實際 URL（manifest 樂庫：原名 > 大細楷 > 同目錄第一首）
+function songUrl(stem, music){
+  if(!MANIFEST||!MANIFEST.music) return null;
+  var list=MANIFEST.music[stem];
+  if(!list||!list.length) return null;
+  var pick=null, i, low=(music||'').toLowerCase();
+  for(i=0;i<list.length;i++){if(list[i]===music){pick=list[i];break;}}
+  if(!pick&&low){for(i=0;i<list.length;i++){if(list[i].toLowerCase()===low){pick=list[i];break;}}}
+  if(!pick) pick=list[0];
+  return '../actions/'+encodeURIComponent(stem)+'/'+encodeURIComponent(pick);
+}
+function audioTick(now){
+  var el=audioElGet(), V=TRAJ?TRAJ.voice:[], act=null;
+  for(var i=0;i<V.length;i++){
+    var nextT=(i+1<V.length)?V[i+1].t:endMs;
+    var stopT=Math.min(V[i].t+V[i].bound,nextT);
+    if(now>=V[i].t&&now<stopT){act={ev:V[i],stop:stopT};break;}
+  }
+  var songEl=document.getElementById('song');
+  if(!act){
+    if(!el.paused) el.pause();
+    audioKey=null;
+    if(songEl) songEl.textContent='🎵 （呢格無歌）';
+    return;
+  }
+  var key=act.ev.t+'|'+act.ev.music;
+  var stem=(TRAJ.name||'').replace(/\.ubx$/i,'');
+  var url=songUrl(stem,act.ev.music);
+  if(songEl) songEl.textContent='🎵 '+(act.ev.music||'(配樂)')+(url?'':'（repo 無呢首歌，得動作）');
+  if(!url||deadSrc[url]){if(!el.paused)el.pause();audioKey=null;return;}
+  if(audioKey!==key||el.src.indexOf(encodeURIComponent(act.ev.music||''))<0){
+    el.src=url;
+    el.currentTime=Math.max(0,(now-act.ev.t)/1000);
+    audioKey=key;
+  }
+  if(el.playbackRate!==effSpeed()){try{el.playbackRate=effSpeed();}catch(e){}}
+  if(el.paused){
+    var pr=el.play();
+    if(pr&&pr.catch) pr.catch(function(e){
+      deadSrc[url]=1; // 404/解唔到就唔好每幀 retry 洗版
+      log('⛔ 播唔到歌 '+act.ev.music+'：'+e.message);
+    });
+  }
+}
+var deadSrc={};
 document.getElementById('file').addEventListener('change',function(ev){
   var f=ev.target.files[0]; if(!f) return;
   var rd=new FileReader();
@@ -244,6 +303,7 @@ document.getElementById('file').addEventListener('change',function(ev){
     if(!r.ok) throw new Error('HTTP '+r.status);
     return r.json();
   }).then(function(m){
+    MANIFEST=m;
     sel.innerHTML='<option value="">揀動作（'+m.count+' 招）…</option>'+m.files.map(function(f){
       return '<option value="'+f+'">'+f.replace(/\.ubx$/,'')+'</option>';
     }).join('');
@@ -269,32 +329,42 @@ function setSpeed(){
   slowDiv=parseInt($('slow').value,10)||1;
   $('slowv').textContent=slowDiv+'x';
   if(playing){pauseMs=clock();t0ms=performance.now();}
+  if(audioEl&&!audioEl.paused){try{audioEl.playbackRate=effSpeed();}catch(e){}}
 }
 window.setSpeed=setSpeed; window.loadSample=loadSample;
 window.togglePlay=togglePlay; window.stop=stop;
 function clock(){return pauseMs+(performance.now()-t0ms)*effSpeed();}
 function seek(ms){
-  pauseMs=Math.max(0,Math.min(TRAJ?TRAJ.durationMs:0,ms));
+  pauseMs=Math.max(0,Math.min(TRAJ?endMs:0,ms));
   t0ms=performance.now(); curIdx=0;
-  drawAt(pauseMs);
+  if(audioEl&&!audioEl.paused) audioEl.pause();
+  audioKey=null;
+  drawAt(pauseMs); audioTick(pauseMs);
 }
 function togglePlay(){
   if(!TRAJ) return;
-  if(playing){pauseMs=clock();t0ms=performance.now();playing=false;$('playBtn').textContent='▶ 播';}
+  if(playing){
+    pauseMs=clock();t0ms=performance.now();playing=false;$('playBtn').textContent='▶ 播';
+    if(audioEl&&!audioEl.paused) audioEl.pause();
+  }
   else{
-    if(pauseMs>=(TRAJ.durationMs-1)) pauseMs=0;
+    if(pauseMs>=(endMs-1)) pauseMs=0;
     t0ms=performance.now();playing=true;$('playBtn').textContent='⏸ 停一停';
     var step=function(){
       if(!playing) return;
       var now=clock();
-      if(now>=TRAJ.durationMs){stop();return;}
-      drawAt(now);
+      if(now>=endMs){stop();return;}
+      drawAt(now); audioTick(now);
       requestAnimationFrame(step);
     };
     requestAnimationFrame(step);
   }
 }
-function stop(){playing=false;$('playBtn').textContent='▶ 播';}
+function stop(){
+  playing=false;$('playBtn').textContent='▶ 播';
+  if(audioEl&&!audioEl.paused) audioEl.pause();
+  audioKey=null;
+}
 function poseAt(ms){
   var F=TRAJ.frames;
   if(ms<F[curIdx].t) curIdx=0;
