@@ -131,8 +131,10 @@ function initGL(){
   scene.add(root);
   window.__root=root;
   scene.add(new THREE.HemisphereLight(0xffffff,0x9aa5b1,1.0));
-  var dl=new THREE.DirectionalLight(0xffffff,1.4);
-  dl.position.set(0.6,-0.4,1.2); scene.add(dl);
+  var dl=new THREE.DirectionalLight(0xffffff,1.6);
+  dl.position.set(0.7,1.2,-1.0); scene.add(dl); // 機頭前方（同鏡頭同一邊）打落嚟，唔背光
+  var dl2=new THREE.DirectionalLight(0xdfe8ff,0.5);
+  dl2.position.set(-0.6,0.4,0.8); scene.add(dl2); // 背後補少少，唔好全黑
   var grid=new THREE.GridHelper(2,20,0x64748b,0xc3ccd6);
   grid.position.y=-0.235; scene.add(grid);
   FK.links.forEach(function(ln){
