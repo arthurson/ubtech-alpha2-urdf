@@ -147,6 +147,10 @@ for cname, jnames in CHAINS.items():
     links += [jn.replace("_joint", "_link") for jn in jnames]
 links += ["r_hand_link", "l_hand_link"]
 out["links"] = links
+out["meshKB"] = {}
+for ln in links:
+    mp = os.path.join(REPO, "meshes", "visual", ln + ".obj")
+    out["meshKB"][ln] = round(os.path.getsize(mp) / 1024) if os.path.isfile(mp) else -1
 # hand (finger) servos: fixed closed value display only
 for sid in (17, 18):
     sm = [r for r in smap if r["servo_id"] == sid][0]

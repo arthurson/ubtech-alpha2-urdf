@@ -1,0 +1,6 @@
+# --->movement audio: the player never plays music, don't redistribute kilos of mp3
+actions/**/*.mp3
+actions/**/*.MP3
+# python caches
+__pycache__/
+*.pyc

@@ -30,13 +30,16 @@
 <body>
 <h1>🕺 Alpha2 UBX 播放器 <small>URDF mesh 即時播 <code>.ubx</code></small></h1>
 <p>揀一個 <code>.ubx</code> 檔（部機 <code>/sdcard/actions/</code> 抄出嚟嗰啲），3D mesh 即時播。
-滑鼠拖轉視角、碌放大縮小。<small>要經 <code>http://</code> 開（<code>python -m http.server</code> / GitHub Pages），直接雙擊 <code>file://</code> 讀唔到 mesh＋CDN。</small></p>
+滑鼠拖轉視角、碌放大縮小。<small>要經 <code>http://</code> 開（<code>python -m http.server</code> / GitHub Pages），直接雙擊 <code>file://</code> 讀唔到 mesh＋CDN。
+首次開要落 44MB mesh（細件先上，個人形幾秒即見，慢線等埋 20MB 個頭）。</small></p>
 
 <div class="card">
 <input type="file" id="file" accept=".ubx">
+<select id="actionSel" style="max-width:280px"><option value="">…載入緊動作清單…</option></select>
 <button onclick="loadSample()">📦 試播內置 sample（3 格）</button>
 <div id="loadbar"><div id="loadfill"></div></div>
 <div id="info" class="mono"></div>
+<div id="dbgstat" class="mono" style="color:#b45309"></div>
 </div>
 
 <div class="card">
@@ -116,9 +119,9 @@ function initGL(){
   scene=new THREE.Scene();
   scene.background=new THREE.Color(0x0b0e14);
   camera=new THREE.PerspectiveCamera(45,840/480,0.01,10);
-  camera.position.set(0.55,-0.75,0.35);
+  camera.position.set(0.35,0.14,-0.62); // 機頭前方(three -Z)高少少望返
   controls=new OrbitControls(camera,renderer.domElement);
-  controls.target.set(0,0,0.05);
+  controls.target.set(0,-0.01,0);
   controls.enableDamping=true;
   // ROS (x前,y左,z上) -> three：root 轉一次搞掂，之後全部照 URDF 數擺
   var root=new THREE.Group();
@@ -136,7 +139,13 @@ function initGL(){
     root.add(g); linkGroups[ln]=g;
   });
   resize(); window.addEventListener('resize',resize);
-  renderer.setAnimationLoop(function(){controls.update();renderer.render(scene,camera);});
+  // 郁先畫：慳 CPU（parse mesh 嗰陣唔搶），拖/播先 render（重入閘防遞歸）
+  var rendering=false;
+  function render(){if(rendering)return;rendering=true;
+    try{controls.update();renderer.render(scene,camera);}finally{rendering=false;}}
+  controls.addEventListener('change',render);
+  window.__render=render;
+  render();
 }
 function resize(){
   var w=document.getElementById('gl').clientWidth||840, h=480;
@@ -144,28 +153,56 @@ function resize(){
   camera.aspect=w/h; camera.updateProjectionMatrix();
 }
 var skinMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.55,metalness:0.15});
+function stat(s){try{document.getElementById('dbgstat').textContent=s;}catch(e){}}
+window.onerror=function(m){stat('ONERROR: '+m);};
 function loadMeshes(done){
-  var loader=new OBJLoader(), names=FK.links.slice(), i=0;
+  var loader=new OBJLoader();
+  // 細件先上：個人形即見，20MB 頭最後先到（localhost 慢都要頂得順）
+  var names=FK.links.slice().sort(function(a,b){
+    return (FK.meshKB[a]||1e9)-(FK.meshKB[b]||1e9);});
+  var ndone=0, fails=[];
   document.getElementById('loadfill').style.width='2%';
-  (function next(){
-    if(i>=names.length){meshReady=true;log('mesh 齊（21 件 vertex 色直用）');done&&done();return;}
-    var ln=names[i++];
-    fetch(MESH_DIR+ln+'.obj').then(function(r){
+  stat('loading…0/21');
+  function fetchOne(ln, attempt){
+    var ctl=new AbortController(), timer=setTimeout(function(){ctl.abort();},120000);
+    var st0=Date.now();
+    return fetch(MESH_DIR+ln+'.obj',{signal:ctl.signal}).then(function(r){
       if(!r.ok) throw new Error('HTTP '+r.status);
       return r.text();
     }).then(function(t){
-      // 唔經 mtl：vertex 本身有色，去掉 mtllib/usemtl 單一 material 搞掂
+      clearTimeout(timer);
+      var st1=Date.now();
       t=t.replace(/^mtllib.*$/gm,'').replace(/^usemtl.*$/gm,'');
       var o=loader.parse(t);
       o.traverse(function(m){if(m.isMesh){m.material=skinMat;}});
       linkGroups[ln].add(o); linkGroups[ln].visible=true;
-      document.getElementById('loadfill').style.width=Math.round(i/names.length*100)+'%';
-      next();
-    }).catch(function(e){log('⛔ mesh '+ln+' 載唔到：'+e.message+'（要 http:// 開，唔好雙擊 file）');});
+      ndone++;
+      document.getElementById('loadfill').style.width=Math.round(ndone/names.length*100)+'%';
+      stat('ok '+ndone+'/21 '+ln+' net'+(st1-st0)+'ms parse'+(Date.now()-st1)+'ms'+(fails.length?' fails:'+fails.join(','):''));
+      poseMesh(lastAngles); // 逐件畫，即見人
+    }).catch(function(e){
+      clearTimeout(timer);
+      if(attempt<2){return fetchOne(ln,attempt+1);}
+      fails.push(ln+'['+(e&&e.message||e)+']');
+      stat('FAIL '+ln+': '+(e&&e.message||e));
+      log('⛔ mesh '+ln+' 載唔到：'+(e&&e.message||e));
+      ndone++;
+    });
+  }
+  var workers=names.map(function(ln){return function(){return fetchOne(ln,0);};});
+  var running=0, idx=0;
+  (function pump(){
+    while(running<6&&idx<workers.length){running++;workers[idx++]().then(function(){running--;pump();});}
+    if(idx>=workers.length&&running===0){
+      meshReady=true; // 有幾多畫幾多，缺件剩隱形（poseMesh 有 guard）
+      stat(fails.length?('死 '+fails.length+' 件：'+fails.join(',')):'mesh 齊 21/21');
+      log(fails.length?('mesh 死：'+fails.join(',')):'mesh 齊（21 件 vertex 色直用）');
+      done&&done();
+    }
   })();
 }
 function poseMesh(angles20){
-  if(!meshReady) return;
+  // progressive：未載入嘅 link 剩隱形（visible=false），有幾多畫幾多
   var F=linkFrames(angles20);
   FK.links.forEach(function(ln){
     var g=linkGroups[ln], f=F[ln];
@@ -173,6 +210,7 @@ function poseMesh(angles20){
     g.position.set(f.p[0],f.p[1],f.p[2]);
     g.quaternion.copy(rosQuat(f.R));
   });
+  if(window.__render) window.__render();
 }
 
 // ---- 播放狀態（同 stick 版同一套 clock）----
@@ -199,6 +237,26 @@ document.getElementById('file').addEventListener('change',function(ev){
   rd.onload=function(){setFile(f.name,rd.result);};
   rd.readAsArrayBuffer(f);
 });
+// 內置 202 招（同 repo 一齊出街嗰啲）：manifest 拎清單，逐個 fetch 播
+(function(){
+  var sel=document.getElementById('actionSel');
+  fetch('../actions/manifest.json').then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    return r.json();
+  }).then(function(m){
+    sel.innerHTML='<option value="">揀動作（'+m.count+' 招）…</option>'+m.files.map(function(f){
+      return '<option value="'+f+'">'+f.replace(/\.ubx$/,'')+'</option>';
+    }).join('');
+    sel.addEventListener('change',function(){
+      if(!sel.value) return;
+      fetch('../actions/'+encodeURIComponent(sel.value)).then(function(r){
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        return r.arrayBuffer();
+      }).then(function(b){setFile(sel.value,b);})
+        .catch(function(e){log('⛔ 動作載唔到：'+e.message);});
+    });
+  }).catch(function(){sel.innerHTML='<option value="">（無內置清單，用上面揀檔）</option>';});
+})();
 function loadSample(){
   fetch('tools/test-action.ubx').then(function(r){
     if(!r.ok) throw new Error('HTTP '+r.status+'（雙擊開 file:// 請改用上面揀檔掣）');
