@@ -711,6 +711,13 @@ Object.keys(FK.chains).forEach(function(c){
 var lastAngles=HOME20.slice();
 poseMesh(HOME20);
 applyLang();
+// online（http/https）：fetch 直讀，離線揀資料夾嗰格唔使見；file:// 先留返
+try{
+  if(location.protocol!=='file:'){
+    var ob=document.getElementById('offlinebox');
+    if(ob) ob.style.display='none';
+  }
+}catch(e){}
 log('就緒。mesh 載入中（21 件）… 揀 .ubx 開播。');
 </script>
 </body>
