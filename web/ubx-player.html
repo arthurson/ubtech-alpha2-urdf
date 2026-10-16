@@ -5,18 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Alpha2 UBX 播放器（URDF mesh 即時播）</title>
 <style>
-  body{font-family:system-ui,"Microsoft JhengHei",sans-serif;max-width:900px;margin:0 auto;padding:12px;background:#f6f6f8;color:#222}
-  h1{font-size:20px}
-  .card{background:#fff;border:1px solid #ddd;border-radius:10px;padding:12px;margin:10px 0}
-  button{padding:8px 14px;font-size:15px;border-radius:8px;border:1px solid #999;background:#fff;cursor:pointer;margin:4px 4px 4px 0}
+  html,body{height:100%}
+  body{font-family:system-ui,"Microsoft JhengHei",sans-serif;margin:0;color:#222;overflow:hidden}
+  #gl{position:fixed;inset:0;width:100%;height:100%;background:#eef1f4;display:block}
+  .hud{position:fixed;z-index:10;background:rgba(255,255,255,.93);border:1px solid #ddd;
+    border-radius:12px;padding:10px 12px;box-shadow:0 2px 12px rgba(0,0,0,.12);
+    backdrop-filter:blur(6px);font-size:14px}
+  #topbar{top:10px;left:10px;right:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  #topbar h1{font-size:17px;margin:0 8px 0 0}
+  #transport{left:10px;right:10px;bottom:10px}
+  #views{right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px;padding:8px}
+  #views button{margin:2px 0;padding:6px 8px;font-size:13px}
+  #meta{left:10px;bottom:118px;max-width:46ch}
+  #logbox{left:10px;bottom:118px;display:none;max-width:420px;max-height:30vh;overflow:auto}
+  button{padding:8px 14px;font-size:15px;border-radius:8px;border:1px solid #999;background:#fff;cursor:pointer;margin:2px}
   button.primary{background:#2563eb;color:#fff;border-color:#2563eb}
   button:disabled{opacity:.5}
   select,input[type=file]{font-size:14px;max-width:100%}
   input[type=range]{width:100%}
-  #gl{width:100%;height:480px;background:#eef1f4;border-radius:8px;display:block}
   .mono{font-variant-numeric:tabular-nums}
   #log{background:#111;color:#0f0;font-size:12px;padding:8px;border-radius:8px;height:110px;overflow-y:auto;white-space:pre-wrap}
-  #loadbar{height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;margin-top:6px}
+  #loadbar{height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;margin-top:6px;min-width:200px;flex:1}
   #loadfill{height:100%;width:0%;background:#2563eb}
   small{color:#666}
 </style>
@@ -28,39 +37,45 @@
 </script>
 </head>
 <body>
-<h1>🕺 Alpha2 UBX 播放器 <small>URDF mesh 即時播 <code>.ubx</code></small></h1>
-<p>揀一個 <code>.ubx</code> 檔（部機 <code>/sdcard/actions/</code> 抄出嚟嗰啲），3D mesh 即時播。
-滑鼠拖轉視角、碌放大縮小。<small>要經 <code>http://</code> 開（<code>python -m http.server</code> / GitHub Pages），直接雙擊 <code>file://</code> 讀唔到 mesh＋CDN。
-首次開要落 44MB mesh（細件先上，個人形幾秒即見，慢線等埋 20MB 個頭）。</small></p>
+<canvas id="gl"></canvas>
 
-<div class="card">
-<input type="file" id="file" accept=".ubx">
-<select id="actionSel" style="max-width:280px"><option value="">…載入緊動作清單…</option></select>
-<button onclick="loadSample()">📦 試播內置 sample（3 格）</button>
-<div id="loadbar"><div id="loadfill"></div></div>
-<div id="info" class="mono"></div>
+<div class="hud" id="topbar">
+<h1>🕺 Alpha2 UBX</h1>
+<input type="file" id="file" accept=".ubx" title="由部機 /sdcard/actions/ 抄出嚟嘅 .ubx">
+<select id="actionSel" style="max-width:240px"><option value="">…載入緊動作清單…</option></select>
+<button onclick="loadSample()" title="內置 3 格測試">📦 sample</button>
+<div id="loadbar" title="mesh 載入進度（首次 44MB）"><div id="loadfill"></div></div>
+<button onclick="var e=document.getElementById('logbox');e.style.display=e.style.display==='block'?'none':'block'" title="log">📝</button>
+</div>
+
+<div class="hud" id="views">
+<button onclick="setView('front')" title="前面">前</button>
+<button onclick="setView('back')" title="後面">後</button>
+<button onclick="setView('left')" title="左面">左</button>
+<button onclick="setView('right')" title="右面">右</button>
+<button onclick="setView('top')" title="頂面">頂</button>
+<button onclick="setView('home')" title="預設角度">⌂</button>
+</div>
+
+<div class="hud" id="meta">
+<div id="info" class="mono">揀上面嘅動作開播（滑鼠拖轉視角、碌 zoom）</div>
 <div id="dbgstat" class="mono" style="color:#b45309"></div>
 </div>
 
-<div class="card">
+<div class="hud" id="transport">
 <button class="primary" id="playBtn" onclick="togglePlay()" disabled>▶ 播</button>
 <button onclick="stop()">⏹ 停</button>
 <label>速度 <select id="spd" onchange="setSpeed()">
 <option value="0.5">0.5x</option><option value="0.67">0.67x</option>
 <option value="1" selected>1x</option><option value="1.5">1.5x</option><option value="2">2x</option>
 </select></label>
-<label>慢鏡 <input type="range" id="slow" min="1" max="8" step="1" value="1" style="width:120px" onchange="setSpeed()"> <span id="slowv">1x</span></label>
-<div class="mono"><span id="tcur">0.0</span>s / <span id="ttot">0.0</span>s · 第 <span id="fcur">-</span> / <span id="ftot">-</span> 格 · <span id="song"></span></div>
+<label>慢鏡 <input type="range" id="slow" min="1" max="8" step="1" value="1" style="width:90px" onchange="setSpeed()"> <span id="slowv">1x</span></label>
+<span class="mono"><span id="tcur">0.0</span>s / <span id="ttot">0.0</span>s · 第 <span id="fcur">-</span> / <span id="ftot">-</span> 格 · <span id="song"></span></span>
 <input type="range" id="scrub" min="0" max="1000" value="0">
-<canvas id="gl"></canvas>
-<div class="mono" id="pose"></div>
+<div class="mono" id="pose" style="font-size:12px"></div>
 </div>
 
-<div class="card"><h3>Log</h3><div id="log"></div></div>
-<p><small>FK 參數 <code>fk-params.js</code> 由 <code>urdf/alpha2.urdf</code>＋<code>config/servo_map.yaml</code> 生成；
-mesh 係 <code>meshes/visual/*.obj</code> 原裝（vertex 色直用，唔經 mtl）；
-解析 <code>ubx-parse.js</code> 同 openalpha2 嘅 <code>ubx_to_traj.py</code> 對過。
-q = (servo + offset)°，20 號頭用 urdf_offset −120。</small></p>
+<div class="hud" id="logbox"><div id="log"></div></div>
 
 <script src="fk-params.js"></script>
 <script src="ubx-parse.js"></script>
@@ -151,10 +166,20 @@ function initGL(){
   render();
 }
 function resize(){
-  var w=document.getElementById('gl').clientWidth||840, h=480;
+  var w=window.innerWidth||840, h=window.innerHeight||480;
   renderer.setSize(w,h,false);
   camera.aspect=w/h; camera.updateProjectionMatrix();
 }
+// 視角預設（three 座標：機頭向 -Z，y 上）——robot_viewer 嗰套 ±X ±Y ±Z 掣
+var VIEWS={front:[0,0.06,-0.85],back:[0,0.06,0.85],left:[-0.85,0.06,0],right:[0.85,0.06,0],
+  top:[0,1.05,-0.01],home:[0.35,0.14,-0.62]};
+function setView(k){
+  var v=VIEWS[k]||VIEWS.home;
+  camera.position.set(v[0],v[1],v[2]);
+  controls.target.set(0,-0.01,0);
+  if(window.__render) window.__render();
+}
+window.setView=setView;
 var skinMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.55,metalness:0.15});
 function stat(s){try{document.getElementById('dbgstat').textContent=s;}catch(e){}}
 window.onerror=function(m){stat('ONERROR: '+m);};
