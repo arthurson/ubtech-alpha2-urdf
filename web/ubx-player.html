@@ -43,7 +43,6 @@
 <h1>🕺 Alpha2 UBX</h1>
 <input type="file" id="file" accept=".ubx" title="由部機 /sdcard/actions/ 抄出嚟嘅 .ubx">
 <select id="actionSel" style="max-width:240px"><option value="">…載入緊動作清單…</option></select>
-<button onclick="loadSample()" title="內置 3 格測試">📦 sample</button>
 <div id="loadbar" title="mesh 載入進度（首次 44MB）"><div id="loadfill"></div></div>
 <button onclick="var e=document.getElementById('logbox');e.style.display=e.style.display==='block'?'none':'block'" title="log">📝</button>
 </div>
@@ -356,13 +355,6 @@ document.getElementById('file').addEventListener('change',function(ev){
     });
   }).catch(function(){sel.innerHTML='<option value="">（無內置清單，用上面揀檔）</option>';});
 })();
-function loadSample(){
-  fetch('tools/test-action.ubx').then(function(r){
-    if(!r.ok) throw new Error('HTTP '+r.status+'（雙擊開 file:// 請改用上面揀檔掣）');
-    return r.arrayBuffer();
-  }).then(function(b){setFile('test-action.ubx (sample)',b);})
-    .catch(function(e){log('⛔ 載唔到 sample：'+e.message);});
-}
 function setSpeed(){
   speed=parseFloat($('spd').value)||1;
   slowDiv=parseInt($('slow').value,10)||1;
@@ -370,7 +362,7 @@ function setSpeed(){
   if(playing){pauseMs=clock();t0ms=performance.now();}
   if(audioEl&&!audioEl.paused){try{audioEl.playbackRate=effSpeed();}catch(e){}}
 }
-window.setSpeed=setSpeed; window.loadSample=loadSample;
+window.setSpeed=setSpeed;
 window.togglePlay=togglePlay; window.stop=stop;
 function clock(){return pauseMs+(performance.now()-t0ms)*effSpeed();}
 function seek(ms){
@@ -410,8 +402,10 @@ function poseAt(ms){
   while(curIdx+1<F.length&&F[curIdx+1].t<=ms) curIdx++;
   var i=curIdx, cur=F[i], prev=i>0?F[i-1]:cur;
   var k=cur.move>0?Math.min(1,Math.max(0,(ms-cur.t)/cur.move)):1;
+  // s17/s18 手指 255 = 放鬆（韌體唔上力）：插值前先當 120，唔會掃過成段
+  function v(f,j){var x=f.a[j];return (j>=16&&x===255)?120:x;}
   var a=[];
-  for(var j=0;j<20;j++) a.push(Math.round(prev.a[j]+(cur.a[j]-prev.a[j])*k));
+  for(var j=0;j<20;j++) a.push(Math.round(v(prev,j)+(v(cur,j)-v(prev,j))*k));
   return {a:a, idx:i};
 }
 function drawAt(ms){
