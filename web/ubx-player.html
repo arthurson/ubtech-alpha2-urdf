@@ -39,12 +39,9 @@
   #loadfill{height:100%;width:0%;background:#2563eb}
   small{color:#666}
 </style>
-<script type="importmap">
-{"imports":{
-  "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-}}
-</script>
+<script src="vendor/three.min.js"></script>
+<script src="vendor/OBJLoader.js"></script>
+<script src="vendor/OrbitControls.js"></script>
 </head>
 <body>
 <canvas id="gl"></canvas>
@@ -52,6 +49,14 @@
 <div class="hud" id="leftpanel">
 <h1><span>🕺 Alpha2 UBX</span> <button id="langBtn" onclick="toggleLang()" title="中文 / English">EN</button></h1>
 <input type="file" id="file" accept=".ubx" data-i18n-title="file_title" title="由部機 /sdcard/actions/ 抄出嚟嘅 .ubx">
+<details id="offlinebox" style="font-size:12px;border:1px dashed #999;border-radius:8px;padding:6px 8px">
+<summary data-i18n="off_title">離線 / file:// 用：揀本地資料夾（免上網）</summary>
+<div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">
+<label>📁 meshes <input type="file" id="meshDir" webkitdirectory multiple></label>
+<label>📁 actions <input type="file" id="actDir" webkitdirectory multiple></label>
+<div id="offstat" class="mono" style="color:#065f46"></div>
+</div>
+</details>
 <select id="actionSel"><option value="">…</option></select>
 <div>
 <button class="primary" id="playBtn" onclick="togglePlay()" disabled>▶</button>
@@ -87,10 +92,7 @@
 
 <script src="fk-params.js"></script>
 <script src="ubx-parse.js"></script>
-<script type="module">
-import * as THREE from 'three';
-import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+<script>
 
 // ---- 3x3 數學 ----
 function rotAxis(ax,q){var n=Math.hypot(ax[0],ax[1],ax[2]);var x=ax[0]/n,y=ax[1]/n,z=ax[2]/n;
@@ -129,7 +131,8 @@ var I18N={
   act_pick:{zh:'揀動作',en:'Pick action'},
   act_count:{zh:'招',en:'actions'},
   act_none:{zh:'（無內置清單，用上面揀檔）',en:'(no built-in list, use file picker above)'},
-  all_home_log:{zh:'全部回中',en:'All servos centered'}
+  all_home_log:{zh:'全部回中',en:'All servos centered'},
+  off_title:{zh:'離線 / file:// 用：揀本地資料夾（免上網）',en:'Offline / file://: pick local folders (no internet needed)'},
 };
 var uiLang='zh';
 try{uiLang=localStorage.getItem('ubx_lang')||'zh';}catch(e){}
@@ -192,7 +195,7 @@ function initGL(){
   camera=new THREE.PerspectiveCamera(45,840/480,0.01,10);
   camera=new THREE.PerspectiveCamera(45,840/480,0.01,10);
   camera.position.set(0,0.10,-0.75); // 置中正面，左右唔會透視一大一細
-  controls=new OrbitControls(camera,renderer.domElement);
+  controls=new THREE.OrbitControls(camera,renderer.domElement);
   controls.target.set(0,-0.01,0);
   controls.enableDamping=true;
   // ROS (x前,y左,z上) -> three：root 轉一次搞掂，之後全部照 URDF 數擺
@@ -240,8 +243,97 @@ window.setView=setView;
 var skinMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:0.55,metalness:0.15});
 function stat(s){try{document.getElementById('dbgstat').textContent=s;}catch(e){}}
 window.onerror=function(m){stat('ONERROR: '+m);};
+// ---- 離線 / file:// 支援：本地資料夾經 FileReader 讀，唔經 fetch ----
+// （http 正常時照行 fetch；file:// 下 fetch 必死，改行呢啲）
+var meshFileMap={}, loadedMesh={};
+var UBX_FILEMAP={}, OFFURLS={};
+function offstat(s){try{document.getElementById('offstat').textContent=s;}catch(e){}}
+function readAsText(f){return new Promise(function(res,rej){var r=new FileReader();r.onload=function(){res(r.result);};r.onerror=function(){rej(r.error||new Error('read fail'));};r.readAsText(f);});}
+function readAsBuf(f){return new Promise(function(res,rej){var r=new FileReader();r.onload=function(){res(r.result);};r.onerror=function(){rej(r.error||new Error('read fail'));};r.readAsArrayBuffer(f);});}
+function offUrl(stem,musicFile){
+  var e=OFFURLS[((stem||'').toLowerCase()+'/'+(musicFile||'').toLowerCase())];
+  if(!e) return null;
+  if(!e.url){try{e.url=URL.createObjectURL(e.file);}catch(err){return null;}}
+  return e.url;
+}
+function parseObjText(ln,t){
+  t=t.replace(/^mtllib.*$/gm,'').replace(/^usemtl.*$/gm,'');
+  var o=new THREE.OBJLoader().parse(t);
+  o.traverse(function(m){if(m.isMesh){m.material=skinMat;}});
+  linkGroups[ln].add(o); linkGroups[ln].visible=true;
+  loadedMesh[ln]=1;
+  poseMesh(lastAngles);
+}
+function retryMissingMeshes(){
+  var missing=FK.links.filter(function(ln){return !loadedMesh[ln];});
+  if(!missing.length) return;
+  meshReady=false;
+  var fails=[];
+  (function next(){
+    if(!missing.length){
+      meshReady=true;
+      stat(fails.length?('死 '+fails.length+' 件：'+fails.join(',')):'mesh 齊 21/21（本地）');
+      log(fails.length?('mesh 死：'+fails.join(',')):'mesh 齊（本地資料夾直讀）');
+      return;
+    }
+    var ln=missing.shift(), local=meshFileMap[ln.toLowerCase()];
+    if(!local){fails.push(ln+'[無本地檔]');next();return;}
+    readAsText(local).then(function(t){
+      try{parseObjText(ln,t);stat('本地 mesh '+ln);}catch(e){fails.push(ln+'[parse死]');}
+      document.getElementById('loadfill').style.width='100%';
+      next();
+    }).catch(function(){fails.push(ln+'[讀唔到]');next();});
+  })();
+}
+document.getElementById('meshDir').addEventListener('change',function(ev){
+  var fs=ev.target.files||[], n=0;
+  for(var i=0;i<fs.length;i++){
+    var p=(fs[i].webkitRelativePath||fs[i].name).replace(/\\/g,'/');
+    if(/\.obj$/i.test(p)){meshFileMap[p.split('/').pop().replace(/\.obj$/i,'').toLowerCase()]=fs[i];n++;}
+  }
+  offstat('meshes：執到 '+n+' 件 .obj');
+  log('📁 meshes 資料夾：'+n+' 件 .obj（本地直讀）');
+  retryMissingMeshes();
+});
+document.getElementById('actDir').addEventListener('change',function(ev){
+  var fs=ev.target.files||[], i;
+  UBX_FILEMAP={};
+  var scanned=[], smusic={};
+  for(i=0;i<fs.length;i++){
+    var f=fs[i], p=(f.webkitRelativePath||f.name).replace(/\\/g,'/');
+    if(/\.ubx$/i.test(p)){
+      var bn=p.split('/').pop();
+      if(scanned.indexOf(bn)<0) scanned.push(bn);
+      UBX_FILEMAP[bn.toLowerCase()]=f;
+    } else if(/\.(mp3|wav|ogg|m4a)$/i.test(p)){
+      var ps=p.split('/'), stem=ps.length>1?ps[ps.length-2]:'';
+      if(stem){
+        var key=stem.toLowerCase()+'/'+ps[ps.length-1].toLowerCase();
+        if(!OFFURLS[key]) OFFURLS[key]={file:f,url:null};
+        if(!smusic[stem]) smusic[stem]=[];
+        if(smusic[stem].indexOf(ps[ps.length-1])<0) smusic[stem].push(ps[ps.length-1]);
+      }
+    }
+  }
+  scanned.sort();
+  var manF=null;
+  for(i=0;i<fs.length;i++){var q=(fs[i].webkitRelativePath||fs[i].name).replace(/\\/g,'/');if(/(^|\/)manifest\.json$/i.test(q)){manF=fs[i];break;}}
+  function done(m){
+    if(m&&m.files&&m.files.length){
+      MANIFEST=m;
+      if(!MANIFEST.music||!Object.keys(MANIFEST.music).length) MANIFEST.music=smusic;
+    } else {
+      MANIFEST={count:scanned.length,files:scanned,music:smusic,names:(MANIFEST&&MANIFEST.names)||{}};
+    }
+    buildActions();
+    offstat('actions：'+MANIFEST.files.length+' 招（本地）');
+    log('📁 actions 資料夾：'+MANIFEST.files.length+' 招，本地直讀唔經 fetch');
+  }
+  if(manF) readAsText(manF).then(function(t){var m=null;try{m=JSON.parse(t);}catch(e){}done(m);}).catch(function(){done(null);});
+  else done(null);
+});
 function loadMeshes(done){
-  var loader=new OBJLoader();
+  var loader=new THREE.OBJLoader();
   // 細件先上：個人形即見，20MB 頭最後先到（localhost 慢都要頂得順）
   var names=FK.links.slice().sort(function(a,b){
     return (FK.meshKB[a]||1e9)-(FK.meshKB[b]||1e9);});
@@ -249,28 +341,40 @@ function loadMeshes(done){
   document.getElementById('loadfill').style.width='2%';
   stat('loading…0/21');
   function fetchOne(ln, attempt){
-    var ctl=new AbortController(), timer=setTimeout(function(){ctl.abort();},120000);
     var st0=Date.now();
+    var local=meshFileMap[ln.toLowerCase()];
+    if(local){
+      // 離線：本地資料夾直讀
+      return readAsText(local).then(function(t){
+        var st1=Date.now();
+        parseObjText(ln,t);
+        ndone++;
+        document.getElementById('loadfill').style.width=Math.round(ndone/names.length*100)+'%';
+        stat('ok '+ndone+'/21 '+ln+' 本地'+(Date.now()-st1)+'ms');
+      }).catch(function(e){
+        fails.push(ln+'['+(e&&e.message||e)+']');
+        stat('FAIL '+ln+': '+(e&&e.message||e));
+        log('⛔ mesh '+ln+' 載唔到：'+(e&&e.message||e));
+        ndone++;
+      });
+    }
+    var ctl=new AbortController(), timer=setTimeout(function(){ctl.abort();},120000);
     return fetch(MESH_DIR+ln+'.obj',{signal:ctl.signal}).then(function(r){
       if(!r.ok) throw new Error('HTTP '+r.status);
       return r.text();
     }).then(function(t){
       clearTimeout(timer);
       var st1=Date.now();
-      t=t.replace(/^mtllib.*$/gm,'').replace(/^usemtl.*$/gm,'');
-      var o=loader.parse(t);
-      o.traverse(function(m){if(m.isMesh){m.material=skinMat;}});
-      linkGroups[ln].add(o); linkGroups[ln].visible=true;
+      parseObjText(ln,t);
       ndone++;
       document.getElementById('loadfill').style.width=Math.round(ndone/names.length*100)+'%';
       stat('ok '+ndone+'/21 '+ln+' net'+(st1-st0)+'ms parse'+(Date.now()-st1)+'ms'+(fails.length?' fails:'+fails.join(','):''));
-      poseMesh(lastAngles); // 逐件畫，即見人
     }).catch(function(e){
       clearTimeout(timer);
       if(attempt<2){return fetchOne(ln,attempt+1);}
       fails.push(ln+'['+(e&&e.message||e)+']');
       stat('FAIL '+ln+': '+(e&&e.message||e));
-      log('⛔ mesh '+ln+' 載唔到：'+(e&&e.message||e));
+      log('⛔ mesh '+ln+' 載唔到：'+(e&&e.message||e)+'（離線開 file:// 請喺上面揀 meshes 資料夾）');
       ndone++;
     });
   }
@@ -330,8 +434,10 @@ function audioElGet(){
   if(!audioEl){audioEl=new Audio();audioEl.preload='auto';}
   return audioEl;
 }
-// voice event 歌名 -> 實際 URL（manifest 樂庫：原名 > 大細楷 > 同目錄第一首）
+// voice event 歌名 -> 實際 URL（本地離線歌優先；manifest 樂庫：原名 > 大細楷 > 同目錄第一首）
 function songUrl(stem, music){
+  var off=offUrl(stem,music);
+  if(off) return off;
   if(!MANIFEST||!MANIFEST.music) return null;
   var list=MANIFEST.music[stem];
   if(!list||!list.length) return null;
@@ -339,6 +445,8 @@ function songUrl(stem, music){
   for(i=0;i<list.length;i++){if(list[i]===music){pick=list[i];break;}}
   if(!pick&&low){for(i=0;i<list.length;i++){if(list[i].toLowerCase()===low){pick=list[i];break;}}}
   if(!pick) pick=list[0];
+  var off2=offUrl(stem,pick);
+  if(off2) return off2;
   return '../actions/'+encodeURIComponent(stem)+'/'+encodeURIComponent(pick);
 }
 function audioTick(now){
@@ -366,7 +474,7 @@ function audioTick(now){
   var url=songUrl(stem,act.ev.music);
   if(songEl) songEl.textContent='🎵 '+(act.ev.music||'(配樂)')+(url?'':' '+T('song_missing'));
   if(!url||deadSrc[url]){if(!el.paused)el.pause();audioKey=null;return;}
-  if(audioKey!==key||el.src.indexOf(encodeURIComponent(act.ev.music||''))<0){
+  if(audioKey!==key||(el.src.indexOf('blob:')!==0&&el.src.indexOf(encodeURIComponent(act.ev.music||''))<0)){
     el.src=url;
     el.currentTime=Math.max(0,(now-act.ev.t)/1000);
     audioKey=key;
@@ -399,6 +507,7 @@ document.getElementById('file').addEventListener('change',function(ev){
   }).catch(function(){
     var sel=document.getElementById('actionSel');
     sel.innerHTML='<option value="">'+T('act_none')+'</option>';
+    log('💡 動作清單載唔到（file:// 離線？請喺上面揀 actions 資料夾，或直接揀 .ubx 檔播）');
   });
 })();
 function actionLabel(f){
@@ -424,6 +533,12 @@ function buildActions(){
   sel.value=cur;
   sel.onchange=function(){
     if(!sel.value) return;
+    var local=UBX_FILEMAP[(sel.value||'').toLowerCase()];
+    if(local){
+      readAsBuf(local).then(function(b){setFile(sel.value,b);})
+        .catch(function(e){log('⛔ 動作載唔到：'+e.message);});
+      return;
+    }
     fetch('../actions/'+encodeURIComponent(sel.value)).then(function(r){
       if(!r.ok) throw new Error('HTTP '+r.status);
       return r.arrayBuffer();

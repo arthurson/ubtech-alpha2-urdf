@@ -3,15 +3,18 @@
 ## ubx-player.html — UBX 播放器（URDF mesh 即時播）
 - 揀一個 `.ubx` 檔（部機 `/sdcard/actions/` 抄出嚟嗰啲），21 件原裝 mesh
  （`meshes/visual/*.obj`，vertex 色直用）即時播；滑鼠拖轉視角、碌放大縮小。
-- three.js 行 CDN（要上網），mesh 經 `../meshes` 讀：本地用
-  `python -m http.server` 開（唔好雙擊 `file://`），Pages 版直頭得。
+- three.js 已收歸 `vendor/`（r147 UMD，唔經 CDN，離線都畫到），mesh 經 `../meshes` 讀：
+  有網就 `python -m http.server` 開或直接用 Pages 版；完全離線（包括 `file://`
+  雙擊開）就喺頁面頂「離線 / file:// 用」嗰格分別揀 `meshes` 同 `actions`
+  兩個資料夾，之後 mesh／動作／歌全部本地直讀（已用 headless Chrome
+  由 `file://` 端到端驗過：21 件 mesh＋202 招＋播歌同步）。
 - FK 同 MuJoCo 對過：5 組位（home／全零／隨機／真 `.ubx` 兩格）21 條 link
   誤差全部 < 1e-13 mm，即係同 URDF 運動學一模一樣。
 - 配樂同步：`.ubx` 入面嘅 voice 幀（歌名＋起止）照真機獨立 clock 排播，
   起新歌打斷舊歌，`playbackRate` 跟速度選擇；歌檔嚟自 `actions/<id>/`，
   清單見 `actions/manifest.json`（`make_manifest.py` 生）。慢鏡模式音樂會
   照比例慢（browser 有上下限，極端值未必跟足，1x 對同步最準）。
-- 無後端、無 build step：`fk-params.js`（URDF FK 參數）＋`ubx-parse.js`（`.ubx` 解析）＋本檔三個掟埋同一目錄就得。
+- 無後端、無 build step：`fk-params.js`（URDF FK 參數）＋`ubx-parse.js`（`.ubx` 解析）＋`vendor/three.min.js`＋`vendor/OBJLoader.js`＋`vendor/OrbitControls.js`＋本檔掟埋同一目錄就得。
 - `tools/test-action.ubx` 係內置 3 格 sample（同 `tools/make_test_ubx.py` 生出嚟嗰個一模一樣）。
 
 ## GitHub Pages 發佈
