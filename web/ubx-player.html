@@ -32,7 +32,7 @@
   button.primary{background:#2563eb;color:#fff;border-color:#2563eb}
   button:disabled{opacity:.5}
   select,input[type=file]{font-size:14px;max-width:100%}
-  input[type=range]{width:100%}
+  input[type=range]{width:100%;accent-color:#2563eb}
   .mono{font-variant-numeric:tabular-nums}
   #log{font-size:12px;padding:8px;border:1px solid #ddd;border-radius:8px;max-height:18vh;overflow-y:auto;white-space:pre-wrap;background:#fff;color:#222}
   #loadbar{height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;margin-top:6px;min-width:200px;flex:1}
@@ -190,6 +190,10 @@ function initGL(){
   var cv=document.getElementById('gl');
   renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true});
   renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+  // r147 相容 r160 發佈版觀感：r155 起預設轉咗 physical 燈＋sRGB 輸出，
+  // 舊版唔開就會白到反光——呢兩行夾返同線上版一樣光暗
+  if('physicallyCorrectLights' in renderer) renderer.physicallyCorrectLights=true;
+  if(THREE.sRGBEncoding!==undefined) renderer.outputEncoding=THREE.sRGBEncoding;
   scene=new THREE.Scene();
   scene.background=new THREE.Color(0xeef1f4); // 明亮底，白色機身睇得清
   camera=new THREE.PerspectiveCamera(45,840/480,0.01,10);
