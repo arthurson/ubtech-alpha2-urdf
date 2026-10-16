@@ -11,13 +11,20 @@
   .hud{position:fixed;z-index:10;background:rgba(255,255,255,.93);border:1px solid #ddd;
     border-radius:12px;padding:10px 12px;box-shadow:0 2px 12px rgba(0,0,0,.12);
     backdrop-filter:blur(6px);font-size:14px}
-  #topbar{top:10px;left:10px;right:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  #topbar h1{font-size:17px;margin:0 8px 0 0}
-  #transport{left:10px;right:10px;bottom:10px}
-  #views{right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px;padding:8px}
-  #views button{margin:2px 0;padding:6px 8px;font-size:13px}
-  #meta{left:10px;bottom:118px;max-width:46ch}
-  #logbox{left:10px;bottom:118px;display:none;max-width:420px;max-height:30vh;overflow:auto}
+  #leftpanel{top:10px;left:10px;width:300px;display:flex;gap:8px;flex-direction:column}
+  #leftpanel h1{font-size:17px;margin:0}
+  #rightpanel{top:10px;right:10px;width:252px;max-height:calc(100vh - 20px);overflow-y:auto}
+  #rightpanel h2{font-size:14px;margin:6px 0 2px}
+  #views{display:flex;gap:2px;flex-wrap:wrap}
+  #views button{margin:1px;padding:6px 8px;font-size:13px;flex:1}
+  .sv{border-top:1px solid #eee;padding:4px 0;font-size:12px}
+  .sv .t{display:flex;justify-content:space-between;align-items:center;gap:4px}
+  .sv .t b{font-variant-numeric:tabular-nums}
+  .sv button{padding:1px 7px;font-size:12px;margin:0}
+  .sv small{color:#888}
+  .sv input[type=range]{width:100%;margin:2px 0}
+  #bottombar{left:322px;right:274px;bottom:10px}
+  #logbox{left:322px;bottom:118px;display:none;max-width:430px;max-height:30vh;overflow:auto;position:fixed;z-index:10;background:rgba(255,255,255,.95);border:1px solid #ddd;border-radius:12px;padding:10px}
   button{padding:8px 14px;font-size:15px;border-radius:8px;border:1px solid #999;background:#fff;cursor:pointer;margin:2px}
   button.primary{background:#2563eb;color:#fff;border-color:#2563eb}
   button:disabled{opacity:.5}
@@ -39,15 +46,30 @@
 <body>
 <canvas id="gl"></canvas>
 
-<div class="hud" id="topbar">
+<div class="hud" id="leftpanel">
 <h1>🕺 Alpha2 UBX</h1>
 <input type="file" id="file" accept=".ubx" title="由部機 /sdcard/actions/ 抄出嚟嘅 .ubx">
-<select id="actionSel" style="max-width:240px"><option value="">…載入緊動作清單…</option></select>
-<div id="loadbar" title="mesh 載入進度（首次 44MB）"><div id="loadfill"></div></div>
+<select id="actionSel"><option value="">…載入緊動作清單…</option></select>
+<div>
+<button class="primary" id="playBtn" onclick="togglePlay()" disabled>▶ 播</button>
+<button onclick="stop()">⏹ 停</button>
 <button onclick="var e=document.getElementById('logbox');e.style.display=e.style.display==='block'?'none':'block'" title="log">📝</button>
 </div>
+<div>
+<label>速度 <select id="spd" onchange="setSpeed()">
+<option value="0.5">0.5x</option><option value="0.67">0.67x</option>
+<option value="1" selected>1x</option><option value="1.5">1.5x</option><option value="2">2x</option>
+</select></label>
+<label>慢鏡 <input type="range" id="slow" min="1" max="8" step="1" value="1" style="width:80px" onchange="setSpeed()"> <span id="slowv">1x</span></label>
+</div>
+<div id="loadbar" title="mesh 載入進度（首次 44MB）"><div id="loadfill"></div></div>
+<div id="info" class="mono">揀動作開播（滑鼠拖轉視角、碌 zoom）</div>
+<div id="dbgstat" class="mono" style="color:#b45309"></div>
+</div>
 
-<div class="hud" id="views">
+<div class="hud" id="rightpanel">
+<h2>視角</h2>
+<div id="views">
 <button onclick="setView('front')" title="前面">前</button>
 <button onclick="setView('back')" title="後面">後</button>
 <button onclick="setView('left')" title="左面">左</button>
@@ -55,26 +77,17 @@
 <button onclick="setView('top')" title="頂面">頂</button>
 <button onclick="setView('home')" title="預設角度">⌂</button>
 </div>
-
-<div class="hud" id="meta">
-<div id="info" class="mono">揀上面嘅動作開播（滑鼠拖轉視角、碌 zoom）</div>
-<div id="dbgstat" class="mono" style="color:#b45309"></div>
+<h2>舵機 <button onclick="servosHome()" title="全部回中">回中</button></h2>
+<div id="servos"></div>
 </div>
 
-<div class="hud" id="transport">
-<button class="primary" id="playBtn" onclick="togglePlay()" disabled>▶ 播</button>
-<button onclick="stop()">⏹ 停</button>
-<label>速度 <select id="spd" onchange="setSpeed()">
-<option value="0.5">0.5x</option><option value="0.67">0.67x</option>
-<option value="1" selected>1x</option><option value="1.5">1.5x</option><option value="2">2x</option>
-</select></label>
-<label>慢鏡 <input type="range" id="slow" min="1" max="8" step="1" value="1" style="width:90px" onchange="setSpeed()"> <span id="slowv">1x</span></label>
+<div class="hud" id="bottombar">
 <span class="mono"><span id="tcur">0.0</span>s / <span id="ttot">0.0</span>s · 第 <span id="fcur">-</span> / <span id="ftot">-</span> 格 · <span id="song"></span></span>
 <input type="range" id="scrub" min="0" max="1000" value="0">
 <div class="mono" id="pose" style="font-size:12px"></div>
 </div>
 
-<div class="hud" id="logbox"><div id="log"></div></div>
+<div id="logbox"><div id="log"></div></div>
 
 <script src="fk-params.js"></script>
 <script src="ubx-parse.js"></script>
@@ -168,6 +181,7 @@ function resize(){
   var w=window.innerWidth||840, h=window.innerHeight||480;
   renderer.setSize(w,h,false);
   camera.aspect=w/h; camera.updateProjectionMatrix();
+  if(window.__render) window.__render(); // 全屏/轉 size 即重畫，唔使等人郁鏡頭
 }
 // 視角預設（three 座標：機頭向 -Z，y 上）——robot_viewer 嗰套 ±X ±Y ±Z 掣
 var VIEWS={front:[0,0.06,-0.85],back:[0,0.06,0.85],left:[-0.85,0.06,0],right:[0.85,0.06,0],
@@ -370,6 +384,7 @@ function seek(ms){
   t0ms=performance.now(); curIdx=0;
   if(audioEl&&!audioEl.paused) audioEl.pause();
   audioKey=null; // 下次起播重新對位，唔用舊 offset
+  manualAngles=null; // scrub 返去跟 .ubx
   drawAt(pauseMs); audioTick(pauseMs);
 }
 function togglePlay(){
@@ -380,6 +395,7 @@ function togglePlay(){
   }
   else{
     if(pauseMs>=(endMs-1)) pauseMs=0;
+    manualAngles=null; // 播片跟 .ubx，唔跟手動位
     t0ms=performance.now();playing=true;$('playBtn').textContent='⏸ 停一停';
     var step=function(){
       if(!playing) return;
@@ -411,11 +427,84 @@ function poseAt(ms){
 function drawAt(ms){
   var r=poseAt(ms);
   poseMesh(r.a);
+  syncServos(r.a);
   $('tcur').textContent=(ms/1000).toFixed(1);
   $('fcur').textContent=(r.idx+1);
   if(!scrubbing) $('scrub').value=Math.round(ms/(TRAJ.durationMs||1)*1000);
   $('pose').textContent='s1-10: '+r.a.slice(0,10).join(',')+' … s11-20: '+r.a.slice(10).join(',');
 }
+// ---- 右邊 20 軸 slider：郁佢哋 = 手動擺 pose（自動停播），畀 FK 即畫 ----
+var SERVO_NAMES={1:['右肩上下','R Shoulder Pitch'],2:['右肩左右','R Shoulder Roll'],
+3:['右肘','R Elbow'],4:['左肩上下','L Shoulder Pitch'],5:['左肩左右','L Shoulder Roll'],
+6:['左肘','L Elbow'],7:['右股左右','R Hip Roll'],8:['右股上下','R Hip Pitch'],
+9:['右膝','R Knee'],10:['右腳掌上下','R Ankle Pitch'],11:['右腳掌左右','R Ankle Roll'],
+12:['左股左右','L Hip Roll'],13:['左股上下','L Hip Pitch'],14:['左膝','L Knee'],
+15:['左腳掌上下','L Ankle Pitch'],16:['左腳掌左右','L Ankle Roll'],
+17:['右指','R Hand'],18:['左指','L Hand'],19:['頭左右','Head Yaw'],20:['頭上下','Head Pitch']};
+var servoInfo={}, manualAngles=null;
+(function(){
+  Object.keys(FK.chains).forEach(function(c){
+    FK.chains[c].forEach(function(j){servoInfo[j.servo]={min:j.srg[0],max:j.srg[1],home:j.home};});
+  });
+  servoInfo[17]={min:FK.hands['17'].servo_min,max:FK.hands['17'].servo_max,home:120};
+  servoInfo[18]={min:FK.hands['18'].servo_min,max:FK.hands['18'].servo_max,home:120};
+  var box=document.getElementById('servos'), h='';
+  for(var id=1;id<=20;id++){
+    var nm=SERVO_NAMES[id], inf=servoInfo[id];
+    h+='<div class="sv"><div class="t"><span>#'+id+' '+nm[0]+'</span>'
+      +'<b id="svv'+id+'">'+inf.home+'</b><button onclick="servoHome('+id+')" title="回中 '+inf.home+'">中</button></div>'
+      +'<input type="range" id="sv'+id+'" min="'+inf.min+'" max="'+inf.max+'" step="1" value="'+inf.home+'">'
+      +'<small>'+inf.min+' – '+inf.max+'（中 '+inf.home+'）</small></div>';
+  }
+  box.innerHTML=h;
+  for(var k=1;k<=20;k++)(function(kk){
+    document.getElementById('sv'+kk).addEventListener('input',function(){
+      pausePlayback();
+      if(!manualAngles) manualAngles=readServos();
+      manualAngles[kk-1]=parseInt(document.getElementById('sv'+kk).value,10);
+      document.getElementById('svv'+kk).textContent=manualAngles[kk-1];
+      renderManual();
+    });
+  })(k);
+})();
+function readServos(){var a=[];for(var i=1;i<=20;i++)a.push(parseInt(document.getElementById('sv'+i).value,10));return a;}
+function syncServos(a){
+  // .ubx 播緊嗰陣 slider 跟住郁（被動顯示，唔觸發 input）
+  for(var i=1;i<=20;i++){
+    document.getElementById('sv'+i).value=a[i-1];
+    document.getElementById('svv'+i).textContent=a[i-1];
+  }
+}
+function renderManual(){
+  if(!manualAngles) return;
+  poseMesh(manualAngles);
+  $('pose').textContent='手動：'+manualAngles.join(',');
+}
+function pausePlayback(){
+  if(!playing) return;
+  pauseMs=clock();t0ms=performance.now();playing=false;$('playBtn').textContent='▶ 播';
+  if(audioEl&&!audioEl.paused) audioEl.pause();
+}
+function servoHome(id){
+  pausePlayback();
+  if(!manualAngles) manualAngles=readServos();
+  manualAngles[id-1]=servoInfo[id].home;
+  document.getElementById('sv'+id).value=servoInfo[id].home;
+  document.getElementById('svv'+id).textContent=servoInfo[id].home;
+  renderManual();
+}
+function servosHome(){
+  pausePlayback();
+  manualAngles=[];
+  for(var id=1;id<=20;id++){
+    manualAngles.push(servoInfo[id].home);
+    document.getElementById('sv'+id).value=servoInfo[id].home;
+    document.getElementById('svv'+id).textContent=servoInfo[id].home;
+  }
+  log('全部回中');
+  renderManual();
+}
+window.servoHome=servoHome; window.servosHome=servosHome;
 document.getElementById('scrub').addEventListener('pointerdown',function(){scrubbing=true;});
 document.getElementById('scrub').addEventListener('pointerup',function(){scrubbing=false;});
 document.getElementById('scrub').addEventListener('input',function(){
