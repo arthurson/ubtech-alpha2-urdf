@@ -23,8 +23,11 @@ for f in names:
 # 中英文名（actions/names.json，由 openalpha2 xiaozhi_actions.json 抄一次過嚟）
 npath = os.path.join(ADIR, "names.json")
 anames = json.load(open(npath, encoding="utf-8")) if os.path.isfile(npath) else {}
+# 時長＋voice 數（actions/meta.json，由 web/tools/make_meta.mjs 生成）
+mpath = os.path.join(ADIR, "meta.json")
+meta = json.load(open(mpath, encoding="utf-8")) if os.path.isfile(mpath) else {}
 with open(OUT, "w", encoding="utf-8") as f:
-    json.dump({"count": len(names), "files": names, "music": music,
+    json.dump({"count": len(names), "files": names, "music": music, "meta": meta,
                "names": {s[:-4]: anames.get(s[:-4], {}) for s in names}}, f,
               ensure_ascii=False)
-print("wrote", OUT, len(names), "actions,", len(music), "with music")
+print("wrote", OUT, len(names), "actions,", len(music), "with music,", len(meta), "with meta")

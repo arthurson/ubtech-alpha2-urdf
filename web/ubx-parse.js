@@ -111,6 +111,7 @@
     if (le32(dv, ms) !== eLen) fail("motion len");
     var count = le32(dv, ms + 4), p = ms + 8, rows = [], t = 0;
     var voice = [], vt = 0; // 配樂獨立 clock（同真機並行起線）
+    var tracksData = []; // 逐 track 原樣（畀播放器揀軌道用）
     for (var ti = 0; ti < count; ti++) {
       var itemLen = le32(dv, p);
       if (le32(dv, p + 4) !== itemLen) fail("track echo");
@@ -123,6 +124,7 @@
       q += bLen;
       if (q !== tend) fail("track slack");
       var tb = 0;
+      var traw = [], tvoice = [], tt = 0, vtt = 0; // 呢條 track 自己嘅 clock
       var das = parseBlist(dv, n, bo);
       for (var di = 0; di < das.length; di++) {
         var da = das[di];
@@ -138,7 +140,8 @@
             for (var bi = 0; bi < blks.length; bi++) {
               var fr = blks[bi];
               rows.push({ t: t, move: fr.s * tb, a: fr.a });
-              t += (fr.s + fr.e) * tb;
+              traw.push({ t: tt, move: fr.s * tb, a: fr.a });
+              t += (fr.s + fr.e) * tb; tt += (fr.s + fr.e) * tb;
             }
           } else if (ty === 4) {
             if (!tb) fail("timebase missing");
@@ -146,14 +149,16 @@
             for (var vi = 0; vi < vblks.length; vi++) {
               var vf = vblks[vi];
               voice.push({ t: vt, bound: vf.s * tb, music: vf.music });
-              vt += (vf.s + vf.e) * tb;
+              tvoice.push({ t: vtt, bound: vf.s * tb, music: vf.music });
+              vt += (vf.s + vf.e) * tb; vtt += (vf.s + vf.e) * tb;
             }
           }
         }
       }
+      tracksData.push({ frames: traw, voice: tvoice, durationMs: tt });
       p += 4 + itemLen;
     }
-    return { frames: rows, voice: voice, durationMs: t, tracks: count };
+    return { frames: rows, voice: voice, durationMs: t, tracks: count, tracksData: tracksData };
   }
 
   var api = { parse: parseUbx };
