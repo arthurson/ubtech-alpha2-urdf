@@ -39,9 +39,6 @@
 #playbar .pbtn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
 #playbar .pbtn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
 #playbar .pbtn.txt{width:auto;padding:0 8px;font-size:12px;font-weight:700}
-#ikhint{position:fixed;left:50%;transform:translateX(-50%);bottom:88px;z-index:20;background:var(--panel);
-  border:1px solid var(--panel-bd);color:var(--text);border-radius:999px;padding:6px 14px;font-size:13px;display:none}
-#ikhint.on{display:block}
   #seekrow{display:flex;align-items:center;gap:5px;font-size:12px;white-space:nowrap;min-width:0}
   #seekrow input[type=range]{flex:1;min-width:60px;width:auto;margin:0}
   #meta{overflow:hidden;text-overflow:ellipsis}
@@ -90,7 +87,6 @@
     #seekrow{grid-column:2;grid-row:1}
     #spdwrap{grid-column:1 / span 2;grid-row:2;text-align:right}
     #spdwrap input[type=range]{width:40vw;max-width:220px}
-    #ikhint{bottom:152px;font-size:12px;max-width:calc(100vw - 24px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     #rightpanel h2 button,#views button{font-size:11px}
     .svr .nm{width:74px}
   }
@@ -145,7 +141,6 @@
 <div id="seekrow" class="mono"><span id="tcur">0.0</span><span>s</span> <input type="range" id="scrub" min="0" max="1000" value="0"> <span id="ttot">0.0</span><span>s</span> · <span id="meta"><span data-i18n="frame">第</span> <span id="fcur">-</span>/<span id="ftot">-</span> <span data-i18n="frames">格</span></span></div>
 <div id="spdwrap"><span data-i18n="speed">速度</span> <input type="range" id="spd" min="0.5" max="2" step="0.01" value="1" oninput="setSpeed()"> <span id="spdv">1x</span></div>
 </div>
-<div id="ikhint" data-i18n="ik_hint">IK：拖住藍點擺位（右手／左手／右腳／左腳）</div>
 
 <div id="jmodal" style="display:none;position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.45)" onclick="if(event.target===this)hideJoints()">
 <div class="hud" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:660px;max-width:94vw;max-height:86vh;overflow:auto">
@@ -215,7 +210,6 @@ var I18N={
   anchor_b:{zh:'防飄',en:'Anchor'},
   ik_b:{zh:'IK',en:'IK'},
   ik_title:{zh:'IK：拖住手／腳嘅控制點擺位（自動解關節角）',en:'IK: drag the hand/foot control point (solves joint angles)'},
-  ik_hint:{zh:'IK：拖住藍點擺位（右手／左手／右腳／左腳）',en:'IK: drag a blue dot (R hand / L hand / R foot / L foot)'},
   mob_actions:{zh:'動作',en:'Actions'},
   mob_servos:{zh:'舵機',en:'Servos'},
   com_b:{zh:'質心',en:'CoM'},
@@ -726,8 +720,6 @@ function toggleIK(){
   ikOn=!ikOn;
   if(!ikOn){ ikSel=null; ikDrag=null; controls.enabled=true; }
   syncToggles();
-  var h=document.getElementById('ikhint');
-  if(h) h.classList.toggle('on',ikOn);
   ikMarkerPose();
   if(window.__render) window.__render();
 }

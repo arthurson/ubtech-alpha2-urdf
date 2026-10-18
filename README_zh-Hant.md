@@ -23,9 +23,18 @@ UBTECH Alpha 2 嘅標準 URDF（20 粒轉向關節、21 條 link），由
 - 電池模型（base_link inertial）：3 粒直立 18650（18.3 x 65 mm，每粒 50 g）喺背脊排一橫，中心 x=−0.026、y=−0.0183／0／+0.0183、z=0.062（base_link 入面）。位置係估唔係量；知實數請改 base_link inertial 註解／數值。
 
 ## 網頁 UBX 播放器
-- 瀏覽器開 https://arthurson.github.io/ubtech-alpha2-urdf/web/ubx-player.html：揀 `actions/` 入面 202 招任何一招（中英文名，有配樂）或上載自己嘅 `.ubx`；成副 URDF mesh 3D 即時播（拉轉視角、碌 zoom，前／後／左／右／頂預設，0.5x–2x 速度，逐粒舵機 slider）。
+- 瀏覽器開 https://arthurson.github.io/ubtech-alpha2-urdf/web/ubx-player.html：揀 `actions/` 入面 202 招任何一招（中英文名，有配樂）或上載自己嘅 `.ubx`；成副 URDF mesh 3D 即時播。
+- 完全離線：一次過揀成個 `alpha2_description` 資料夾就得——mesh、動作、manifest、歌全部本地直讀，`file://` 雙擊開都用到。有網（http/https）時資料夾格會收埋，直接由 `../actions`／`../meshes` 讀。
+- 播放：播／停／循環／靜音、0.5x–2x 速度、拖軸 seek；配樂跟真機獨立 clock 排播；多 track `.ubx` 可以鏈式或逐條播；時長嚟自 `actions/meta.json`。
+- 視角：前／後／左／右／頂／底／⌂ 預設，拖轉＋碌 zoom；20 粒舵機 slider（校準範圍或「官方行程」）、回中／零位、關節資料表。
+- 腳 anchor 防飄（預設開）：支撐腳＝鞋底較低嗰隻（2cm 遲滯）；pitch 跟支撐腳，roll 鏡像外傾會抵銷、否則跟最平嗰隻（好似「飛昇上神」呢類姿勢都保持企直）；用鞋底最低角貼地，唔會插穿地面。播片時平滑郁動（每幀上限 3cm），seek／拖軸／手擺即刻對位。
+- 質心標記：橙點＋垂直投影線＋地面錐（跟參考 a2 viewer 同款），永遠顯示（熄 depth test）。
+- 世界位移 root motion：`.ubx` 本身冇 root 位移（得關節角），所以世界郁動由動作數據反推（腳鎖：貼地腳喺身框嘅飄移 → 機身郁）——行路／轉身跟數據；官方轉身動作（實機 45°）加 45° 校準，按腳部活動量分佈（腳未郁唔會郁）。
+- FrontStand／BackStand：一開始瞓低（BackStand 面向上、FrontStand 面向下），用身體接觸點貼地；起身角度由動作本身嘅活動量帶動，冇固定時間表。
+- IK：頂部撳「IK」，拖手／腳嘅藍色控制點，阻尼最小二乘（數值 Jacobian、夾關節範圍、奇異位多起點）即時解，20 條 slider 跟住更新；拖緊會暫停播放。
+- 手機／平板（≤820px 闊）：頂 bar＋動作／舵機 drawer、playbar 變兩行、直向鏡頭自動拉遠。
 - FK 由 `servo_map.yaml` 計（offset，逐粒關節同 MuJoCo 對過，誤差 < 1e-13 mm）；`.ubx` 解析同 reference 實現逐 byte 對過。
-- 無後端、無 build：`web/` 下面靜態檔（three.js 行 CDN）。本地用喺 repo root 起 `python -m http.server`，唔好雙擊 `file://`。
+- 無後端、無 build：`web/` 下面靜態檔（three.js r147 已收歸 `web/vendor/`，唔經 CDN）。本地有網用喺 repo root 起 `python -m http.server`；完全離線就咁開 html 再揀模型資料夾。
 
 ## 授權
 GPL-3.0-only（見 `LICENSE`；`package.xml` license 欄）。覆蓋呢度生出嚟嘅檔（URDF、SRDF、config、launch、本包 script）。mesh 幾何嚟自 maintainer 提供嘅 UBTECH Alpha 2 PC 軟件模型／散件，本包唔授予該第三方素材任何權利。
@@ -72,6 +81,6 @@ GPL-3.0-only（見 `LICENSE`；`package.xml` license 欄）。覆蓋呢度生出
 - 由接觸點計嘅 COM／ZMP-margin 統計唔可靠（槍槍都 flag），唔採信。跌唔跌睇終態（base 高 < 0.15 m 或傾 > 40 度），唔睇身傾（鞠躬、挨身 legit 會過 45 度）。
 
 ## 網頁工具（本 repo 新增，非原英文檔所有）
-- `web/ubx-player.html` — 純靜態 UBX 播放器：即場 parse `.ubx`，21 件原裝 mesh（three.js）＋配樂同步播（voice 幀獨立 clock，起新歌打斷舊歌，`playbackRate` 跟速度）。FK 參數由 URDF＋servo_map.yaml 機器生成（`web/fk-params.js`），解析同 openalpha2 嘅 `ubx_to_traj.py` 逐 byte 對過；成套 FK 同 MuJoCo 對過（21 條 link 誤差 < 1e-13 mm）。開法：repo root 起 `python -m http.server`（唔好雙擊 `file://`），或經 GitHub Pages（`.github/workflows/static.yml`，Settings → Pages → Source 揀 GitHub Actions）。
+- `web/ubx-player.html` — 純靜態 UBX 播放器：即場 parse `.ubx`，21 件原裝 mesh（three.js，已 vendor）＋配樂同步播（voice 幀獨立 clock，起新歌打斷舊歌，`playbackRate` 跟速度）；腳 anchor 防飄、質心標記、數據驅動世界位移（腳鎖）、FrontStand／BackStand 瞓低起身、IK 拖拽求解、手機／平板版面。FK 參數由 URDF＋servo_map.yaml 機器生成（`web/fk-params.js`），解析同 openalpha2 嘅 `ubx_to_traj.py` 逐 byte 對過；成套 FK 同 MuJoCo 對過（21 條 link 誤差 < 1e-13 mm）。開法：repo root 起 `python -m http.server`，完全離線就咁開 html 再揀成個模型資料夾；或經 GitHub Pages（`.github/workflows/static.yml`，Settings → Pages → Source 揀 GitHub Actions）。
 - `actions/` — 隨包附送 202 招官方 `.ubx`（`manifest.json` 清單、`names.json` 中英文名、`actionInfo.txt` 原檔；mp3 配樂同目錄，播片嗰陣先落）。授權同 mesh 一樣：UBTECH 原廠素材，本包唔授予任何權利。
 - `web/tools/` — `extract_fk_params.py`（抽 FK 參數）、`make_test_ubx.py`（最小合法 `.ubx` 回歸測試）、`make_manifest.py`（生 `actions/manifest.json`）。

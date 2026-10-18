@@ -1,13 +1,20 @@
 # web/ — Alpha2 靜態網頁工具（GitHub Pages 直接 serve）
 
 ## ubx-player.html — UBX 播放器（URDF mesh 即時播）
-- 揀一個 `.ubx` 檔（部機 `/sdcard/actions/` 抄出嚟嗰啲），21 件原裝 mesh
- （`meshes/visual/*.obj`，vertex 色直用）即時播；滑鼠拖轉視角、碌放大縮小。
-- three.js 已收歸 `vendor/`（r147 UMD，唔經 CDN，離線都畫到），mesh 經 `../meshes` 讀：
-  有網就 `python -m http.server` 開或直接用 Pages 版；完全離線（包括 `file://`
-  雙擊開）就喺頁面頂「離線 / file:// 用」嗰格分別揀 `meshes` 同 `actions`
-  兩個資料夾，之後 mesh／動作／歌全部本地直讀（已用 headless Chrome
-  由 `file://` 端到端驗過：21 件 mesh＋202 招＋播歌同步）。
+- 開頁即用：揀一個 `.ubx`（部機 `/sdcard/actions/` 抄出嚟嗰啲），21 件原裝 mesh
+  （`meshes/visual/*.obj`，vertex 色直用）即時播；拖轉視角、碌 zoom、前後左右頂底⌂ 預設。
+- 一次過揀成個 `alpha2_description` 資料夾（folder picker）可完全離線：
+  mesh／動作清單（manifest＋meta 時長／🎵）／配樂全部本地直讀，`file://` 雙擊開都用到。
+  有網（http/https）時資料夾格會收埋，改由 `../meshes`、`../actions` 直接讀。
+- 功能：20 粒舵機 slider（校準範圍／官方行程）＋回中／零位／關節資料表；播放列
+  （播／停／循環／靜音／0.5x–2x／拖軸 seek）；多 track 播放序；配樂跟真機獨立 clock。
+- 腳 anchor 防飄（預設開）：支撐腳＝較低 sole（2cm 遲滯）、pitch 跟支撐腳、roll 鏡像
+  外傾抵銷／否則跟最平嗰隻、最低鞋底角貼地（唔插地）；播片平滑，seek／拖軸即到。
+- 質心標記（橙點＋投影線＋地面錐，跟參考 viewer）；數據驅動世界位移（腳鎖：貼地腳
+  身框飄移 → 機身郁，轉身 45° 校準按腳部活動量分佈）；FrontStand／BackStand 瞓低
+  起身（活動量帶動）；IK（頂部掣，拖手／腳藍點，LM 阻尼最小二乘＋多起點）；手機／
+  平板自動版面（頂 bar＋動作／舵機 drawer）。
+- three.js 已收歸 `vendor/`（r147 UMD，唔經 CDN），mesh 經 `../meshes` 讀。
 - FK 同 MuJoCo 對過：5 組位（home／全零／隨機／真 `.ubx` 兩格）21 條 link
   誤差全部 < 1e-13 mm，即係同 URDF 運動學一模一樣。
 - 配樂同步：`.ubx` 入面嘅 voice 幀（歌名＋起止）照真機獨立 clock 排播，
