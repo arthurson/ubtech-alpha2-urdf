@@ -428,26 +428,59 @@ function anchorApply(F,tMs){
     anchorInit=false; anchorPrevT=null; anchorSnapReq=false;
     return;
   }
-  var A=anchorSolve(F,anchorSt);
-  if(!A) return;
-  anchorSide=anchorSt.side;
-  // ③ 高度：兩腳鞋底角落最低點貼地；世界 x/z、轉向交畀 root motion（由動作數據反推）
-  var pT=new THREE.Vector3(0,GROUND_Y-Math.min(A.lowR,A.lowL),0);
+  var qT, pT;
+  if(TRAJ&&TRAJ.special){
+    // FrontStand/BackStand：瞓低開場（back=仰睡面向上, front=趴睡面向下），
+    // root pitch ±90° → 0°，用身體主要接觸點（背/胸、頭、手、膝、腳）貼地
+    var S=specialPose(F,tMs);
+    qT=S.qT; pT=new THREE.Vector3(0,GROUND_Y-S.minY,0);
+  }else{
+    var A=anchorSolve(F,anchorSt);
+    if(!A) return;
+    anchorSide=anchorSt.side;
+    qT=A.qT;
+    // 高度：兩腳鞋底角落最低點貼地；世界 x/z、轉向交畀 root motion（由動作數據反推）
+    pT=new THREE.Vector3(0,GROUND_Y-Math.min(A.lowR,A.lowL),0);
+  }
   // ④ 播片跟住平滑（時間基底＋限速）；seek／scrub／手擺 pose 即刻對位
   var snap=anchorSnapReq||(tMs==null)||!anchorInit||anchorPrevT==null||Math.abs(tMs-anchorPrevT)>200;
   anchorSnapReq=false;
   if(snap){
-    rootRef.quaternion.copy(A.qT); rootRef.position.copy(pT);
+    rootRef.quaternion.copy(qT); rootRef.position.copy(pT);
   }else{
     var dt=Math.min(0.1,Math.max(0.004,(tMs-anchorPrevT)/1000));
     var k=Math.min(1,1-Math.exp(-dt/ANCHOR_TAU));
     if(k<0.12)k=0.12;
     var err=pT.distanceTo(rootRef.position);
     if(err>1e-9&&k*err>ANCHOR_MAXSTEP)k=ANCHOR_MAXSTEP/err;
-    rootRef.quaternion.slerp(A.qT,k);
+    rootRef.quaternion.slerp(qT,k);
     rootRef.position.lerp(pT,k);
   }
   anchorInit=true; anchorPrevT=tMs;
+}
+// 瞓低↔起身：θ(t) 由 ±90° 平滑過渡到 0（頭 25% 時間瞓住，92% 前企返直）
+function specialPose(F,tMs){
+  var dur=(TRAJ&&TRAJ.durationMs)||1;
+  var p=tMs==null?0:Math.min(1,Math.max(0,tMs/dur));
+  var T1=0.25, T2=0.92;
+  var k=p<T1?0:(p>T2?1:(function(u){return u*u*(3-2*u);})((p-T1)/(T2-T1)));
+  var s=(TRAJ.special==='back')?1:-1;
+  var th=s*(Math.PI/2)*(1-k);
+  var qT=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),th).multiply(qROS);
+  var pts=[];
+  function addLink(n,r){var L=F[n]; if(L){var p2=vApplyQ(L.p,qT); pts.push(p2[1]-r);}}
+  addLink('base_link',0.07);
+  addLink('head_pitch_link',0.055);
+  addLink('r_hand_link',0.028); addLink('l_hand_link',0.028);
+  addLink('r_knee_link',0.04); addLink('l_knee_link',0.04);
+  ['r','l'].forEach(function(sd){
+    var so=SOLE[sd], f=F[so.parent];
+    if(!f) return;
+    var p2=vApplyQ(vAdd(f.p,mDot(f.R,so.off)),qT);
+    var nn=vApplyQ(mDot(f.R,[0,0,1]),qT);
+    pts.push(p2[1]-(FOOT_HL*Math.abs(nn[2])+FOOT_HW*Math.abs(nn[0])));
+  });
+  return {qT:qT, minY:Math.min.apply(null,pts)};
 }
 // ---- 質心標記（跟參考 viewer：橙點＋垂直投影線＋地面錐仔）----
 var comMarker=null, comOn=false;
@@ -522,8 +555,17 @@ function computeRootMotion(traj,key){
   ROOTMOTION_CACHE[key]=arr;
   return arr;
 }
+function specialKind(name){
+  var key=(name||'').replace(/\.ubx$/i,''), zh='', en='';
+  try{var nm=MANIFEST&&MANIFEST.names?MANIFEST.names[key]:null; if(nm){zh=nm.zh||'';en=nm.en||'';}}catch(e){}
+  var s=(zh+' '+en+' '+key).toLowerCase();
+  if(/backstand|仰躺站立/.test(s)) return 'back';
+  if(/frontstand|趴著站立|趴着站立/.test(s)) return 'front';
+  return null;
+}
 function setRootMotion(name,durMs){
   if(!TRAJ) return;
+  if(TRAJ.special){ TRAJ.rootMot=null; TRAJ.rootCal=0; return; }
   var key=(name||'')+'#'+(TRAJ.frames?TRAJ.frames.length:0)+'#'+(durMs||0);
   TRAJ.rootMot=ROOTMOTION_CACHE[key]||null;
   if(!TRAJ.rootMot){
@@ -535,7 +577,7 @@ function setRootMotion(name,durMs){
 var extraPos={x:0,z:0}, extraYaw=0; // 上一幀加咗嘅世界位移（畀 poseMesh 褪返，唔計入 anchor 平滑）
 function rootExtra(tMs){
   var arr=TRAJ&&TRAJ.rootMot;
-  if(!arr||arr.length<10||tMs==null||!rootRef||!anchorOn) return;
+  if(!arr||arr.length<10||tMs==null||!rootRef||!anchorOn||(TRAJ&&TRAJ.special)) return;
   var n=(arr.length/5)|0, i=Math.floor(tMs/20);
   if(i<0)i=0; if(i>n-1)i=n-1;
   var j=Math.min(n-1,i+1), o=i*5, p=j*5;
@@ -846,6 +888,7 @@ function setFile(name,buf){
     var t0=performance.now();
     TRAJ=UbxParse.parse(new Uint8Array(buf));
     TRAJ.name=name;
+    TRAJ.special=specialKind(name);
     TRAJ.frames=sanitize255(TRAJ.frames);
     (TRAJ.tracksData||[]).forEach(function(td){
       if(td.frames&&td.frames!==TRAJ.frames) sanitize255(td.frames);
@@ -889,6 +932,7 @@ function applyTrack(i){
   var src=(i>=0&&TRAJ.tracksData[i])?TRAJ.tracksData[i]:TRAJ.full;
   if(!src||!src.frames.length){log('⛔ 呢條軌道無舵機幀');return;}
   TRAJ.frames=src.frames; TRAJ.voice=src.voice||[]; TRAJ.durationMs=src.durationMs;
+  TRAJ.special=specialKind(TRAJ.name);
   endMs=TRAJ.durationMs;
   TRAJ.voice.forEach(function(v){endMs=Math.max(endMs,Math.min(v.t+v.bound,TRAJ.durationMs+60000));});
   $('ttot').textContent=(endMs/1000).toFixed(1);
