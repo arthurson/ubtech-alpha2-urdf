@@ -376,34 +376,25 @@ var ANCHOR_MARGIN=0.02;           // 換腳遲滯：另一隻要低過 2cm 先�
 var ANCHOR_TAU=0.06;              // 平滑時間常數（秒）：播片時慢慢移過去
 var ANCHOR_MAXSTEP=0.03;          // 每幀最多移 3cm（大跳位都變順滑，唔會一幀彈走）
 var anchorInit=false, anchorPrevT=null, anchorSnapReq=false;
+var anchorSt={side:null};         // anchorSolve 嘅支撐腳遲滯狀態
 function setAnchor(v){
   anchorOn=!!v;
   anchorInit=false; anchorPrevT=null; // 開／閂之後即刻對位
   poseMesh(lastAngles);
 }
-function anchorApply(F,tMs){
-  if(!rootRef) return;
-  if(!anchorOn||!anchorRest){
-    rootRef.quaternion.copy(qROS); rootRef.position.set(0,0,0);
-    anchorInit=false; anchorPrevT=null; anchorSnapReq=false;
-    return;
-  }
+// 由 poses 計錨定：支撐腳＋機身傾角（pitch 跟支撐腳；roll 鏡像抵銷／跟最平嗰隻）
+function anchorSolve(F, st){
   var pr=soleWorld(F,'r'), pl=soleWorld(F,'l');
-  if(!pr||!pl) return;
-  // ① 揀支撐腳：比較兩隻鞋底角落（未上 anchor 旋轉）邊隻低＝踮地嗰隻
+  if(!pr||!pl) return null;
   var r0=vApplyQ(pr,qROS), l0=vApplyQ(pl,qROS);
   var nr0=vApplyQ(mDot(F[SOLE.r.parent].R,[0,0,1]),qROS);
   var nl0=vApplyQ(mDot(F[SOLE.l.parent].R,[0,0,1]),qROS);
   var lowR0=r0[1]-(FOOT_HL*Math.abs(nr0[2])+FOOT_HW*Math.abs(nr0[0]));
   var lowL0=l0[1]-(FOOT_HL*Math.abs(nl0[2])+FOOT_HW*Math.abs(nl0[0]));
-  if(!anchorSide) anchorSide=(lowR0<=lowL0)?'r':'l';
-  else if(anchorSide==='r'&&lowL0<lowR0-ANCHOR_MARGIN) anchorSide='l';
-  else if(anchorSide==='l'&&lowR0<lowL0-ANCHOR_MARGIN) anchorSide='r';
-  // ② root 轉到法線對返垂直（腳板貼地）：pitch 永遠跟支撐腳（鞠躬向前傾唔會少）；
-  //    roll：兩腳都踩地（高低差 <1.5cm）又係鏡像外傾（splay，例如「飛昇上神」）就兩邊抵銷，
-  //    機身唔會跟住歪／橫移；兩腳都踩地但唔係鏡像 → 跟法線最直嗰隻（腳側 roll 咗 13° 都唔會扭歪全身）；
-  //    同向側傾、單腳企、提腿就照用支撐腳
-  var nS=(anchorSide==='r')?nr0:nl0;
+  if(!st.side) st.side=(lowR0<=lowL0)?'r':'l';
+  else if(st.side==='r'&&lowL0<lowR0-ANCHOR_MARGIN) st.side='l';
+  else if(st.side==='l'&&lowR0<lowL0-ANCHOR_MARGIN) st.side='r';
+  var nS=(st.side==='r')?nr0:nl0;
   var nW=nS;
   if(Math.abs(lowR0-lowL0)<0.015){
     var rollR=Math.atan2(nr0[0],nr0[1]), rollL=Math.atan2(nl0[0],nl0[1]);
@@ -416,35 +407,44 @@ function anchorApply(F,tMs){
       nW=(tiltR<=tiltL)?nr0:nl0;
     }
   }
-  var vv=new THREE.Vector3(nW[0],nW[1],nW[2]);
   var qT=qROS;
+  var vv=new THREE.Vector3(nW[0],nW[1],nW[2]);
   if(vv.lengthSq()>1e-12){
     vv.normalize();
     var qE=new THREE.Quaternion().setFromUnitVectors(vv,new THREE.Vector3(0,1,0));
     qT=qE.multiply(qROS);
   }
-  // ③ 位置：支撐腳 sole x,z 釘站姿位；高低用「兩腳鞋底角落最低點」貼地面
-  //    → 兩腳平放時齊齊貼地，腳掌掀起／傾斜都唔會插穿地下
   var sr=vApplyQ(pr,qT), sl=vApplyQ(pl,qT);
   var nr=vApplyQ(mDot(F[SOLE.r.parent].R,[0,0,1]),qT);
   var nl=vApplyQ(mDot(F[SOLE.l.parent].R,[0,0,1]),qT);
   var dropR=FOOT_HL*Math.abs(nr[2])+FOOT_HW*Math.abs(nr[0]);
   var dropL=FOOT_HL*Math.abs(nl[2])+FOOT_HW*Math.abs(nl[0]);
-  var rest=anchorRest[anchorSide];
-  var sup=anchorSide==='r'?sr:sl;
-  var pT=new THREE.Vector3(rest[0]-sup[0],GROUND_Y-Math.min(sr[1]-dropR,sl[1]-dropL),rest[2]-sup[2]);
-  // ④ 播片跟住平滑移（時間基底＋限速）；seek／scrub／手擺 pose（tMs 冇）即刻對位
+  return {qT:qT, side:st.side, pr:pr, pl:pl, lowR:sr[1]-dropR, lowL:sl[1]-dropL};
+}
+function anchorApply(F,tMs){
+  if(!rootRef) return;
+  if(!anchorOn||!anchorRest){
+    rootRef.quaternion.copy(qROS); rootRef.position.set(0,0,0);
+    anchorInit=false; anchorPrevT=null; anchorSnapReq=false;
+    return;
+  }
+  var A=anchorSolve(F,anchorSt);
+  if(!A) return;
+  anchorSide=anchorSt.side;
+  // ③ 高度：兩腳鞋底角落最低點貼地；世界 x/z、轉向交畀 root motion（由動作數據反推）
+  var pT=new THREE.Vector3(0,GROUND_Y-Math.min(A.lowR,A.lowL),0);
+  // ④ 播片跟住平滑（時間基底＋限速）；seek／scrub／手擺 pose 即刻對位
   var snap=anchorSnapReq||(tMs==null)||!anchorInit||anchorPrevT==null||Math.abs(tMs-anchorPrevT)>200;
   anchorSnapReq=false;
   if(snap){
-    rootRef.quaternion.copy(qT); rootRef.position.copy(pT);
+    rootRef.quaternion.copy(A.qT); rootRef.position.copy(pT);
   }else{
     var dt=Math.min(0.1,Math.max(0.004,(tMs-anchorPrevT)/1000));
     var k=Math.min(1,1-Math.exp(-dt/ANCHOR_TAU));
     if(k<0.12)k=0.12;
     var err=pT.distanceTo(rootRef.position);
     if(err>1e-9&&k*err>ANCHOR_MAXSTEP)k=ANCHOR_MAXSTEP/err;
-    rootRef.quaternion.slerp(qT,k);
+    rootRef.quaternion.slerp(A.qT,k);
     rootRef.position.lerp(pT,k);
   }
   anchorInit=true; anchorPrevT=tMs;
@@ -469,44 +469,88 @@ function updateCom(F){
   d.cone.position.set(0,GROUND_Y+0.001-y,0);
 }
 
-// ---- 世界位移 root motion（UBX 只有機身內關節角，行路/轉身嘅真實位移要另外俾）----
-// 按動作名配對：向前走/向後走＝直線行；向右走/向左走＝弧形（行＋轉 90°）；右轉/左轉＝原地轉 90°；
-// 右移/左移＝橫移。速度/角度可以喺度改。
-var RM_WALK=0.08, RM_SIDE=0.08, RM_ARC_V=0.06, RM_TURN_DEG=90;
-function rootMotionFor(zh,en,durMs){
-  var s=((zh||'')+' '+(en||''));
-  var turnRate=durMs>0?RM_TURN_DEG/(durMs/1000):0;
-  var isHeadTurn=/轉頭|head/i.test(s);
-  if(/向前(走|行)|walk forward|go forward/i.test(s)) return {v:RM_WALK,w:0,sx:0};
-  if(/向後(走|行)|walk backward|go backward/i.test(s)) return {v:-RM_WALK,w:0,sx:0};
-  if(/向右走|turn right and walk/i.test(s)) return {v:RM_ARC_V,w:-turnRate,sx:0};
-  if(/向左走|turn left and walk/i.test(s)) return {v:RM_ARC_V,w:turnRate,sx:0};
-  if(!isHeadTurn&&/(^|[^向])右轉|turn right(?!.*head)/i.test(s)) return {v:0,w:-turnRate,sx:0};
-  if(!isHeadTurn&&/(^|[^向])左轉|turn left(?!.*head)/i.test(s)) return {v:0,w:turnRate,sx:0};
-  if(/右移|move right/i.test(s)) return {v:0,w:0,sx:RM_SIDE};
-  if(/左移|move left/i.test(s)) return {v:0,w:0,sx:-RM_SIDE};
-  return null;
+// ---- 世界位移 root motion：由動作數據反推（腳鎖），所有動作一視同仁 ----
+// 貼地腳喺機身框嘅移動/轉向 → 反推世界位移（腳唔郁、機身郁）：行路會行、轉身會轉、
+// 企定／鞠躬唔會無啦啦移位。數據冇嘅（例如官方轉身動作嘅 45°）先靠校準表補，
+// 而且按「腳部活動量」累積分佈——腳未開始郁，公仔唔會自己郁。
+var ROOTMOTION_CACHE={};
+function rootCalDeg(name){
+  var key=(name||'').replace(/\.ubx$/i,''), zh='', en='';
+  try{var nm=MANIFEST&&MANIFEST.names?MANIFEST.names[key]:null; if(nm){zh=nm.zh||'';en=nm.en||'';}}catch(e){}
+  var s=zh+' '+en+' '+key;
+  if(/轉頭|head/i.test(s)) return 0;
+  if(/向右轉|右轉|turn right/i.test(s)) return -45;
+  if(/向左轉|左轉|turn left/i.test(s)) return 45;
+  return 0;
+}
+function computeRootMotion(traj,key){
+  var dur=traj&&traj.durationMs||0;
+  if(!dur||!rootRef) return null;
+  curIdx=0; // poseAt 用全局 curIdx：由頭掃，唔好帶住上一條片嘅索引
+  var dt=20, n=Math.floor(dur/dt)+1;
+  var st={side:null}, arr=new Float32Array(n*5);
+  var px=0, pz=0, yawAcc=0, actCum=0, prev=null;
+  function wrap(a){while(a>Math.PI)a-=2*Math.PI;while(a<-Math.PI)a+=2*Math.PI;return a;}
+  function rotY(x,z,c,s){return [x*c+z*s,-x*s+z*c];}
+  for(var i=0;i<n;i++){
+    var tt=Math.min(dur,i*dt);
+    var F=linkFrames(poseAt(tt).a);
+    var A=anchorSolve(F,st);
+    if(!A) return null;
+    var fr=vApplyQ(mDot(F[SOLE.r.parent].R,[1,0,0]),A.qT);
+    var fl=vApplyQ(mDot(F[SOLE.l.parent].R,[1,0,0]),A.qT);
+    var pr=vApplyQ(A.pr,A.qT), pl=vApplyQ(A.pl,A.qT);
+    var yawR=Math.atan2(fr[2],fr[0]), yawL=Math.atan2(fl[2],fl[0]);
+    var lmin=Math.min(A.lowR,A.lowL);
+    var wR=Math.max(0.0001,Math.min(1,1-(A.lowR-lmin)/0.01));
+    var wL=Math.max(0.0001,Math.min(1,1-(A.lowL-lmin)/0.01));
+    var W=wR+wL;
+    if(prev){
+      yawAcc+=-(wR*wrap(yawR-prev.yawR)+wL*wrap(yawL-prev.yawL))/W;
+      var cN=Math.cos(yawAcc), sN=Math.sin(yawAcc);
+      var cP=Math.cos(prev.yawAcc), sP=Math.sin(prev.yawAcc);
+      var nR=rotY(pr[0],pr[2],cN,sN), nL=rotY(pl[0],pl[2],cN,sN);
+      var oR=rotY(prev.pr[0],prev.pr[2],cP,sP), oL=rotY(prev.pl[0],prev.pl[2],cP,sP);
+      px-=((nR[0]-oR[0])*wR+(nL[0]-oL[0])*wL)/W;
+      pz-=((nR[1]-oR[1])*wR+(nL[1]-oL[1])*wL)/W;
+      actCum+=Math.hypot(pr[0]-prev.pr[0],pr[2]-prev.pr[2])+Math.hypot(pl[0]-prev.pl[0],pl[2]-prev.pl[2])
+        +0.08*(Math.abs(wrap(yawR-prev.yawR))+Math.abs(wrap(yawL-prev.yawL)));
+    }
+    var o=i*5; arr[o]=tt; arr[o+1]=px; arr[o+2]=pz; arr[o+3]=yawAcc; arr[o+4]=actCum;
+    prev={pr:pr, pl:pl, yawR:yawR, yawL:yawL, yawAcc:yawAcc};
+  }
+  ROOTMOTION_CACHE[key]=arr;
+  return arr;
 }
 function setRootMotion(name,durMs){
-  var nm=null, key=(name||'').replace(/\.ubx$/i,'');
-  try{nm=MANIFEST&&MANIFEST.names?MANIFEST.names[key]:null;}catch(e){}
-  TRAJ&&(TRAJ.rootMot=rootMotionFor(nm?nm.zh:key,nm?nm.en:'',durMs));
+  if(!TRAJ) return;
+  var key=(name||'')+'#'+(TRAJ.frames?TRAJ.frames.length:0)+'#'+(durMs||0);
+  TRAJ.rootMot=ROOTMOTION_CACHE[key]||null;
+  if(!TRAJ.rootMot){
+    try{ TRAJ.rootMot=computeRootMotion(TRAJ,key); }catch(e){ TRAJ.rootMot=null; }
+  }
+  TRAJ.rootCal=rootCalDeg(name);
 }
-// 由動作時間計世界位移（seek/scrub 都一致）：航向 θ=ω·t，向前速度 v → 圓弧/直線
+// seek/scrub/播片都係查表（t → 世界位移/轉向），唔會累加
 var extraPos={x:0,z:0}, extraYaw=0; // 上一幀加咗嘅世界位移（畀 poseMesh 褪返，唔計入 anchor 平滑）
 function rootExtra(tMs){
-  var rm=TRAJ&&TRAJ.rootMot;
-  if(!rm||tMs==null||!rootRef||!anchorOn) return;
-  var t=tMs/1000, w=rm.w*Math.PI/180;
-  var px=rm.sx*t, pz=0;
-  if(Math.abs(w)>1e-9){
-    px+=rm.v/w*(Math.cos(w*t)-1);
-    pz+=-(rm.v/w)*Math.sin(w*t);
-  }else{
-    pz+=-(rm.v)*t;
+  var arr=TRAJ&&TRAJ.rootMot;
+  if(!arr||arr.length<10||tMs==null||!rootRef||!anchorOn) return;
+  var n=(arr.length/5)|0, i=Math.floor(tMs/20);
+  if(i<0)i=0; if(i>n-1)i=n-1;
+  var j=Math.min(n-1,i+1), o=i*5, p=j*5;
+  var k=(arr[p]-arr[o])>0?Math.min(1,Math.max(0,(tMs-arr[o])/(arr[p]-arr[o]))):0;
+  var px=arr[o+1]+(arr[p+1]-arr[o+1])*k;
+  var pz=arr[o+2]+(arr[p+2]-arr[o+2])*k;
+  var yaw=arr[o+3]+(arr[p+3]-arr[o+3])*k;
+  var cal=TRAJ.rootCal||0;
+  if(cal){
+    var tot=arr[(n-1)*5+4]||0;
+    var cum=arr[o+4]+(arr[p+4]-arr[o+4])*k;
+    yaw+=(cal*Math.PI/180)*(tot>1e-9?Math.min(1,cum/tot):0);
   }
-  extraPos.x=px; extraPos.z=pz; extraYaw=w*t;
-  rootRef.quaternion.premultiply(new THREE.Quaternion(0,Math.sin(extraYaw/2),0,Math.cos(extraYaw/2)));
+  extraPos.x=px; extraPos.z=pz; extraYaw=yaw;
+  rootRef.quaternion.premultiply(new THREE.Quaternion(0,Math.sin(yaw/2),0,Math.cos(yaw/2)));
   rootRef.position.x+=px;
   rootRef.position.z+=pz;
 }
