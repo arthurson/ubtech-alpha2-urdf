@@ -25,7 +25,7 @@ UBTECH Alpha 2 嘅標準 URDF（20 粒轉向關節、21 條 link），由
 ## 網頁 UBX 播放器
 - 瀏覽器開 https://arthurson.github.io/ubtech-alpha2-urdf/web/ubx-player.html：揀 `actions/` 入面 202 招任何一招（中英文名，有配樂）或上載自己嘅 `.ubx`；成副 URDF mesh 3D 即時播。
 - 完全離線：一次過揀成個 `alpha2_description` 資料夾就得——mesh、動作、manifest、歌全部本地直讀，`file://` 雙擊開都用到。有網（http/https）時資料夾格會收埋，直接由 `../actions`／`../meshes` 讀。
-- 播放：播／停／循環／靜音、0.5x–2x 速度、拖軸 seek；配樂跟真機獨立 clock 排播；多 track `.ubx` 可以鏈式或逐條播；時長嚟自 `actions/meta.json`。
+- 播放：播／停／循環／靜音、0.5x–2x 速度、拖軸 seek；配樂跟真機獨立 clock 排播；多 track `.ubx` 跟官方播放流程（leaf 鏈：gate／Loop／跳 track／跨 track 續接），亦可揀單條 track 睇；時長嚟自 `actions/meta.json`（重算：`web/tools/make_meta.mjs`）。
 - 視角：前／後／左／右／頂／底／⌂ 預設，拖轉＋碌 zoom；20 粒舵機 slider（校準範圍或「官方行程」）、回中／零位、關節資料表。
 - 腳 anchor 防飄（預設開）：支撐腳＝鞋底較低嗰隻（2cm 遲滯）；pitch 跟支撐腳，roll 鏡像外傾會抵銷、否則跟最平嗰隻（好似「飛昇上神」呢類姿勢都保持企直）；用鞋底最低角貼地，唔會插穿地面。播片時平滑郁動（每幀上限 3cm），seek／拖軸／手擺即刻對位。
 - 質心標記：橙點＋垂直投影線＋地面錐（跟參考 a2 viewer 同款），永遠顯示（熄 depth test）。
@@ -33,7 +33,7 @@ UBTECH Alpha 2 嘅標準 URDF（20 粒轉向關節、21 條 link），由
 - FrontStand／BackStand：一開始瞓低（BackStand 面向上、FrontStand 面向下），用身體接觸點貼地；起身角度由動作本身嘅活動量帶動，冇固定時間表。
 - IK：頂部撳「IK」，拖手／腳嘅藍色控制點，阻尼最小二乘（數值 Jacobian、夾關節範圍、奇異位多起點）即時解，20 條 slider 跟住更新；拖緊會暫停播放。
 - 手機／平板（≤820px 闊）：頂 bar＋動作／舵機 drawer、playbar 變兩行、直向鏡頭自動拉遠。
-- FK 由 `servo_map.yaml` 計（offset，逐粒關節同 MuJoCo 對過，誤差 < 1e-13 mm）；`.ubx` 解析同 reference 實現逐 byte 對過。
+- FK 由 `servo_map.yaml` 計（offset，逐粒關節同 MuJoCo 對過，誤差 < 1e-13 mm）；`.ubx` 播放跟官方 Alpha2Services 1.1.7.3 流程（leaf 鏈＋block gate＋Loop＋跳 track＋跨 track 續接），202 招逐格（角度／時間／歌）對過全中。
 - 無後端、無 build：`web/` 下面靜態檔（three.js r147 已收歸 `web/vendor/`，唔經 CDN）。本地有網用喺 repo root 起 `python -m http.server`；完全離線就咁開 html 再揀模型資料夾。
 
 ## 授權

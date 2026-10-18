@@ -38,5 +38,9 @@
   同 `node` 跑 `ubx-parse.js` 逐格對（見當初驗證，3 格 1800ms 全中）。
 
 ## 已知差異
-- 真機播多 track 檔會跟鏈式次序（`UbxParser.computePlayOrder`），呢頁用 parse 序；
-  動作內容一樣，極少數多 track 檔段次序或有出入。
+- 已跟齊官方播放流程（Alpha2Services 1.1.7.3；202 招逐格角度／時間／歌對過全中）：
+  入口 leaf 鏈、block 內置 f 表 gate（0/3 播、1 中斷、2 跳過）、Loop block
+  （(track,block) 快取 i/g/h）、f==1 跳 track、c==-2 跨 track 續接、
+  逐 block timebase（static 後蓋前）。
+- 舵機值 255（真機＝該舵機放鬆斷力）：呢頁冇力學，非手指舵機沿用上一幀、
+  手指當 120 近似顯示（corpus 255 只見於雙手同 1509001441250 嘅左肘）。

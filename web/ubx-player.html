@@ -966,7 +966,7 @@ document.getElementById('offDir').addEventListener('change',function(ev){
     } else {
       MANIFEST={count:scanned.length,files:scanned,music:smusic,names:(MANIFEST&&MANIFEST.names)||{}};
     }
-    if(mt) MANIFEST.meta=Object.assign({},mt,MANIFEST.meta||{});
+    if(mt) MANIFEST.meta=Object.assign({},MANIFEST.meta||{},mt); // meta.json（make_meta.mjs 直出）為準，manifest.meta 只做後備
     buildActions();
     if(MANIFEST.files.every(function(f){return metaFor(f);}))
       offstat('✅ '+MANIFEST.files.length+' 招（連時長同 🎵）');

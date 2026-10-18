@@ -25,7 +25,7 @@ Standard URDF of the UBTech Alpha 2 (20 revolute joints, 21 links), built from
 ## Web UBX player
 - Open https://arthurson.github.io/ubtech-alpha2-urdf/web/ubx-player.html in a browser: pick any of the 202 bundled actions in `actions/` (bilingual names, songs where available) or upload your own `.ubx`; the full URDF meshes play it back in 3D.
 - Fully offline: pick the whole `alpha2_description` folder once (folder picker) - meshes, actions, manifest and songs are read locally and it works from `file://` too. Online (http/https) the folder box is hidden and files are fetched from `../actions` / `../meshes`.
-- Playback: play/pause/stop, loop, mute, 0.5x-2x speed, scrub bar; music events use their own clock (same as the real robot); multi-track `.ubx` can play as a chain or per track; durations come from `actions/meta.json` (`web/tools/make_meta.mjs`).
+- Playback: play/pause/stop, loop, mute, 0.5x-2x speed, scrub bar; music events use their own clock (same as the real robot); multi-track `.ubx` follows the official playback flow (leaf chain: block gates, loops, track jumps, cross-track continuation) and a single track can also be picked; durations come from `actions/meta.json` (`web/tools/make_meta.mjs`).
 - Views: front/back/left/right/top/bottom/home presets, orbit + zoom; 20 servo sliders (calibrated range, or the official observed range via "Official range"), Home / Zero buttons, joint info table (mass, torque, limits).
 - Foot anchor (on by default): support foot = lower sole (2 cm hysteresis); body pitch follows the support foot, roll cancels mirrored splay and otherwise follows the flattest foot, so poses like the "flying" action stay upright; feet are grounded by the lowest sole corner (no floor clipping). Smooth during playback (3 cm/frame cap), exact on seek/scrub/manual pose.
 - CoM marker: orange dot + vertical projection line + ground cone from the URDF inertials (same visual as the reference alpha2 viewer), always visible (depth test off).
@@ -33,7 +33,7 @@ Standard URDF of the UBTech Alpha 2 (20 revolute joints, 21 links), built from
 - FrontStand / BackStand: start lying (BackStand face up, FrontStand face down) resting on their contact points; the stand-up pitch is driven by the action's own limb activity - no fixed schedule.
 - IK: toggle "IK" in the header and drag the blue control dots at the hands/feet; a damped least-squares solver (numerical Jacobian, joint limits, multi-start at singular poses) updates the 20 sliders. Playback pauses while dragging.
 - Responsive: on phones/tablets (<= 820 px) the header moves to a top bar with action/servo drawers, the play bar re-flows to two rows and the portrait camera pulls back.
-- FK is computed from `servo_map.yaml` (offsets, verified joint-for-joint against MuJoCo to 1e-13 mm); the `.ubx` parser is checked byte-for-byte against the reference implementation.
+- FK is computed from `servo_map.yaml` (offsets, verified joint-for-joint against MuJoCo to 1e-13 mm); the `.ubx` player follows the official Alpha2Services 1.1.7.3 playback flow (leaf chain, block gates, loops, track jumps, cross-track continuation), verified frame-by-frame on all 202 bundled actions.
 - No backend, no build step: static files under `web/` (three.js r147 vendored in `web/vendor/`, no CDN). Online: serve the repo root (`python -m http.server`). Offline: just open the html file and pick the model folder.
 
 ## License
