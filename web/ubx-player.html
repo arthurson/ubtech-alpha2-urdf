@@ -77,7 +77,7 @@
 <canvas id="gl"></canvas>
 
 <div id="leftcol"><div class="hud" id="leftpanel">
-<h1><button id="langBtn" onclick="toggleLang()" title="中文 / English">EN</button><button id="themeBtn" onclick="toggleTheme()" data-i18n-title="theme_title" title="黑/白主題">🌙</button><button id="anchorBtn" class="on" onclick="toggleAnchor()" data-i18n="anchor_b" data-i18n-title="anchor" title="腳 anchor 防飄">防飄</button><button id="axesBtn" onclick="toggleAxes()" data-i18n="axes_b" data-i18n-title="axes" title="顯示每個關節嘅轉軸">軸</button><button id="comBtn" onclick="toggleCom()" data-i18n="com_b" data-i18n-title="com_title" title="顯示質心（用 URDF inertial 質量計）">質心</button></h1>
+<h1><button id="langBtn" onclick="toggleLang()" title="中文 / English">EN</button><button id="themeBtn" onclick="toggleTheme()" data-i18n-title="theme_title" title="黑/白主題">🌙</button><button id="anchorBtn" class="on" onclick="toggleAnchor()" data-i18n="anchor_b" data-i18n-title="anchor" title="腳 anchor 防飄">防飄</button><button id="comBtn" onclick="toggleCom()" data-i18n="com_b" data-i18n-title="com_title" title="顯示質心（用 URDF inertial 質量計）">質心</button></h1>
 <div id="offlinebox" style="font-size:12px;border:1px dashed #999;border-radius:8px;padding:6px 8px;display:flex;flex-direction:column;gap:4px">
 <label style="cursor:pointer;display:flex;align-items:center;gap:6px"><span data-i18n="off_dir">📁 選擇模型資料夾</span><span id="offcount" class="mono" style="margin-left:auto;color:var(--muted2)"></span>
 <input type="file" id="offDir" webkitdirectory multiple style="display:none" data-i18n-title="off_dir_title" title="揀成個 alpha2_description：入面有 meshes/visual 同 actions（連 manifest/meta/mp3）"></label>
@@ -184,9 +184,7 @@ var I18N={
   mute_title:{zh:'靜音',en:'Mute'},
   theme_title:{zh:'黑/白主題',en:'Dark/Light theme'},
   anchor:{zh:'腳 anchor 防飄',en:'Foot anchor'},
-  axes:{zh:'關節軸',en:'Joint axes'},
   anchor_b:{zh:'防飄',en:'Anchor'},
-  axes_b:{zh:'軸',en:'Axes'},
   com_b:{zh:'質心',en:'CoM'},
   com:{zh:'質心',en:'CoM'},
   com_title:{zh:'顯示質心（用 URDF inertial 質量計）',en:'Show center of mass (from URDF inertial)'},
@@ -284,16 +282,21 @@ function initGL(){
   dl.position.set(0.7,1.2,-1.0); scene.add(dl); // 機頭前方（同鏡頭同一邊）打落嚟，唔背光
   var dl2=new THREE.DirectionalLight(0xdfe8ff,0.5);
   dl2.position.set(-0.6,0.4,0.8); scene.add(dl2); // 背後補少少，唔好全黑
-  gridObj=new THREE.GridHelper(2,20,0x64748b,0xc3ccd6);
+  gridObj=new THREE.GridHelper(6,60,0x64748b,0xc3ccd6);
   gridObj.position.y=GROUND_Y; scene.add(gridObj);
-  comMarker=new THREE.Mesh(new THREE.SphereGeometry(0.012,16,12),new THREE.MeshBasicMaterial({color:0xff3b30}));
+  comMarker=new THREE.Group();
+  var cmCol=0xff9f0a; // 同參考 viewer 一樣橙色，depthTest 熄咗永遠見得到
+  var cmDot=new THREE.Mesh(new THREE.SphereGeometry(0.009,16,12),new THREE.MeshBasicMaterial({color:cmCol,depthTest:false}));
+  cmDot.renderOrder=11;
+  var cmLine=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3(0,-1,0)]),
+    new THREE.LineBasicMaterial({color:cmCol,depthTest:false}));
+  var cmCone=new THREE.Mesh(new THREE.ConeGeometry(0.009,0.013,24),new THREE.MeshBasicMaterial({color:cmCol,side:THREE.DoubleSide,depthTest:false}));
+  comMarker.add(cmDot,cmLine,cmCone);
+  comMarker.userData={dot:cmDot,line:cmLine,cone:cmCone};
   comMarker.visible=comOn; scene.add(comMarker);
   FK.links.forEach(function(ln){
     var g=new THREE.Group(); g.visible=false;
     root.add(g); linkGroups[ln]=g;
-    var ax=new THREE.AxesHelper(0.05); // 關節軸 gizmo（toggle）
-    ax.traverse(function(o){if(o.material){o.material.depthTest=false;o.material.transparent=true;o.material.opacity=0.9;}});
-    ax.visible=false; g.add(ax); linkAxes[ln]=ax;
   });
   resize(); window.addEventListener('resize',resize);
   // 郁先畫：慳 CPU（parse mesh 嗰陣唔搶），拖/播先 render（重入閘防遞歸）
@@ -337,22 +340,14 @@ function applyTheme(){
   if(!scene) return;
   scene.background=new THREE.Color(theme==='dark'?0x131316:0xeef1f4);
   if(gridObj){scene.remove(gridObj);gridObj.geometry.dispose();gridObj.material.dispose();}
-  gridObj=new THREE.GridHelper(2,20,theme==='dark'?0x4a5568:0x64748b,theme==='dark'?0x2e3440:0xc3ccd6);
+  gridObj=new THREE.GridHelper(6,60,theme==='dark'?0x4a5568:0x64748b,theme==='dark'?0x2e3440:0xc3ccd6);
   gridObj.position.y=GROUND_Y; scene.add(gridObj);
   if(window.__render) window.__render();
 }
 
-// ---- 關節軸 gizmo（每個 link frame 一組 RGB 軸）----
-var linkAxes={}, axesOn=false;
-function setAxes(v){
-  axesOn=!!v;
-  Object.keys(linkAxes).forEach(function(k){linkAxes[k].visible=axesOn;});
-  if(window.__render) window.__render();
-}
-
-// ---- 腳 anchor 防飄（跟 a2_viewer 做法）----
-// 支撐腳（較低嗰隻）sole frame：① root 轉到 sole 法線對返世界垂直（腳板貼地）
-// ② sole 釘返站姿位置（x,y,z）——鞠躬／單腳企呢啲唔會再彈
+// ---- 腳 anchor 防飄（跟 alpha2_viewer 做法）----
+// 支撐腳＝鞋底最低嗰隻（2cm 遲滯，企定／郁手唔會左右跳）：① root 轉到 sole 法線對返世界垂直（腳板貼地）
+// ② sole 釘返站姿位置（x,z）③ 兩腳鞋底角落最低點貼地面；播片時平滑過去，seek／手擺即刻對位
 var rootRef=null, qROS=null, anchorOn=true, anchorRest=null;
 var SOLE={r:{parent:'r_ankle_roll_link',off:[0.000213,-0.016948,-0.027969]},
           l:{parent:'l_ankle_roll_link',off:[0.000213,0.016948,-0.027969]}};
@@ -376,42 +371,85 @@ function comRos(F){
 }
 var GROUND_Y=-0.235;              // 地面高度＝grid y
 var FOOT_HL=0.064, FOOT_HW=0.041; // 鞋底半長/半闊（由 mesh bbox 量）
-var anchorSide=null;              // 當前支撐腳（質心決定）
+var anchorSide=null;              // 當前支撐腳（鞋底較低嗰隻）
+var ANCHOR_MARGIN=0.02;           // 換腳遲滯：另一隻要低過 2cm 先換（企定／郁手唔會左右跳）
+var ANCHOR_TAU=0.06;              // 平滑時間常數（秒）：播片時慢慢移過去
+var ANCHOR_MAXSTEP=0.03;          // 每幀最多移 3cm（大跳位都變順滑，唔會一幀彈走）
+var anchorInit=false, anchorPrevT=null, anchorSnapReq=false;
 function setAnchor(v){
   anchorOn=!!v;
+  anchorInit=false; anchorPrevT=null; // 開／閂之後即刻對位
   poseMesh(lastAngles);
 }
-function anchorApply(F){
+function anchorApply(F,tMs){
   if(!rootRef) return;
-  rootRef.quaternion.copy(qROS);
-  rootRef.position.set(0,0,0);
-  if(!anchorOn||!anchorRest) return;
+  if(!anchorOn||!anchorRest){
+    rootRef.quaternion.copy(qROS); rootRef.position.set(0,0,0);
+    anchorInit=false; anchorPrevT=null; anchorSnapReq=false;
+    return;
+  }
   var pr=soleWorld(F,'r'), pl=soleWorld(F,'l');
   if(!pr||!pl) return;
-  // ① 支撐腳＝質心就近嗰隻 ② root 轉到支撐腳 sole 法線對返垂直（腳板貼地）
-  var c=comRos(F);
-  anchorSide=(Math.hypot(c[0]-pr[0],c[1]-pr[1])<=Math.hypot(c[0]-pl[0],c[1]-pl[1]))?'r':'l';
-  var f=F[SOLE[anchorSide].parent];
-  var nW=vApplyQ(mDot(f.R,[0,0,1]),qROS);
+  // ① 揀支撐腳：比較兩隻鞋底角落（未上 anchor 旋轉）邊隻低＝踮地嗰隻
+  var r0=vApplyQ(pr,qROS), l0=vApplyQ(pl,qROS);
+  var nr0=vApplyQ(mDot(F[SOLE.r.parent].R,[0,0,1]),qROS);
+  var nl0=vApplyQ(mDot(F[SOLE.l.parent].R,[0,0,1]),qROS);
+  var lowR0=r0[1]-(FOOT_HL*Math.abs(nr0[2])+FOOT_HW*Math.abs(nr0[0]));
+  var lowL0=l0[1]-(FOOT_HL*Math.abs(nl0[2])+FOOT_HW*Math.abs(nl0[0]));
+  if(!anchorSide) anchorSide=(lowR0<=lowL0)?'r':'l';
+  else if(anchorSide==='r'&&lowL0<lowR0-ANCHOR_MARGIN) anchorSide='l';
+  else if(anchorSide==='l'&&lowR0<lowL0-ANCHOR_MARGIN) anchorSide='r';
+  // ② root 轉到法線對返垂直（腳板貼地）：pitch 永遠跟支撐腳（鞠躬向前傾唔會少）；
+  //    roll：兩腳都踩地（高低差 <1.5cm）又係鏡像外傾（splay，例如「飛昇上神」）就兩邊抵銷，
+  //    機身唔會跟住歪／橫移；兩腳都踩地但唔係鏡像 → 跟法線最直嗰隻（腳側 roll 咗 13° 都唔會扭歪全身）；
+  //    同向側傾、單腳企、提腿就照用支撐腳
+  var nS=(anchorSide==='r')?nr0:nl0;
+  var nW=nS;
+  if(Math.abs(lowR0-lowL0)<0.015){
+    var rollR=Math.atan2(nr0[0],nr0[1]), rollL=Math.atan2(nl0[0],nl0[1]);
+    if(rollR*rollL<-1e-6){
+      var rollW=(rollR+rollL)/2, pitchS=Math.asin(Math.max(-1,Math.min(1,nS[2])));
+      nW=[Math.sin(rollW)*Math.cos(pitchS),Math.cos(rollW)*Math.cos(pitchS),Math.sin(pitchS)];
+    }else{
+      var tiltR=Math.acos(Math.max(-1,Math.min(1,nr0[1])));
+      var tiltL=Math.acos(Math.max(-1,Math.min(1,nl0[1])));
+      nW=(tiltR<=tiltL)?nr0:nl0;
+    }
+  }
   var vv=new THREE.Vector3(nW[0],nW[1],nW[2]);
+  var qT=qROS;
   if(vv.lengthSq()>1e-12){
     vv.normalize();
     var qE=new THREE.Quaternion().setFromUnitVectors(vv,new THREE.Vector3(0,1,0));
-    rootRef.quaternion.copy(qE.multiply(qROS));
+    qT=qE.multiply(qROS);
   }
   // ③ 位置：支撐腳 sole x,z 釘站姿位；高低用「兩腳鞋底角落最低點」貼地面
   //    → 兩腳平放時齊齊貼地，腳掌掀起／傾斜都唔會插穿地下
-  var q=rootRef.quaternion;
-  var sr=vApplyQ(pr,q), sl=vApplyQ(pl,q);
-  var nr=vApplyQ(mDot(F[SOLE.r.parent].R,[0,0,1]),q);
-  var nl=vApplyQ(mDot(F[SOLE.l.parent].R,[0,0,1]),q);
+  var sr=vApplyQ(pr,qT), sl=vApplyQ(pl,qT);
+  var nr=vApplyQ(mDot(F[SOLE.r.parent].R,[0,0,1]),qT);
+  var nl=vApplyQ(mDot(F[SOLE.l.parent].R,[0,0,1]),qT);
   var dropR=FOOT_HL*Math.abs(nr[2])+FOOT_HW*Math.abs(nr[0]);
   var dropL=FOOT_HL*Math.abs(nl[2])+FOOT_HW*Math.abs(nl[0]);
   var rest=anchorRest[anchorSide];
   var sup=anchorSide==='r'?sr:sl;
-  rootRef.position.set(rest[0]-sup[0],GROUND_Y-Math.min(sr[1]-dropR,sl[1]-dropL),rest[2]-sup[2]);
+  var pT=new THREE.Vector3(rest[0]-sup[0],GROUND_Y-Math.min(sr[1]-dropR,sl[1]-dropL),rest[2]-sup[2]);
+  // ④ 播片跟住平滑移（時間基底＋限速）；seek／scrub／手擺 pose（tMs 冇）即刻對位
+  var snap=anchorSnapReq||(tMs==null)||!anchorInit||anchorPrevT==null||Math.abs(tMs-anchorPrevT)>200;
+  anchorSnapReq=false;
+  if(snap){
+    rootRef.quaternion.copy(qT); rootRef.position.copy(pT);
+  }else{
+    var dt=Math.min(0.1,Math.max(0.004,(tMs-anchorPrevT)/1000));
+    var k=Math.min(1,1-Math.exp(-dt/ANCHOR_TAU));
+    if(k<0.12)k=0.12;
+    var err=pT.distanceTo(rootRef.position);
+    if(err>1e-9&&k*err>ANCHOR_MAXSTEP)k=ANCHOR_MAXSTEP/err;
+    rootRef.quaternion.slerp(qT,k);
+    rootRef.position.lerp(pT,k);
+  }
+  anchorInit=true; anchorPrevT=tMs;
 }
-// ---- 質心標記 ----
+// ---- 質心標記（跟參考 viewer：橙點＋垂直投影線＋地面錐仔）----
 var comMarker=null, comOn=false;
 function setCom(v){
   comOn=!!v;
@@ -421,7 +459,56 @@ function setCom(v){
 function updateCom(F){
   if(!comMarker||!F) return;
   var c=comRos(F), t=vApplyQ(c,rootRef.quaternion);
-  comMarker.position.set(t[0]+rootRef.position.x,t[1]+rootRef.position.y,t[2]+rootRef.position.z);
+  var y=t[1]+rootRef.position.y;
+  comMarker.position.set(t[0]+rootRef.position.x,y,t[2]+rootRef.position.z);
+  var d=comMarker.userData;
+  var pos=d.line.geometry.attributes.position;
+  pos.setXYZ(0,0,0,0);
+  pos.setXYZ(1,0,GROUND_Y-y,0);
+  pos.needsUpdate=true;
+  d.cone.position.set(0,GROUND_Y+0.001-y,0);
+}
+
+// ---- 世界位移 root motion（UBX 只有機身內關節角，行路/轉身嘅真實位移要另外俾）----
+// 按動作名配對：向前走/向後走＝直線行；向右走/向左走＝弧形（行＋轉 90°）；右轉/左轉＝原地轉 90°；
+// 右移/左移＝橫移。速度/角度可以喺度改。
+var RM_WALK=0.08, RM_SIDE=0.08, RM_ARC_V=0.06, RM_TURN_DEG=90;
+function rootMotionFor(zh,en,durMs){
+  var s=((zh||'')+' '+(en||''));
+  var turnRate=durMs>0?RM_TURN_DEG/(durMs/1000):0;
+  var isHeadTurn=/轉頭|head/i.test(s);
+  if(/向前(走|行)|walk forward|go forward/i.test(s)) return {v:RM_WALK,w:0,sx:0};
+  if(/向後(走|行)|walk backward|go backward/i.test(s)) return {v:-RM_WALK,w:0,sx:0};
+  if(/向右走|turn right and walk/i.test(s)) return {v:RM_ARC_V,w:-turnRate,sx:0};
+  if(/向左走|turn left and walk/i.test(s)) return {v:RM_ARC_V,w:turnRate,sx:0};
+  if(!isHeadTurn&&/(^|[^向])右轉|turn right(?!.*head)/i.test(s)) return {v:0,w:-turnRate,sx:0};
+  if(!isHeadTurn&&/(^|[^向])左轉|turn left(?!.*head)/i.test(s)) return {v:0,w:turnRate,sx:0};
+  if(/右移|move right/i.test(s)) return {v:0,w:0,sx:RM_SIDE};
+  if(/左移|move left/i.test(s)) return {v:0,w:0,sx:-RM_SIDE};
+  return null;
+}
+function setRootMotion(name,durMs){
+  var nm=null, key=(name||'').replace(/\.ubx$/i,'');
+  try{nm=MANIFEST&&MANIFEST.names?MANIFEST.names[key]:null;}catch(e){}
+  TRAJ&&(TRAJ.rootMot=rootMotionFor(nm?nm.zh:key,nm?nm.en:'',durMs));
+}
+// 由動作時間計世界位移（seek/scrub 都一致）：航向 θ=ω·t，向前速度 v → 圓弧/直線
+var extraPos={x:0,z:0}, extraYaw=0; // 上一幀加咗嘅世界位移（畀 poseMesh 褪返，唔計入 anchor 平滑）
+function rootExtra(tMs){
+  var rm=TRAJ&&TRAJ.rootMot;
+  if(!rm||tMs==null||!rootRef||!anchorOn) return;
+  var t=tMs/1000, w=rm.w*Math.PI/180;
+  var px=rm.sx*t, pz=0;
+  if(Math.abs(w)>1e-9){
+    px+=rm.v/w*(Math.cos(w*t)-1);
+    pz+=-(rm.v/w)*Math.sin(w*t);
+  }else{
+    pz+=-(rm.v)*t;
+  }
+  extraPos.x=px; extraPos.z=pz; extraYaw=w*t;
+  rootRef.quaternion.premultiply(new THREE.Quaternion(0,Math.sin(extraYaw/2),0,Math.cos(extraYaw/2)));
+  rootRef.position.x+=px;
+  rootRef.position.z+=pz;
 }
 
 // ---- 循環 / 靜音 ----
@@ -471,14 +558,13 @@ function buildJointTable(){
   document.getElementById('jtable').innerHTML=h;
 }
 function syncToggles(){
-  var m={anchorBtn:anchorOn, axesBtn:axesOn, comBtn:comOn};
+  var m={anchorBtn:anchorOn, comBtn:comOn};
   for(var k in m){var b=document.getElementById(k); if(b) b.classList.toggle('on',!!m[k]);}
 }
 function toggleAnchor(){setAnchor(!anchorOn); syncToggles();}
-function toggleAxes(){setAxes(!axesOn); syncToggles();}
 function toggleCom(){setCom(!comOn); syncToggles();}
-window.toggleTheme=toggleTheme; window.setAxes=setAxes; window.setAnchor=setAnchor; window.setCom=setCom;
-window.toggleAnchor=toggleAnchor; window.toggleAxes=toggleAxes; window.toggleCom=toggleCom;
+window.toggleTheme=toggleTheme; window.setAnchor=setAnchor; window.setCom=setCom;
+window.toggleAnchor=toggleAnchor; window.toggleCom=toggleCom;
 window.toggleLoop=toggleLoop; window.toggleMute=toggleMute;
 window.showJoints=showJoints; window.hideJoints=hideJoints;
 function stat(s){try{document.getElementById('dbgstat').textContent=s;}catch(e){}}
@@ -666,7 +752,7 @@ function loadMeshes(done){
     }
   })();
 }
-function poseMesh(angles20){
+function poseMesh(angles20,tMs){
   // progressive：未載入嘅 link 剩隱形（visible=false），有幾多畫幾多
   if(angles20) lastAngles=angles20;
   var F=linkFrames(angles20);
@@ -676,7 +762,18 @@ function poseMesh(angles20){
     g.position.set(f.p[0],f.p[1],f.p[2]);
     g.quaternion.copy(rosQuat(f.R));
   });
-  if(rootRef) anchorApply(F);
+  if(rootRef){
+    // 先褪返上一幀嘅世界位移 → anchor 喺 anchor 空間平滑，額外位移唔會累加
+    rootRef.position.x-=extraPos.x;
+    rootRef.position.z-=extraPos.z;
+    if(extraYaw){
+      var qU=new THREE.Quaternion(0,Math.sin(-extraYaw/2),0,Math.cos(-extraYaw/2));
+      rootRef.quaternion.premultiply(qU);
+    }
+    extraPos.x=0; extraPos.z=0; extraYaw=0;
+    anchorApply(F,tMs);
+    rootExtra(tMs);
+  }
   updateCom(F);
   if(window.__render) window.__render();
 }
@@ -721,6 +818,7 @@ function setFile(name,buf){
     $('ttot').textContent=(endMs/1000).toFixed(1);
     $('ftot').textContent=TRAJ.frames.length;
     $('info').textContent=name+'｜'+TRAJ.frames.length+' 格｜'+(TRAJ.durationMs/1000).toFixed(1)+'s';
+    setRootMotion(name,TRAJ.durationMs);
     $('playBtn').disabled=false;
     buildTracks(true);
     stop(); seek(0);
@@ -751,6 +849,7 @@ function applyTrack(i){
   TRAJ.voice.forEach(function(v){endMs=Math.max(endMs,Math.min(v.t+v.bound,TRAJ.durationMs+60000));});
   $('ttot').textContent=(endMs/1000).toFixed(1);
   $('ftot').textContent=TRAJ.frames.length;
+  setRootMotion(TRAJ.name,TRAJ.durationMs);
   stop(); seek(0);
 }
 window.pickTrack=pickTrack;
@@ -908,6 +1007,7 @@ function clock(){return pauseMs+(performance.now()-t0ms)*effSpeed();}
 function seek(ms){
   pauseMs=Math.max(0,Math.min(TRAJ?endMs:0,ms));
   t0ms=performance.now(); curIdx=0;
+  anchorSnapReq=true; // 拖去第二個時間：anchor 即刻對位，唔平滑過去
   if(audioEl&&!audioEl.paused) audioEl.pause();
   audioKey=null; // 下次起播重新對位，唔用舊 offset
   manualAngles=null; // 播片跟 .ubx，唔跟手動位
@@ -955,7 +1055,7 @@ function poseAt(ms){
 }
 function drawAt(ms){
   var r=poseAt(ms);
-  poseMesh(r.a);
+  poseMesh(r.a, ms);
   syncServos(r.a);
   $('tcur').textContent=(ms/1000).toFixed(1);
   $('fcur').textContent=(r.idx+1);
