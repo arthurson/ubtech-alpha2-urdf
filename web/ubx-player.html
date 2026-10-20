@@ -127,7 +127,7 @@
 <button onclick="setView('home')" title="Default view">⌂</button>
 </div>
 <h2><span data-i18n="servos">舵機</span> <button onclick="servosHome()" data-i18n="home_all">回中</button> <button onclick="servosZero()" data-i18n="zero_all" data-i18n-title="zero_title" title="所有關節 q=0">零位</button> <button onclick="showJoints()" data-i18n="jinfo">ℹ 關節資料</button></h2>
-<label style="font-size:12px"><input type="checkbox" id="envCk" onchange="setEnvMode(this.checked)" data-i18n-title="env_title" title="用官方 202 招實測行程做 slider 範圍"> <span data-i18n="env_range">官方行程（較闊）</span></label>
+<label style="font-size:12px"><input type="checkbox" id="envCk" onchange="setEnvMode(this.checked)" data-i18n-title="env_title" title="用官方 226 招實測行程做 slider 範圍"> <span data-i18n="env_range">官方行程（較闊）</span></label>
 <div id="servos"><div class="svcol" id="svcol1"></div></div>
 </div>
 
@@ -180,7 +180,7 @@ var I18N={
   zero_title:{zh:'所有關節 q=0',en:'All joints at q=0'},
   zero_log:{zh:'全部零位 q=0',en:'All joints at q=0'},
   env_range:{zh:'官方行程（較闊）',en:'Official range (wider)'},
-  env_title:{zh:'用官方 202 招實測行程做 slider 範圍',en:'Slider range = travel measured over the 202 official actions'},
+  env_title:{zh:'用官方 226 招實測行程做 slider 範圍',en:'Slider range = travel measured over the 226 official actions'},
   cal_lbl:{zh:'校準',en:'cal'},
   env_lbl:{zh:'行程',en:'env'},
   off_dir:{zh:'📁 選擇模型資料夾',en:'📁 Choose model folder'},
@@ -1235,7 +1235,7 @@ document.getElementById('file').addEventListener('change',function(ev){
   rd.onload=function(){setFile(f.name,rd.result);};
   rd.readAsArrayBuffer(f);
 });
-// 內置 202 招（同 repo 一齊出街嗰啲）：manifest 拎清單，一按即播
+// 內置 226 招（同 repo 一齊出街嗰啲）：manifest 拎清單，一按即播
 (function(){
   fetch('../actions/manifest.json').then(function(r){
     if(!r.ok) throw new Error('HTTP '+r.status);
@@ -1385,8 +1385,8 @@ var SERVO_NAMES={1:['右肩上下','R Shoulder Pitch'],2:['右肩左右','R Shou
 15:['左腳掌上下','L Ankle Pitch'],16:['左腳掌左右','L Ankle Roll'],
 17:['右指','R Hand'],18:['左指','L Hand'],19:['頭左右','Head Yaw'],20:['頭上下','Head Pitch']};
 var servoInfo={}, manualAngles=null;
-// 官方 202 招實測行程（255 放鬆唔計；web/tools/make_meta.mjs 可重算）
-var ENV={1:[0,217],2:[48,225],3:[47,192],4:[23,240],5:[17,192],6:[41,191],7:[100,205],8:[14,190],
+// 官方 226 招實測行程（255 放鬆唔計；web/tools/make_meta.mjs 可重算）
+var ENV={1:[0,217],2:[48,225],3:[47,192],4:[23,240],5:[17,192],6:[41,191],7:[100,205],8:[10,190],
  9:[25,212],10:[57,213],11:[100,198],12:[35,140],13:[79,226],14:[27,215],15:[26,182],16:[46,138],
  17:[81,130],18:[87,130],19:[68,176],20:[96,149]};
 // 兩行分類：上排＝頭/右手/左手，下排＝右腳/左腳（跟 a2_viewer 分組）
