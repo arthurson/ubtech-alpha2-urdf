@@ -28,6 +28,13 @@
 1464835936046##左移##Move leftward##1
 1464835936047##左轉##Turn left##1
 1464835936048##舞蹈##Dance##1
+1464835936057##向後走##Go backward##1
+1464835936061##左踢腿##Left leg kick##1
+1464835936066##後退##Move backward##1
+1464835936067##前進##Move forward##1
+1464835936071##打功夫##Play kungfu##1
+1464835936082##向左走##Turn left and walk##1
+1464835936084##向右走##Turn right and walk##1
 1464835936087##點頭##Nod##1
 1464835936088##抬頭##Raise head##1
 1464835936089##彎腰##Bow##1
@@ -35,7 +42,14 @@
 1464835936091##右抬腿##Right leg lift##1
 1464835936092##左抬頭##Raise head leftward##1
 1464835936093##左抬腿##Left leg lift##1
+1464835936097##左抬腿##Left leg lift##1
 1464835936105##抬雙手##Lift both hands##1
+1464835936108##A secret life##A secret life##2
+1464835936109##get up##get up##2
+1464835936110##Sirius##Sirius##2
+1464835936111##sweet and sour##sweet and sour##2
+1464835936112##we are taking off##we are taking off##2
+1464835936113##Give Them##Give Them##2
 1464835936120##The deer and the lion##The deer and the lion##3
 1464835936121##The deer in the cowshed##The deer in the cowshed##3
 1464835936122##The donkey and the wolf##The donkey and the wolf##3
@@ -46,6 +60,21 @@
 1464835936127##The wolf and the lamb##The wolf and the lamb##3
 1464835936128##The mouse, the frog, and the eagle##The mouse, the frog, and the eagle##3
 1464835936129##Trojan horse##Trojan horse##3
+1464835936130##展臂式##arm stretch##4
+1464835936131##左踢式##left kick##4
+1464835936132##左腿騎馬式##left leg forward horseriding##4
+1464835936133##左腿伸展式##left leg stretch##4
+1464835936134##左側腰踢腿式##left side bow with right leg kick##4
+1464835936135##左腰伸展式##left waist stretch##4
+1464835936136##金雞獨立##one foot standing##4
+1464835936137##右踢式##right kick##4
+1464835936138##右腿騎馬式##right leg forward horseriding##4
+1464835936139##右腿伸展式##right leg stretch##4
+1464835936140##右側腰踢腿式##right side bow with left leg kick##4
+1464835936141##右腰伸展式##right waist stretch##4
+1464835936142##敬禮式##salute##4
+1464835936143##前伸展式##stretch forward##4
+1464835936159##蹲式##squat pose##4
 1464835936160##蹲下##Squat##1
 1466392694011##鈴兒響叮噹##jingle bells##2
 1466392694013##倫敦大橋垮下來##london bridge is falling down##2
@@ -67,6 +96,30 @@
 1482310201686015##ACT13-2##ACT13-2##1
 1482310201686016##ACT13-3##ACT13-3##1
 1484033233040##拍照##take photo##1
+1487230160190##大笑##risus1##1
+1487233706977##感覺身體被掏空##body being hollowed out##1
+1487234282378##恭喜發財##happy new year##1
+1487234521742##寶寶心裏苦##baby heart broken##1
+1487234946100##哼##shit##1
+1487235353183##你這麼厲害##you are so powerful##1
+1487236251311##左手右手慢動作##left right hand##2
+1487236451234##金星完美##perfect##1
+1487236640811##一起搖擺片段##swing together##2
+1487404045421##飛昇上神##ascends to godhood##1
+1487404045422##仙友好##immortal friends##1
+1487404045423##第一美機器人##most beautiful##1
+1487404045424##我要主人##i want you only##1
+1487404045425##理理我##dont ignore me##1
+1487404045426##好委屈##so wronged##1
+1487404045427##不愛洗澡的小豬##The Little Pig Who Doesn't Like Bathing##3
+1496217022040##大頭兒子和小頭爸爸##big head son and small head dad##2
+1496218328201##猴哥##monkey brother##2
+1496218474326##葫蘆娃##calabash baby##2
+1496218581505##喜羊羊與灰太狼##pleasant goat and big wolf##2
+1496222666158##黑貓警長##black cat sheriff##2
+1496223873017##聰明的一休##smart ikkyu##2
+1497596360378##好爸爸壞爸爸##good dad and bad dad##2
+1497601531838##爸爸去哪兒(動作版）##where is dad##2
 1508999477476##向左轉##turn left##basic
 1508999547240##向左移動##move left##basic
 1508999590337##左踢腿##left kick##basic
@@ -99,6 +152,7 @@
 1509001327218##我們去約會##lets go##dance
 1509001368824##倫敦大橋垮下來##london bridge is falling down##dance
 1509001404283##一擊滑落##punch and slide##dance
+1509001441250##微笑搖擺##smile swing##dance
 1509001488632##西班牙說唱##spanish rumble##dance
 1509001526297##阿拉伯半島的蘇丹##sultan of arabia##dance
 1509001595235##當哈姆萊特遇到布魯克林##when harlem met brooklyn##dance
@@ -168,35 +222,5 @@
 1524572829281##聯通介紹語3##unicom tts03##basic
 1524573025741##聯通說唱##unicom rap01##dance
 1524573159187##聯通介紹語2##unicom tts02##basic
-1509001441250##微笑搖擺##smile swing##dance
-1464835936108##A secret life##A secret life##2
-1464835936109##get up##get up##2
-1464835936110##Sirius##Sirius##2
-1464835936111##sweet and sour##sweet and sour##2
-1464835936112##we are taking off##we are taking off##2
-1464835936113##Give Them##Give Them##2
-1487230160190##大笑##risus1##1
-1487233706977##感覺身體被掏空##body being hollowed out##1
-1487234282378##恭喜發財##happy new year##1
-1487234521742##寶寶心裏苦##baby heart broken##1
-1487234946100##哼##shit##1
-1487235353183##你這麼厲害##you are so powerful##1
-1487236251311##左手右手慢動作##left right hand##2
-1487236451234##金星完美##perfect##1
-1487236640811##一起搖擺片段##swing together##2
-1487404045421##飛昇上神##ascends to godhood##1
-1487404045422##仙友好##immortal friends##1
-1487404045423##第一美機器人##most beautiful##1
-1487404045424##我要主人##i want you only##1
-1487404045425##理理我##dont ignore me##1
-1487404045426##好委屈##so wronged##1
-1496217022040##大頭兒子和小頭爸爸##big head son and small head dad##2
-1496218328201##猴哥##monkey brother##2
-1496218474326##葫蘆娃##calabash baby##2
-1496218581505##喜羊羊與灰太狼##pleasant goat and big wolf##2
-1496222666158##黑貓警長##black cat sheriff##2
-1496223873017##聰明的一休##smart ikkyu##2
-1497596360378##好爸爸壞爸爸##good dad and bad dad##2
-1497601531838##爸爸去哪兒(動作版）##where is dad##2
 BackStand##仰躺站立##BackStand##neuron
 FrontStand##趴著站立##FrontStand##neuron
