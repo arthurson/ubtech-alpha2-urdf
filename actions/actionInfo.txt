@@ -28,13 +28,6 @@
 1464835936046##左移##Move leftward##1
 1464835936047##左轉##Turn left##1
 1464835936048##舞蹈##Dance##1
-1464835936057##向後走##Go backward##1
-1464835936061##左踢腿##Left leg kick##1
-1464835936066##後退##Move backward##1
-1464835936067##前進##Move forward##1
-1464835936071##打功夫##Play kungfu##1
-1464835936082##向左走##Turn left and walk##1
-1464835936084##向右走##Turn right and walk##1
 1464835936087##點頭##Nod##1
 1464835936088##抬頭##Raise head##1
 1464835936089##彎腰##Bow##1
@@ -42,7 +35,6 @@
 1464835936091##右抬腿##Right leg lift##1
 1464835936092##左抬頭##Raise head leftward##1
 1464835936093##左抬腿##Left leg lift##1
-1464835936097##左抬腿##Left leg lift##1
 1464835936105##抬雙手##Lift both hands##1
 1464835936108##A secret life##A secret life##2
 1464835936109##get up##get up##2
@@ -60,21 +52,6 @@
 1464835936127##The wolf and the lamb##The wolf and the lamb##3
 1464835936128##The mouse, the frog, and the eagle##The mouse, the frog, and the eagle##3
 1464835936129##Trojan horse##Trojan horse##3
-1464835936130##展臂式##arm stretch##4
-1464835936131##左踢式##left kick##4
-1464835936132##左腿騎馬式##left leg forward horseriding##4
-1464835936133##左腿伸展式##left leg stretch##4
-1464835936134##左側腰踢腿式##left side bow with right leg kick##4
-1464835936135##左腰伸展式##left waist stretch##4
-1464835936136##金雞獨立##one foot standing##4
-1464835936137##右踢式##right kick##4
-1464835936138##右腿騎馬式##right leg forward horseriding##4
-1464835936139##右腿伸展式##right leg stretch##4
-1464835936140##右側腰踢腿式##right side bow with left leg kick##4
-1464835936141##右腰伸展式##right waist stretch##4
-1464835936142##敬禮式##salute##4
-1464835936143##前伸展式##stretch forward##4
-1464835936159##蹲式##squat pose##4
 1464835936160##蹲下##Squat##1
 1466392694011##鈴兒響叮噹##jingle bells##2
 1466392694013##倫敦大橋垮下來##london bridge is falling down##2
