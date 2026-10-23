@@ -22,12 +22,26 @@
 #leftpanel{flex:1 1 auto;min-height:150px;display:flex;gap:8px;flex-direction:column;overflow:hidden}
 #leftpanel h1{font-size:17px;margin:0;display:flex;gap:4px;align-items:center;flex-wrap:nowrap}
 #leftpanel h1 button{padding:3px 7px;font-size:12px;border-radius:8px;margin:0;font-weight:700;white-space:nowrap}
+#ikSquatRow,#ikSplitRow,#ikFSplitRow{display:none;align-items:center;gap:5px;font-size:12px;white-space:nowrap;margin:4px 0 0}
+#ikSquatRow input[type=range],#ikSplitRow input[type=range],#ikFSplitRow input[type=range]{flex:1;min-width:40px;width:auto;margin:0}
+#ikSquatRow span,#ikSplitRow span,#ikFSplitRow span{flex:none;width:62px}
+#ikFSplitRow{margin-bottom:3px}
+#tmpOffBox{margin:6px 0 2px;font-size:12px;border:1px solid var(--panel-bd);border-radius:8px;padding:4px 6px;background:var(--log-bg)}
+#tmpOffBox summary{cursor:pointer;font-weight:700;color:var(--accent);font-size:12px;display:flex;align-items:center;gap:6px;white-space:nowrap}
+#tmpOffOn{color:var(--warn);font-size:11px}
+.tmp-head{display:flex;align-items:center;justify-content:flex-end;gap:6px;font-size:11px;color:var(--muted);margin:4px 0}
+.tmp-head button{padding:2px 6px;font-size:11px;margin:0;flex:none}
+#tmpOffGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px 8px}
+.toi{display:flex;align-items:center;gap:3px;font-size:11px;min-width:0}
+.toi span{flex:none;width:20px;white-space:nowrap}
+.toi input{flex:1;min-width:38px;width:auto;font-size:11px;padding:1px 2px;text-align:right}
+.toi i{font-style:normal;color:var(--muted);font-size:10px}
 #offlinebox label span{white-space:nowrap}
 #leftpanel .foot{font-size:11px}
 #leftpanel .foot:empty{display:none}
 #pose{white-space:nowrap;overflow-x:auto;font-size:11px;display:none}
   #rightpanel{top:10px;right:10px;width:340px;max-width:48vw;bottom:70px;overflow-y:auto}
-  #rightpanel h2{font-size:14px;margin:6px 0 2px;display:flex;align-items:center;gap:2px;flex-wrap:nowrap;white-space:nowrap}
+  #rightpanel h2{font-size:14px;margin:6px 0 2px;display:flex;align-items:center;gap:2px;flex-wrap:wrap;white-space:nowrap}
   #rightpanel h2 button{padding:3px 7px;font-size:12px;margin:0}
   #servos{display:flex;gap:12px}
   #servos .svcol{flex:1;min-width:0}
@@ -100,7 +114,7 @@
 <div id="mtop"><div id="mtabs"><button id="mobLBtn" onclick="toggleMob('l')" data-i18n="mob_actions" title="動作">動作</button><button id="mobRBtn" onclick="toggleMob('r')" data-i18n="mob_servos" title="舵機">舵機</button></div></div>
 
 <div id="leftcol"><div class="hud" id="leftpanel">
-<h1><button id="langBtn" onclick="toggleLang()" title="中文 / English">EN</button><button id="themeBtn" onclick="toggleTheme()" data-i18n-title="theme_title" title="黑/白主題">🌙</button><button id="anchorBtn" class="on" onclick="toggleAnchor()" data-i18n="anchor_b" data-i18n-title="anchor" title="腳 anchor 防飄">防飄</button><button id="comBtn" onclick="toggleCom()" data-i18n="com_b" data-i18n-title="com_title" title="顯示質心（用 URDF inertial 質量計）">質心</button><button id="ikBtn" onclick="toggleIK()" data-i18n="ik_b" data-i18n-title="ik_title" title="IK：拖住手／腳嘅控制點擺位（自動解關節角）">IK</button></h1>
+<h1><button id="langBtn" onclick="toggleLang()" title="中文 / English">EN</button><button id="themeBtn" onclick="toggleTheme()" data-i18n-title="theme_title" title="黑/白主題">🌙</button><button id="anchorBtn" onclick="toggleAnchor()" data-i18n="anchor_b" data-i18n-title="anchor" title="腳部錨定：固定支撐腳位置，鞋底貼地">錨定</button><button id="comBtn" onclick="toggleCom()" data-i18n="com_b" data-i18n-title="com_title" title="顯示質心（用 URDF inertial 質量計）">質心</button><button id="ikBtn" onclick="toggleIK()" data-i18n="ik_b" data-i18n-title="ik_title" title="IK：拖手／腳藍點擺位；拖綠色骨盆點＝拖身體（雙腳釘地、鞠躬／重心轉移）">IK</button></h1>
 <div id="offlinebox" style="font-size:12px;border:1px dashed #999;border-radius:8px;padding:6px 8px;display:flex;flex-direction:column;gap:4px">
 <label style="cursor:pointer;display:flex;align-items:center;gap:6px"><span data-i18n="off_dir">📁 選擇模型資料夾</span><span id="offcount" class="mono" style="margin-left:auto;color:var(--muted2)"></span>
 <input type="file" id="offDir" webkitdirectory multiple style="display:none" data-i18n-title="off_dir_title" title="揀成個 alpha2_description：入面有 meshes/visual 同 actions（連 manifest/meta/mp3）"></label>
@@ -126,8 +140,27 @@
 <button onclick="setView('bottom')" data-i18n="v_bottom" data-i18n-title="t_bottom" title="底面">底</button>
 <button onclick="setView('home')" title="Default view">⌂</button>
 </div>
-<h2><span data-i18n="servos">舵機</span> <button onclick="servosHome()" data-i18n="home_all">回中</button> <button onclick="servosZero()" data-i18n="zero_all" data-i18n-title="zero_title" title="所有關節 q=0">零位</button> <button onclick="showJoints()" data-i18n="jinfo">ℹ 關節資料</button></h2>
-<label style="font-size:12px"><input type="checkbox" id="envCk" onchange="setEnvMode(this.checked)" data-i18n-title="env_title" title="用官方 203 招實測行程做 slider 範圍"> <span data-i18n="env_range">官方行程（較闊）</span></label>
+<h2><span data-i18n="servos">舵機</span> <button onclick="servosHome()" data-i18n="home_all">回中</button> <button onclick="servosZero()" data-i18n="zero_all" data-i18n-title="zero_title" title="所有關節 q=0；servo 值用 q_init 導出嘅有效 offset 換算（同 FK 同一套），唔會改 q_init">零位</button> <button id="envBtn" onclick="toggleEnv()" data-i18n="env_range" data-i18n-title="env_title" title="用官方 203 招實測行程做 slider 範圍">官方行程</button> <button onclick="showJoints()" data-i18n="jinfo">ℹ 關節資料</button></h2>
+<div id="ikSquatRow">
+<span data-i18n="ik_squat" style="flex:none">蹲下</span>
+<input type="range" id="ikSquat" min="0" max="100" step="1" value="0" oninput="setIkSquat(this.value)" data-i18n-title="ik_squat_title" title="重現官方「蹲下」pose：手垂低、深蹲、腳掌貼地（建議開錨定）">
+<b id="ikSquatV" class="mono" style="flex:none;width:44px;text-align:right">0</b>
+</div>
+<div id="ikSplitRow">
+<span data-i18n="ik_split" style="flex:none">左右</span>
+<input type="range" id="ikSplit" min="0" max="100" step="1" value="0" oninput="setIkSplit(this.value)" data-i18n-title="ik_split_title" title="雙腳左右劈開：兩隻腳一齊向外撐，肩 roll 自動張開避手，腳掌保持貼地、機身下降（建議開錨定）">
+<b id="ikSplitV" class="mono" style="flex:none;width:44px;text-align:right">0</b>
+</div>
+<div id="ikFSplitRow">
+<span data-i18n="ik_fsplit" style="flex:none">前後</span>
+<input type="range" id="ikFSplit" min="0" max="100" step="1" value="0" oninput="setIkFSplit(this.value)" data-i18n-title="ik_fsplit_title" title="雙腳前後劈開：左腳踏前、右腳踏後，腳掌貼地、機身下降（建議開錨定）">
+<b id="ikFSplitV" class="mono" style="flex:none;width:44px;text-align:right">0</b>
+</div>
+<details id="tmpOffBox">
+<summary data-i18n-title="tmp_off_title" title="offset：改 q_init_deg；有效 offset = q_init_deg − pc_init_angle，即時預覽，唔會寫入模型"><span data-i18n="tmp_off">offset</span><b id="tmpOffOn" class="mono"></b></summary>
+<div class="tmp-head"><button onclick="resetTmpOff()" data-i18n="tmp_off_reset">還原 URDF</button></div>
+<div id="tmpOffGrid"></div>
+</details>
 <div id="servos"><div class="svcol" id="svcol1"></div></div>
 </div>
 
@@ -149,8 +182,8 @@
 </div>
 </div>
 
-<script src="fk-params.js"></script>
-<script src="ubx-parse.js"></script>
+<script src="fk-params.js?v=20261023"></script>
+<script src="ubx-parse.js?v=20261023"></script>
 <script>
 
 // ---- 3x3 數學 ----
@@ -177,9 +210,9 @@ var I18N={
   servos:{zh:'舵機',en:'Servos'},
   home_all:{zh:'回中',en:'Center'},
   zero_all:{zh:'零位',en:'Zero'},
-  zero_title:{zh:'所有關節 q=0',en:'All joints at q=0'},
+  zero_title:{zh:'所有關節 q=0；servo 值用 q_init 導出嘅有效 offset 換算（同 FK 同一套），唔會改 q_init',en:'All joints at q=0; servo values use the effective offset derived from q_init (same set as FK); does not change q_init'},
   zero_log:{zh:'全部零位 q=0',en:'All joints at q=0'},
-  env_range:{zh:'官方行程（較闊）',en:'Official range (wider)'},
+  env_range:{zh:'官方行程',en:'Official range'},
   env_title:{zh:'用官方 203 招實測行程做 slider 範圍',en:'Slider range = travel measured over the 203 official actions'},
   cal_lbl:{zh:'校準',en:'cal'},
   env_lbl:{zh:'行程',en:'env'},
@@ -206,10 +239,21 @@ var I18N={
   loop_title:{zh:'循環播',en:'Loop'},
   mute_title:{zh:'靜音',en:'Mute'},
   theme_title:{zh:'黑/白主題',en:'Dark/Light theme'},
-  anchor:{zh:'腳 anchor 防飄',en:'Foot anchor'},
-  anchor_b:{zh:'防飄',en:'Anchor'},
+  anchor:{zh:'腳部錨定：固定支撐腳位置，鞋底貼地',en:'Foot anchor: keep the support foot pinned and the soles grounded'},
+  anchor_b:{zh:'錨定',en:'Anchor'},
   ik_b:{zh:'IK',en:'IK'},
-  ik_title:{zh:'IK：拖住手／腳嘅控制點擺位（自動解關節角）',en:'IK: drag the hand/foot control point (solves joint angles)'},
+  ik_title:{zh:'IK：拖手／腳藍點擺位；拖綠色骨盆點＝拖身體（雙腳釘地、鞠躬／重心轉移）',en:'IK: drag hand/foot dots; drag the green pelvis dot to move the body with feet pinned (bow / weight shift)'},
+  ik_squat:{zh:'蹲下',en:'Squat'},
+  ik_squat_title:{zh:'重現官方「蹲下」pose：手垂低、深蹲、腳掌貼地（建議開錨定）',en:'Match the official Squat pose: arms down, deep squat, feet planted (keep Anchor on)'},
+  ik_split:{zh:'左右',en:'Left/Right'},
+  ik_split_title:{zh:'雙腳左右劈開：兩隻腳一齊向外撐，雙臂自動張開避手，腳掌保持貼地、機身下降（建議開錨定）',en:'Legs spread left/right: both legs push outward; arms swing outward to clear the legs; feet stay planted and the body lowers (keep Anchor on)'},
+ik_fsplit:{zh:'前後',en:'Front/Back'},
+ik_fsplit_title:{zh:'雙腳前後劈開：左腳踏前、右腳踏後，腳掌保持貼地、機身下降（建議開錨定）',en:'Left leg forward, right leg back; feet stay planted and the body lowers (keep Anchor on)'},
+  tmp_off:{zh:'offset',en:'offset'},
+  tmp_off_title:{zh:'offset：改 q_init_deg；有效 offset = q_init_deg − pc_init_angle，即時預覽，唔會寫入模型',en:'offset: edit q_init_deg; effective offset = q_init_deg - pc_init_angle; live preview, not saved'},
+tmp_off_reset:{zh:'還原 URDF',en:'Restore URDF'},
+tmp_off_base:{zh:'q_init_deg 原值',en:'q_init_deg base'},
+tmp_off_changed:{zh:'已改',en:'changed'},
   mob_actions:{zh:'動作',en:'Actions'},
   mob_servos:{zh:'舵機',en:'Servos'},
   com_b:{zh:'質心',en:'CoM'},
@@ -240,7 +284,7 @@ function applyLang(){
   document.querySelectorAll('[data-i18n-title]').forEach(function(el){el.title=T(el.getAttribute('data-i18n-title'));});
   document.getElementById('langBtn').textContent=uiLang==='zh'?'EN':'中';
   updOffCount();
-  buildActions(); buildServos(); if(TRAJ) buildTracks(false);
+  buildActions(); buildServos(); buildTmpOff(); if(TRAJ) buildTracks(false);
   if(document.getElementById('jmodal').style.display==='') buildJointTable();
   document.getElementById('playBtn').textContent=playing?'⏸':'▶';
   if(TRAJ){drawAt(pauseMs);audioTick(pauseMs);}
@@ -248,20 +292,42 @@ function applyLang(){
 
 // 每條 link 嘅 frame：{p（base frame pivot）, R（link orientation）}
 // 用 servo_map 原 offset（q = servo + offset），同 MuJoCo 對過嗰套
+// 暫調 q_init_deg 直接覆寫有效 offset（只喺記憶體），唔會改 FK 原始資料。
+// 輸入／顯示用 q_init_deg；內部換返 q = servo + offset 用嘅 offset。
+var tmpInitAbs=new Array(20).fill(null);
+function origInit(k){
+  var inf=servoInfo&&servoInfo[k];
+  if(!inf) return 0;
+  return typeof inf.qinit==='number'?inf.qinit:inf.home+inf.off;
+}
+function tmpInit(k){
+  var q=tmpInitAbs&&tmpInitAbs[k-1];
+  return typeof q==='number'?q:origInit(k);
+}
+function tmpOff(k,base){
+  var q=tmpInitAbs&&tmpInitAbs[k-1];
+  if(typeof q==='number'&&servoInfo&&servoInfo[k]){
+    var init=typeof servoInfo[k].init==='number'?servoInfo[k].init:servoInfo[k].home;
+    return q-init;
+  }
+  if(typeof base==='number') return base;
+  var inf=servoInfo&&servoInfo[k];
+  return inf?inf.off:0;
+}
 function linkFrames(angles20){
   var F={base_link:{p:[0,0,0],R:I3()}};
   Object.keys(FK.chains).forEach(function(c){
     var items=FK.chains[c], R=I3(), p=[0,0,0];
     for(var i=0;i<items.length;i++){
       var j=items[i];
-      p=vAdd(p,mDot(R,j.origin)); R=mMul(R,rotAxis(j.axis,(angles20[j.servo-1]+j.offset)*D2R));
+      p=vAdd(p,mDot(R,j.origin)); R=mMul(R,rotAxis(j.axis,(angles20[j.servo-1]+tmpOff(j.servo,j.offset))*D2R));
       F[j.joint.replace(/_joint$/,'_link')]={p:p.slice(),R:R.map(function(r){return r.slice();})};
     }
     P_end[c]={p:p,R:R};
   });
   [['17','r_elbow_link','r_hand_link'],['18','l_elbow_link','l_hand_link']].forEach(function(t){
     var hj=FK.handJoints[t[0]], el=F[t[1]];
-    var q=(angles20[+t[0]-1]+hj.offset)*D2R;
+    var q=(angles20[+t[0]-1]+tmpOff(+t[0],hj.offset))*D2R;
     var R=mMul(el.R,rotAxis(hj.axis,q));
     F[t[2]]={p:vAdd(el.p,mDot(el.R,hj.origin)),R:R};
   });
@@ -327,6 +393,9 @@ function initGL(){
     m.renderOrder=12; m.visible=false;
     scene.add(m); ikMarkers[key]=m;
   });
+  ikRootMarker=new THREE.Mesh(new THREE.SphereGeometry(0.019,20,16),
+    new THREE.MeshBasicMaterial({color:0x18a999,depthTest:false,transparent:true,opacity:0.9}));
+  ikRootMarker.renderOrder=13; ikRootMarker.visible=false; scene.add(ikRootMarker);
   FK.links.forEach(function(ln){
     var g=new THREE.Group(); g.visible=false;
     root.add(g); linkGroups[ln]=g;
@@ -381,10 +450,10 @@ function applyTheme(){
   if(window.__render) window.__render();
 }
 
-// ---- 腳 anchor 防飄（跟 alpha2_viewer 做法）----
+// ---- 腳部錨定（跟 alpha2_viewer 做法）----
 // 支撐腳＝鞋底最低嗰隻（2cm 遲滯，企定／郁手唔會左右跳）：① root 轉到 sole 法線對返世界垂直（腳板貼地）
 // ② sole 釘返站姿位置（x,z）③ 兩腳鞋底角落最低點貼地面；播片時平滑過去，seek／手擺即刻對位
-var rootRef=null, qROS=null, anchorOn=true, anchorRest=null;
+var rootRef=null, qROS=null, anchorOn=false, anchorRest=null;
 var SOLE={r:{parent:'r_ankle_roll_link',off:[0.000213,-0.016948,-0.027969]},
           l:{parent:'l_ankle_roll_link',off:[0.000213,0.016948,-0.027969]}};
 function soleWorld(F,side){
@@ -414,9 +483,10 @@ var ANCHOR_MAXSTEP=0.03;          // 每幀最多移 3cm（大跳位都變順滑
 var anchorInit=false, anchorPrevT=null, anchorSnapReq=false;
 var anchorSt={side:null};         // anchorSolve 嘅支撐腳遲滯狀態
 function setAnchor(v){
+  ikRootClear();
   anchorOn=!!v;
   anchorInit=false; anchorPrevT=null; // 開／閂之後即刻對位
-  poseMesh(lastAngles);
+  var a=manualAngles||lastAngles; if(a) poseMesh(a);
 }
 // 由 poses 計錨定：支撐腳＋機身傾角（pitch 跟支撐腳；roll 鏡像抵銷／跟最平嗰隻）
 function anchorSolve(F, st){
@@ -574,6 +644,10 @@ var IK_CHAINS={
   lf:{servos:[12,13,14,15,16],eff:'soleL'}
 };
 var ikOn=false, ikSel=null, ikDrag=null, ikJoint={}, ikMarkers={};
+var ikRootMarker=null, ikBodyPose=null;
+var IK_ROOT_MAX_X=0.05, IK_ROOT_Z_FWD=0.045, IK_ROOT_Z_BACK=0.032;
+var IK_ROOT_Y_UP=0.008, IK_ROOT_Y_DOWN=0.055;
+var IK_ROOT_PITCH_MAX=25*D2R, IK_ROOT_ROLL_MAX=12*D2R;
 (function(){
   Object.keys(FK.chains).forEach(function(c){
     var ch=FK.chains[c], prev='base_link';
@@ -593,10 +667,11 @@ function ikEff(F,key){
 function ikVsub(a,b){return [a[0]-b[0],a[1]-b[1],a[2]-b[2]];}
 function ikVdot(a,b){return a[0]*b[0]+a[1]*b[1]+a[2]*b[2];}
 function ikVcross(a,b){return [a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];}
-function ikSolveCore(a0,target,key,ch,lim,iters){
+function ikSolveCore(a0,target,key,ch,lim,iters,prep){
   var n=ch.servos.length, a=a0.slice();
   function effAt(arr){
-    var F=linkFrames(arr), p=ikEff(F,key);
+    var aa=prep?prep(arr):arr;
+    var F=linkFrames(aa), p=ikEff(F,key);
     return [p[0],p[1],p[2]];
   }
   var e=effAt(a), errM=Math.hypot(target[0]-e[0],target[1]-e[1],target[2]-e[2]);
@@ -639,19 +714,18 @@ function ikSolveCore(a0,target,key,ch,lim,iters){
   }
   return {a:a, err:errM};
 }
-function ikSolve(key,target,iters){
-  var ch=IK_CHAINS[key];
+function ikSolveChain(start,target,key,ch,iters,prep,noMulti){
   var lim={};
   ch.servos.forEach(function(s){lim[s]=rangeOf(s);});
-  var a=(manualAngles||lastAngles||HOME20).slice();
-  var best=ikSolveCore(a,target,key,ch,lim,iters);
-  if(best.err>0.006){
+  var a=(start||manualAngles||lastAngles||HOME20).slice();
+  var best=ikSolveCore(a,target,key,ch,lim,iters,prep);
+  if(!noMulti&&best.err>0.006){
     // 奇異位（例如手臂完全伸直同軸）→ 多起點，避免卡死
     for(var ci=0; ci<ch.servos.length; ci++){
       [12,-12].forEach(function(d){
         var a2=a.slice(), s=ch.servos[ci];
         a2[s-1]=Math.max(lim[s][0],Math.min(lim[s][1],a2[s-1]+d));
-        var r=ikSolveCore(a2,target,key,ch,lim,iters);
+        var r=ikSolveCore(a2,target,key,ch,lim,iters,prep);
         if(r.err<best.err) best=r;
       });
     }
@@ -660,6 +734,389 @@ function ikSolve(key,target,iters){
   for(var i5=0;i5<ch.servos.length;i5++){var s2=ch.servos[i5]; out[s2-1]=Math.round(out[s2-1]);}
   return out;
 }
+function ikSolve(key,target,iters,start){return ikSolveChain(start,target,key,IK_CHAINS[key],iters);}
+// ---- IK 拖身體（pelvis/root）：雙腳釘喺世界，root 前後左右／升降，兩條腿自動解 ----
+function ikRootMarkerPose(){
+  if(!ikRootMarker||!rootRef) return;
+  ikRootMarker.visible=ikOn;
+  if(!ikRootMarker.visible) return;
+  ikRootMarker.position.set(rootRef.position.x,rootRef.position.y+0.05,rootRef.position.z);
+  ikRootMarker.scale.setScalar(ikSel==='root'?1.35:1);
+  ikRootMarker.material.color.setHex(ikSel==='root'?0xffd60a:0x18a999);
+}
+var IK_ROOT_CHAINS={rf:{servos:[7,8,9],eff:'soleR'},lf:{servos:[12,13,14],eff:'soleL'}};
+function ikRootComp(a,key,b){
+  var rg, rp=(b.rootPitch||0)/D2R, rr=(b.rootRoll||0)/D2R;
+  if(key==='rf'){
+    a[9]=ikSquatAnkle(a,'rf',b.pitchR+rp);
+    a[10]=b.ankleRollR+(a[6]-b.hipRollR)+rr;
+    rg=rangeOf(10); a[9]=Math.max(rg[0],Math.min(rg[1],a[9]));
+    rg=rangeOf(11); a[10]=Math.max(rg[0],Math.min(rg[1],a[10]));
+  }else{
+    a[14]=ikSquatAnkle(a,'lf',b.pitchL+rp);
+    a[15]=b.ankleRollL+(a[11]-b.hipRollL)+rr;
+    rg=rangeOf(15); a[14]=Math.max(rg[0],Math.min(rg[1],a[14]));
+    rg=rangeOf(16); a[15]=Math.max(rg[0],Math.min(rg[1],a[15]));
+  }
+}
+function ikRootSolveLeg(a,key,b,target,iters){
+  var prep=function(arr){var o=arr.slice();ikRootComp(o,key,b);return o;};
+  a=ikSolveChain(a,target,key,IK_ROOT_CHAINS[key],iters||8,prep,true);
+  a=a.slice(); ikRootComp(a,key,b);
+  a[key==='rf'?9:14]=Math.round(a[key==='rf'?9:14]);
+  a[key==='rf'?10:15]=Math.round(a[key==='rf'?10:15]);
+  return a;
+}
+function ikRootCapture(){
+  if(!rootRef) return;
+  pausePlayback();
+  if(!manualAngles) manualAngles=(lastAngles||HOME20).slice();
+  ikSquatClear(); ikSplitClear(); ikFSplitClear();
+  var F=linkFrames(manualAngles);
+  var p=rootRef.position.clone(), q=rootRef.quaternion.clone();
+  function world(key){
+    var l=ikEff(F,key), v=vApplyQ(l,q);
+    return [v[0]+p.x,v[1]+p.y,v[2]+p.z];
+  }
+  ikBodyPose={basePos:p,baseQuat:q,feet:{r:world('rf'),l:world('lf')},off:{x:0,y:0,z:0},
+    rootPitch:0,rootRoll:0,
+    pitchR:ikLegPitch(manualAngles,'r'),pitchL:ikLegPitch(manualAngles,'l'),
+    hipRollR:manualAngles[6],hipRollL:manualAngles[11],
+    ankleRollR:manualAngles[10],ankleRollL:manualAngles[15]};
+}
+function ikRootQuat(){
+  var q=ikBodyPose.baseQuat.clone();
+  if(ikBodyPose.rootPitch||ikBodyPose.rootRoll){
+    var qp=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0),ikBodyPose.rootPitch);
+    var qr=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1),ikBodyPose.rootRoll);
+    q=qp.multiply(qr).multiply(q);
+  }
+  return q;
+}
+function ikRootApply(noRender,iters){
+  if(!ikBodyPose||!rootRef) return 1;
+  var o=ikBodyPose.off;
+  var R=ikBodyPose.basePos.clone().add(new THREE.Vector3(o.x,o.y,o.z));
+  var Q=ikRootQuat(), inv=Q.clone().invert();
+  var a=(manualAngles||lastAngles||HOME20).slice(), err=0;
+  [['r','rf'],['l','lf']].forEach(function(sd){
+    var t=ikBodyPose.feet[sd[0]];
+    var l=new THREE.Vector3(t[0]-R.x,t[1]-R.y,t[2]-R.z).applyQuaternion(inv);
+    a=ikRootSolveLeg(a,sd[1],ikBodyPose,[l.x,l.y,l.z],iters);
+    var p=ikEff(linkFrames(a),sd[1]);
+    err=Math.max(err,Math.hypot(l.x-p[0],l.y-p[1],l.z-p[2]));
+  });
+  manualAngles=a; ikBodyPose.err=err;
+  rootRef.position.copy(R); rootRef.quaternion.copy(Q);
+  if(noRender) return err;
+  syncServos(a); renderManual();
+  return err;
+}
+var IK_ROOT_TOL=0.006; // 鞋底容許誤差 6mm；超出就自動收細動作，保持雙腳釘地
+function ikRootLimitScale(pitch,roll){
+  var rr=Math.min(1,Math.abs(pitch)/IK_ROOT_PITCH_MAX+Math.abs(roll)/IK_ROOT_ROLL_MAX);
+  return Math.max(0.15,1-0.8*rr); // 鞠躬／側傾越大，平移範圍收窄
+}
+function ikRootTargetOff(x,y,z,pitch,roll){
+  var ls=ikRootLimitScale(pitch,roll);
+  var xmax=IK_ROOT_MAX_X*ls, zmax=(z>=0?IK_ROOT_Z_FWD:IK_ROOT_Z_BACK)*ls;
+  var ymax=(y>=0?IK_ROOT_Y_UP:IK_ROOT_Y_DOWN)*ls;
+  var nx=x/xmax, nz=z/zmax, ny=y/ymax;
+  var m=Math.sqrt(nx*nx+nz*nz+ny*ny), lim=0.92;
+  if(m>lim){nx*=lim/m; nz*=lim/m; ny*=lim/m;}
+  return {x:nx*xmax,y:ny*ymax,z:nz*zmax};
+}
+function ikRootTrial(off,pitch,roll,seed,iters){
+  ikBodyPose.off.x=off.x; ikBodyPose.off.y=off.y; ikBodyPose.off.z=off.z;
+  ikBodyPose.rootPitch=pitch; ikBodyPose.rootRoll=roll;
+  manualAngles=seed.slice();
+  return ikRootApply(true,iters);
+}
+function ikRootRender(){
+  syncServos(manualAngles);
+  renderManual();
+}
+function ikRootReach(off,pitch,roll){
+  var pOff={x:ikBodyPose.off.x,y:ikBodyPose.off.y,z:ikBodyPose.off.z};
+  var pPitch=ikBodyPose.rootPitch, pRoll=ikBodyPose.rootRoll, pErr=ikBodyPose.err||0;
+  var seed=(manualAngles||lastAngles||HOME20).slice();
+  var e=ikRootTrial(off,pitch,roll,seed,10);
+  if(e<=IK_ROOT_TOL){ ikRootRender(); return; }
+  // 由現況向着目標做二分：搵最遠而又釘得住腳嘅位（3 次已夠幼）
+  var lo=0, hi=1, bOff=null, bPitch=0, bRoll=0, bAng=null, bErr=pErr;
+  for(var it=0;it<3;it++){
+    var t=(lo+hi)/2;
+    var o={x:pOff.x+(off.x-pOff.x)*t,y:pOff.y+(off.y-pOff.y)*t,z:pOff.z+(off.z-pOff.z)*t};
+    var pp=pPitch+(pitch-pPitch)*t, pr=pRoll+(roll-pRoll)*t;
+    var te=ikRootTrial(o,pp,pr,seed,6);
+    if(te<=IK_ROOT_TOL){
+      bOff=o; bPitch=pp; bRoll=pr; bAng=manualAngles.slice(); bErr=te; lo=t;
+    }else hi=t;
+  }
+  ikBodyPose.off.x=pOff.x; ikBodyPose.off.y=pOff.y; ikBodyPose.off.z=pOff.z;
+  ikBodyPose.rootPitch=pPitch; ikBodyPose.rootRoll=pRoll;
+  if(bOff){
+    ikBodyPose.off.x=bOff.x; ikBodyPose.off.y=bOff.y; ikBodyPose.off.z=bOff.z;
+    ikBodyPose.rootPitch=bPitch; ikBodyPose.rootRoll=bRoll;
+    manualAngles=bAng; ikBodyPose.err=bErr;
+  }else{
+    manualAngles=seed; ikBodyPose.err=pErr;
+  }
+  var R=ikBodyPose.basePos.clone().add(new THREE.Vector3(ikBodyPose.off.x,ikBodyPose.off.y,ikBodyPose.off.z));
+  rootRef.position.copy(R); rootRef.quaternion.copy(ikRootQuat());
+  ikRootRender();
+}
+function ikRootSetOff(x,y,z){
+  if(!ikBodyPose) ikRootCapture();
+  if(!ikBodyPose) return;
+  var o=ikRootTargetOff(x,y,z,ikBodyPose.rootPitch,ikBodyPose.rootRoll);
+  ikRootReach(o,ikBodyPose.rootPitch,ikBodyPose.rootRoll);
+}
+function ikRootSetRot(pitch,roll){
+  if(!ikBodyPose) ikRootCapture();
+  if(!ikBodyPose) return;
+  var p=Math.max(-IK_ROOT_PITCH_MAX,Math.min(IK_ROOT_PITCH_MAX,pitch));
+  var r=Math.max(-IK_ROOT_ROLL_MAX,Math.min(IK_ROOT_ROLL_MAX,roll));
+  var o=ikRootTargetOff(ikBodyPose.off.x,ikBodyPose.off.y,ikBodyPose.off.z,p,r);
+  ikRootReach(o,p,r);
+}
+function ikRootClear(repose){
+  var had=!!ikBodyPose;
+  ikBodyPose=null;
+  if(ikSel==='root') ikSel=null;
+  if(repose&&had){var a=manualAngles||lastAngles; if(a) poseMesh(a);}
+}
+window.ikRootClear=ikRootClear;
+window.ikRootCapture=ikRootCapture; window.ikRootSetOff=ikRootSetOff; window.ikRootSetRot=ikRootSetRot;
+// ---- IK 雙腳蹲下：兩隻腳嘅 sole 一齊向身體收，錨定令腳掌釘地＝機身下降 ----
+// 用髖/膝 pitch（8/9、13/14）做 IK，踝 pitch（10/15）跟住補償，鞋底保持水平；
+// 同時參考官方「蹲下」pose：腳向後收 0.575×深度，所以最多蹲 5cm（腿行程夠用）。
+var IK_SQUAT_MAX=0.05, IK_SQUAT_X=0.575;
+var IK_SQUAT_CHAINS={rf:{servos:[8,9],eff:'soleR'},lf:{servos:[13,14],eff:'soleL'}};
+// 由官方「蹲下」pose 拎嘅起始解：膝頭要向呢邊屈，唔係數值解會跌落相反分支
+var IK_SQUAT_SEED={rf:[26,40],lf:[214,200]};
+// 官方「蹲下」action（1464835936160）嘅最終 pose（servo command）；100% 直接重現呢個 pose。
+var IK_SQUAT_POSE=[120,205,150,120,35,90,120,26,40,205,120,120,214,200,35,120,120,120,120,120];
+// 用三條 pitch 軸嘅有效 offset 反推踝 pitch，令鞋底保持水平
+function ikSquatAnkle(a,key,pitch){
+  if(key==='rf') return a[7]-a[8]+tmpOff(8)-tmpOff(9)-tmpOff(10)-pitch;
+  return a[12]-a[13]+pitch+tmpOff(13)-tmpOff(14)-tmpOff(15);
+}
+var ikSquatDepth=0, ikSquatPct=0, ikSquatBase=null, ikSquatShift={x:0,z:0};
+function ikLegPitch(a,side){
+  if(side==='r') return a[7]+tmpOff(8)-a[8]-tmpOff(9)-a[9]-tmpOff(10);
+  return -(a[12]+tmpOff(13))+a[13]+tmpOff(14)+a[14]+tmpOff(15);
+}
+function ikSquatWorld(F){
+  if(!rootRef) return null;
+  var out={};
+  ['r','l'].forEach(function(sd){
+    var p=vApplyQ(soleWorld(F,sd),rootRef.quaternion);
+    out[sd]=[p[0]+rootRef.position.x,p[1]+rootRef.position.y,p[2]+rootRef.position.z];
+  });
+  return out;
+}
+function ikSquatCapture(){
+  ikSquatBase={a:(manualAngles||lastAngles||HOME20).slice()};
+}
+function ikSquatRebase(){
+  if(!ikSquatBase||!manualAngles||ikSquatPct<=0||ikSquatPct>=100) return;
+  var p=ikSquatPct/100, a=manualAngles, base=ikSquatBase.a.slice();
+  for(var i=0;i<20;i++){
+    var rg=rangeOf(i+1), v=(a[i]-IK_SQUAT_POSE[i]*p)/(1-p);
+    base[i]=Math.round(Math.max(rg[0],Math.min(rg[1],v)));
+  }
+  ikSquatBase.a=base;
+}
+function ikSquatClear(restore){
+  if(restore&&ikSquatBase&&manualAngles) manualAngles=ikSquatBase.a.slice();
+  ikSquatDepth=0; ikSquatPct=0; ikSquatBase=null; ikSquatShift={x:0,z:0};
+  var sl=document.getElementById('ikSquat'), v=document.getElementById('ikSquatV');
+  if(sl) sl.value=0;
+  if(v) v.textContent='0';
+}
+function ikSquatSolve(a,key,base,target,seed){
+  var sd=seed||IK_SQUAT_SEED[key];
+  a=a.slice();
+  if(key==='rf'){a[7]=sd[0]; a[8]=sd[1];}
+  else{a[12]=sd[0]; a[13]=sd[1];}
+  var prep=function(arr){
+    var o=arr.slice();
+    o[key==='rf'?9:14]=ikSquatAnkle(o,key,key==='rf'?base.pitchR:base.pitchL);
+    return o;
+  };
+  a=ikSolveChain(a,target,key,IK_SQUAT_CHAINS[key],30,prep);
+  var dep=key==='rf'?10:15, rg=rangeOf(dep);
+  a[dep-1]=ikSquatAnkle(a,key,key==='rf'?base.pitchR:base.pitchL);
+  if(a[dep-1]<rg[0])a[dep-1]=rg[0]; if(a[dep-1]>rg[1])a[dep-1]=rg[1];
+  a[dep-1]=Math.round(a[dep-1]);
+  return a;
+}
+function setIkSquat(pct){
+  var p=Math.max(0,Math.min(100,parseFloat(pct)||0));
+  var sl=document.getElementById('ikSquat'), v=document.getElementById('ikSquatV');
+  if(sl) sl.value=Math.round(p);
+  if(v) v.textContent=Math.round(p);
+  if(!ikOn) return;
+  pausePlayback();
+  if(!manualAngles) manualAngles=(lastAngles||HOME20).slice();
+  if(p>0){
+    ikRootClear();
+    if(ikFSplitPct>0) ikFSplitClear(true);
+    else if(ikFSplitBase) ikFSplitClear();
+  }
+  if(!ikSquatBase) ikSquatCapture();
+  if(p<=0){
+    manualAngles=ikSquatBase.a.slice();
+    ikSquatPct=0;
+  }else{
+    var a=ikSquatBase.a.slice();
+    for(var i=0;i<20;i++) a[i]=Math.round(a[i]+(IK_SQUAT_POSE[i]-a[i])*p/100);
+    manualAngles=a; ikSquatPct=p;
+  }
+  ikSquatDepth=0; // 官方 pose 已經貼地，唔用舊 IK foot-fix
+  syncServos(manualAngles); renderManual();
+}
+// 雙腳橫向釘返原本世界位置（唔會因為腳向後收而滑走）
+function ikSquatFootFix(F){
+  var b=ikSquatBase&&ikSquatBase.world;
+  if(!b||!rootRef) return;
+  var r=vApplyQ(soleWorld(F,'r'),rootRef.quaternion), l=vApplyQ(soleWorld(F,'l'),rootRef.quaternion);
+  ikSquatShift.x=((b.r[0]+b.l[0])-(r[0]+l[0]))/2;
+  ikSquatShift.z=((b.r[2]+b.l[2])-(r[2]+l[2]))/2;
+  rootRef.position.x+=ikSquatShift.x;
+  rootRef.position.z+=ikSquatShift.z;
+}
+window.setIkSquat=setIkSquat;
+// ---- IK 雙腳一字馬（左右劈腿）：hip roll 向外，ankle roll 反向補償保持鞋底水平 ----
+// 劈腿時肩 roll（servo 2/5）會自動撐開到 100/140，避免大腿／膝頭撞手；收腳會還原。
+// 錨定會令機身隨住下降。
+var IK_SPLIT_MAX=80, IK_SPLIT_ARM_R=100, IK_SPLIT_ARM_L=140;
+var ikSplitPct=0, ikSplitBase=null;
+function ikSplitMaxD(a){
+  var rH=rangeOf(7), rA=rangeOf(11), lH=rangeOf(12), lA=rangeOf(16);
+  return Math.max(0,Math.min(IK_SPLIT_MAX,rH[1]-a[6],rA[1]-a[10],a[11]-lH[0],a[15]-lA[0]));
+}
+function ikSplitCapture(a){
+  a=(a||manualAngles||lastAngles||HOME20).slice();
+  ikSplitBase={rolls:[a[6],a[10],a[11],a[15]],armR:a[1],armL:a[4],maxD:ikSplitMaxD(a)};
+}
+function ikSplitRebase(){
+  if(!ikSplitBase) return;
+  var armR=ikSplitBase.armR, armL=ikSplitBase.armL;
+  var a=(manualAngles||lastAngles||HOME20).slice();
+  var d=ikSplitBase.maxD*ikSplitPct/100;
+  var b=a.slice();
+  b[6]=a[6]-d; b[10]=a[10]-d; b[11]=a[11]+d; b[15]=a[15]+d;
+  ikSplitCapture(b);
+  ikSplitBase.armR=armR; ikSplitBase.armL=armL; // 保持原本手臂姿勢，唔好將自動張臂當成新基準
+}
+function ikSplitClear(restore){
+  if(restore&&ikSplitBase&&manualAngles){
+    manualAngles[6]=ikSplitBase.rolls[0]; manualAngles[10]=ikSplitBase.rolls[1];
+    manualAngles[11]=ikSplitBase.rolls[2]; manualAngles[15]=ikSplitBase.rolls[3];
+    manualAngles[1]=ikSplitBase.armR; manualAngles[4]=ikSplitBase.armL;
+  }
+  ikSplitPct=0; ikSplitBase=null;
+  var sl=document.getElementById('ikSplit'), v=document.getElementById('ikSplitV');
+  if(sl) sl.value=0;
+  if(v) v.textContent='0';
+}
+function setIkSplit(pct){
+  var p=Math.max(0,Math.min(100,parseFloat(pct)||0));
+  var sl=document.getElementById('ikSplit'), v=document.getElementById('ikSplitV');
+  if(sl) sl.value=Math.round(p);
+  if(v) v.textContent=Math.round(p);
+  if(!ikOn) return;
+  pausePlayback();
+  if(!manualAngles) manualAngles=(lastAngles||HOME20).slice();
+  if(p>0) ikRootClear();
+  if(!ikSplitBase) ikSplitCapture(manualAngles);
+  var a=manualAngles.slice(), b=ikSplitBase;
+  if(p<=0){
+    a[6]=b.rolls[0]; a[10]=b.rolls[1]; a[11]=b.rolls[2]; a[15]=b.rolls[3];
+    a[1]=b.armR; a[4]=b.armL;
+    ikSplitPct=0;
+  }else{
+    var d=b.maxD*p/100, k=p/100;
+    a[6]=b.rolls[0]+d; a[10]=b.rolls[1]+d;
+    a[11]=b.rolls[2]-d; a[15]=b.rolls[3]-d;
+    // 肩 roll 同步撐開（右 100、左 140），劈得越盡撐得越開，避免撞大腿
+    a[1]=b.armR+(IK_SPLIT_ARM_R-b.armR)*k;
+    a[4]=b.armL+(IK_SPLIT_ARM_L-b.armL)*k;
+    ikSplitPct=p;
+  }
+  manualAngles=a;
+  syncServos(a); renderManual();
+}
+window.setIkSplit=setIkSplit;
+// ---- IK 前後劈腿（左腳前、右腳後）：pitch 同蹲下共用，兩個控制互斥 ----
+// 依新 offset 重新計：左腳前 7.8cm、右腳後 8.7cm（前後距約 16.5cm）；
+// 右腳目標比左腳低 3.3cm，抵銷 anchor 約 10° 機身俯仰，最後兩腳鞋底同高；機身下降約 5cm。
+var IK_FSPLIT_FWD=0.078, IK_FSPLIT_BACK=0.087;
+var IK_FSPLIT_DZ_F=0.0695, IK_FSPLIT_DZ_B=0.0365;
+var IK_FSPLIT_SEED={rf:[109,125],lf:[191,10]};
+var ikFSplitPct=0, ikFSplitBase=null;
+function ikFSplitCapture(a,r,l){
+  a=(a||manualAngles||lastAngles||HOME20).slice();
+  var F=linkFrames(a), br=(r||ikEff(F,'rf')).slice(), bl=(l||ikEff(F,'lf')).slice();
+  var b={r:br,l:bl,legs:a.slice(6,16),
+    pitchR:ikLegPitch(a,'r'),pitchL:ikLegPitch(a,'l')};
+  // 先用 IK 解一次終點（左腳前、右腳後），slider 之後喺基準同終點之間平滑過渡
+  var e=a.slice();
+  e=ikSquatSolve(e,'rf',b,[br[0]-IK_FSPLIT_BACK,br[1],br[2]+IK_FSPLIT_DZ_B],IK_FSPLIT_SEED.rf);
+  e=ikSquatSolve(e,'lf',b,[bl[0]+IK_FSPLIT_FWD,bl[1],bl[2]+IK_FSPLIT_DZ_F],IK_FSPLIT_SEED.lf);
+  b.end=[e[7],e[8],e[9],e[12],e[13],e[14]];
+  ikFSplitBase=b;
+}
+function ikFSplitRebase(){
+  if(!ikFSplitBase) return;
+  var a=(manualAngles||lastAngles||HOME20).slice(), p=ikFSplitPct/100;
+  var F=linkFrames(a), r=ikEff(F,'rf'), l=ikEff(F,'lf');
+  ikFSplitCapture(a,
+    [r[0]+IK_FSPLIT_BACK*p,r[1],r[2]-IK_FSPLIT_DZ_B*p],
+    [l[0]-IK_FSPLIT_FWD*p,l[1],l[2]-IK_FSPLIT_DZ_F*p]);
+}
+function ikFSplitClear(restore){
+  if(restore&&ikFSplitBase&&manualAngles){
+    [7,8,9,12,13,14].forEach(function(ix){manualAngles[ix]=ikFSplitBase.legs[ix-6];});
+  }
+  ikFSplitPct=0; ikFSplitBase=null;
+  var sl=document.getElementById('ikFSplit'), v=document.getElementById('ikFSplitV');
+  if(sl) sl.value=0;
+  if(v) v.textContent='0';
+}
+function setIkFSplit(pct){
+  var p=Math.max(0,Math.min(100,parseFloat(pct)||0));
+  var sl=document.getElementById('ikFSplit'), v=document.getElementById('ikFSplitV');
+  if(sl) sl.value=Math.round(p);
+  if(v) v.textContent=Math.round(p);
+  if(!ikOn) return;
+  pausePlayback();
+  if(!manualAngles) manualAngles=(lastAngles||HOME20).slice();
+  if(p>0) ikRootClear();
+  if(p>0&&ikSquatBase) ikSquatClear(true);
+  if(!ikFSplitBase) ikFSplitCapture(manualAngles);
+  var a=manualAngles.slice(), b=ikFSplitBase;
+  if(p<=0){
+    [7,8,9,12,13,14].forEach(function(ix){a[ix]=b.legs[ix-6];});
+    ikFSplitPct=0; ikFSplitBase=null;
+  }else{
+    var k=p/100, e=b.end;
+    a[7]=Math.round(b.legs[1]+(e[0]-b.legs[1])*k);
+    a[8]=Math.round(b.legs[2]+(e[1]-b.legs[2])*k);
+    a[12]=Math.round(b.legs[6]+(e[3]-b.legs[6])*k);
+    a[13]=Math.round(b.legs[7]+(e[4]-b.legs[7])*k);
+    var rg=rangeOf(10);
+    a[9]=Math.round(Math.max(rg[0],Math.min(rg[1],ikSquatAnkle(a,'rf',b.pitchR))));
+    rg=rangeOf(15);
+    a[14]=Math.round(Math.max(rg[0],Math.min(rg[1],ikSquatAnkle(a,'lf',b.pitchL))));
+    ikFSplitPct=p;
+  }
+  manualAngles=a;
+  syncServos(a); renderManual();
+}
+window.setIkFSplit=setIkFSplit;
 function ikMarkerPose(){
   if(!rootRef) return;
   Object.keys(ikMarkers).forEach(function(key){
@@ -672,6 +1129,7 @@ function ikMarkerPose(){
     m.scale.setScalar(sel?1.4:1);
     m.material.color.setHex(sel?0xff9f0a:0x2f7bff);
   });
+  ikRootMarkerPose();
 }
 function ikPointerNDC(ev){
   var rect=renderer.domElement.getBoundingClientRect();
@@ -685,6 +1143,10 @@ function ikPick(ev){
     var d=ray.ray.distanceSqToPoint(ikMarkers[key].position);
     if(d<0.0011&&d<bestD){best=key;bestD=d;}
   });
+  if(ikRootMarker&&ikRootMarker.visible){
+    var dr=ray.ray.distanceSqToPoint(ikRootMarker.position);
+    if(dr<0.0028&&dr<bestD){best='root';bestD=dr;}
+  }
   return best;
 }
 window.addEventListener('pointerdown',function(ev){
@@ -693,6 +1155,35 @@ window.addEventListener('pointerdown',function(ev){
   if(!key) return;
   ikSel=key;
   pausePlayback();
+  if(key==='root'){
+    if(!ikBodyPose) ikRootCapture();
+    var mode=ev.altKey?'rot':(ev.shiftKey?'y':'xz');
+    if(mode==='rot'){
+      ikDrag={key:'root',mode:'rot',startX:ev.clientX,startY:ev.clientY,
+        startPitch:ikBodyPose.rootPitch,startRoll:ikBodyPose.rootRoll};
+      controls.enabled=false; ikMarkerPose();
+      ev.preventDefault(); ev.stopPropagation();
+      return;
+    }
+    var n0=new THREE.Vector3(); camera.getWorldDirection(n0);
+    var normal;
+    if(mode==='xz') normal=new THREE.Vector3(0,1,0);
+    else{
+      normal=new THREE.Vector3(n0.x,0,n0.z);
+      if(normal.lengthSq()<1e-8) normal.set(0,0,1);
+      normal.normalize();
+    }
+    var plane=new THREE.Plane().setFromNormalAndCoplanarPoint(normal,ikRootMarker.position.clone());
+    var mouse0=ikPointerNDC(ev), ray0=new THREE.Raycaster(); ray0.setFromCamera(mouse0,camera);
+    var hit0=new THREE.Vector3();
+    if(!ray0.ray.intersectPlane(plane,hit0)) return;
+    ikDrag={key:'root',mode:mode,plane:plane,startHit:hit0,
+      startOff:{x:ikBodyPose.off.x,y:ikBodyPose.off.y,z:ikBodyPose.off.z}};
+    controls.enabled=false;
+    ikMarkerPose();
+    ev.preventDefault(); ev.stopPropagation();
+    return;
+  }
   if(!manualAngles) manualAngles=(lastAngles||HOME20).slice();
   var n=new THREE.Vector3(); camera.getWorldDirection(n);
   ikDrag={key:key, plane:new THREE.Plane().setFromNormalAndCoplanarPoint(n,ikMarkers[key].position.clone())};
@@ -702,10 +1193,25 @@ window.addEventListener('pointerdown',function(ev){
 },true);
 window.addEventListener('pointermove',function(ev){
   if(!ikDrag) return;
+  if(ikDrag.key==='root'&&ikDrag.mode==='rot'){
+    var rp=ikDrag.startPitch-(ev.clientY-ikDrag.startY)*0.005;
+    var rr=ikDrag.startRoll+(ev.clientX-ikDrag.startX)*0.005;
+    ikRootSetRot(rp,rr);
+    ev.preventDefault(); ev.stopPropagation();
+    return;
+  }
   var mouse=ikPointerNDC(ev);
   var ray=new THREE.Raycaster(); ray.setFromCamera(mouse,camera);
   var hit=new THREE.Vector3();
   if(!ray.ray.intersectPlane(ikDrag.plane,hit)) return;
+  if(ikDrag.key==='root'){
+    var dx=hit.x-ikDrag.startHit.x, dy=hit.y-ikDrag.startHit.y, dz=hit.z-ikDrag.startHit.z;
+    var so=ikDrag.startOff;
+    if(ikDrag.mode==='y') ikRootSetOff(so.x,so.y+dy,so.z);
+    else ikRootSetOff(so.x+dx,so.y,so.z+dz);
+    ev.preventDefault(); ev.stopPropagation();
+    return;
+  }
   var inv=rootRef.quaternion.clone().invert();
   var fp=hit.sub(rootRef.position).applyQuaternion(inv);
   manualAngles=ikSolve(ikDrag.key,[fp.x,fp.y,fp.z]);
@@ -714,11 +1220,20 @@ window.addEventListener('pointermove',function(ev){
   ev.preventDefault(); ev.stopPropagation();
 },true);
 window.addEventListener('pointerup',function(){
-  if(ikDrag){ ikDrag=null; controls.enabled=true; ikMarkerPose(); }
+  if(ikDrag){
+    var wasFoot=(ikDrag.key==='rf'||ikDrag.key==='lf');
+    ikDrag=null; controls.enabled=true;
+    if(wasFoot){ // 拖過腳：蹲下／一字馬基準跟返新姿勢
+      ikSquatRebase();
+      ikSplitRebase();
+      ikFSplitRebase();
+    }
+    ikMarkerPose();
+  }
 },true);
 function toggleIK(){
   ikOn=!ikOn;
-  if(!ikOn){ ikSel=null; ikDrag=null; controls.enabled=true; }
+  if(!ikOn){ ikSel=null; ikDrag=null; controls.enabled=true; ikRootClear(true); }
   syncToggles();
   ikMarkerPose();
   if(window.__render) window.__render();
@@ -869,6 +1384,10 @@ function buildJointTable(){
 function syncToggles(){
   var m={anchorBtn:anchorOn, comBtn:comOn, ikBtn:ikOn};
   for(var k in m){var b=document.getElementById(k); if(b) b.classList.toggle('on',!!m[k]);}
+  ['ikSquatRow','ikSplitRow','ikFSplitRow'].forEach(function(id){
+    var row=document.getElementById(id);
+    if(row) row.style.display=ikOn?'flex':'none';
+  });
 }
 function toggleAnchor(){setAnchor(!anchorOn); syncToggles();}
 function toggleCom(){setCom(!comOn); syncToggles();}
@@ -1082,6 +1601,19 @@ function poseMesh(angles20,tMs){
     extraPos.x=0; extraPos.z=0; extraYaw=0;
     anchorApply(F,tMs);
     rootExtra(tMs);
+    var draggingFoot=ikDrag&&(ikDrag.key==='rf'||ikDrag.key==='lf');
+    if(anchorOn&&ikSquatBase&&ikSquatDepth>1e-4&&manualAngles){
+      if(draggingFoot){ // 拖腳途中保持機身唔跳，放手先重新對位
+        rootRef.position.x+=ikSquatShift.x;
+        rootRef.position.z+=ikSquatShift.z;
+      }else ikSquatFootFix(F);
+    }
+    if(ikBodyPose){
+      rootRef.position.set(ikBodyPose.basePos.x+ikBodyPose.off.x,
+                           ikBodyPose.basePos.y+ikBodyPose.off.y,
+                           ikBodyPose.basePos.z+ikBodyPose.off.z);
+      rootRef.quaternion.copy(ikRootQuat());
+    }
   }
   updateCom(F);
   if(ikOn) ikMarkerPose();
@@ -1324,7 +1856,9 @@ function seek(ms){
   anchorSnapReq=true; // 拖去第二個時間：anchor 即刻對位，唔平滑過去
   if(audioEl&&!audioEl.paused) audioEl.pause();
   audioKey=null; // 下次起播重新對位，唔用舊 offset
+  ikRootClear();
   manualAngles=null; // 播片跟 .ubx，唔跟手動位
+  ikSquatClear(); ikSplitClear(); ikFSplitClear();
   drawAt(pauseMs); audioTick(pauseMs);
 }
 function togglePlay(){
@@ -1335,7 +1869,9 @@ function togglePlay(){
   }
   else{
     if(pauseMs>=(endMs-1)) pauseMs=0;
+    ikRootClear();
     manualAngles=null; // 播片跟 .ubx，唔跟手動位
+    ikSquatClear(); ikSplitClear(); ikFSplitClear();
     t0ms=performance.now();playing=true;$('playBtn').textContent='⏸';
     var step=function(){
       if(!playing) return;
@@ -1400,11 +1936,19 @@ var envMode=false;
 function sName(id){return uiLang==='zh'?SERVO_NAMES[id][0]:SERVO_NAMES[id][1];}
 function rangeOf(k){var inf=servoInfo[k];return envMode?inf.env:[inf.min,inf.max];}
 function svTitle(k,v){
-  var inf=servoInfo[k];
-  return '#'+k+' '+sName(k)+'｜q='+(v+inf.off)+'°｜'+T('cal_lbl')+' '+inf.min+'–'+inf.max+'｜'+T('env_lbl')+' '+inf.env[0]+'–'+inf.env[1];
+  var inf=servoInfo[k], o=tmpOff(k), d=Math.round((o-inf.off)*10)/10, q=Math.round((v+o)*10)/10;
+  return '#'+k+' '+sName(k)+'｜q='+q+'°'+(d?'（Δ'+d+'°）':'')+'｜'+T('cal_lbl')+' '+inf.min+'–'+inf.max+'｜'+T('env_lbl')+' '+inf.env[0]+'–'+inf.env[1];
 }
 function svOor(k,v){return envMode&&(v<servoInfo[k].min-0.5||v>servoInfo[k].max+0.5);}
-function setEnvMode(v){envMode=!!v;buildServos();}
+function toggleEnv(){setEnvMode(!envMode);}
+function setEnvMode(v){
+  ikRootClear(true);
+  envMode=!!v;
+  var b=document.getElementById('envBtn');
+  if(b) b.classList.toggle('on',envMode);
+  buildServos();
+}
+window.toggleEnv=toggleEnv; window.setEnvMode=setEnvMode;
 function buildServos(){
   // 重建（轉語言／換行程用）：留返而家啲 slider 值
   var cur={};
@@ -1425,6 +1969,9 @@ function buildServos(){
   for(var m=1;m<=20;m++)(function(kk){
     document.getElementById('sv'+kk).addEventListener('input',function(){
       pausePlayback();
+      ikRootClear();
+      if(kk===7||kk===11||kk===12||kk===16) ikSplitClear(true);
+      if(kk===8||kk===9||kk===10||kk===13||kk===14||kk===15){ ikSquatClear(true); ikFSplitClear(true); }
       if(!manualAngles) manualAngles=readServos();
       manualAngles[kk-1]=parseInt(document.getElementById('sv'+kk).value,10);
       var b=document.getElementById('svv'+kk);
@@ -1438,10 +1985,10 @@ function buildServos(){
 }
 (function(){
   Object.keys(FK.chains).forEach(function(c){
-    FK.chains[c].forEach(function(j){servoInfo[j.servo]={min:j.srg[0],max:j.srg[1],home:j.home,off:j.offset,env:ENV[j.servo]};});
+    FK.chains[c].forEach(function(j){servoInfo[j.servo]={min:j.srg[0],max:j.srg[1],home:j.home,off:j.offset,init:j.init,qinit:j.qinit,env:ENV[j.servo]};});
   });
-  servoInfo[17]={min:FK.hands['17'].servo_min,max:FK.hands['17'].servo_max,home:120,off:FK.handJoints['17'].offset,env:ENV[17]};
-  servoInfo[18]={min:FK.hands['18'].servo_min,max:FK.hands['18'].servo_max,home:120,off:FK.handJoints['18'].offset,env:ENV[18]};
+  servoInfo[17]={min:FK.hands['17'].servo_min,max:FK.hands['17'].servo_max,home:120,off:FK.handJoints['17'].offset,init:FK.handJoints['17'].init,qinit:FK.handJoints['17'].qinit,env:ENV[17]};
+  servoInfo[18]={min:FK.hands['18'].servo_min,max:FK.hands['18'].servo_max,home:120,off:FK.handJoints['18'].offset,init:FK.handJoints['18'].init,qinit:FK.handJoints['18'].qinit,env:ENV[18]};
 })();
 function readServos(){var a=[];for(var i=1;i<=20;i++)a.push(parseInt(document.getElementById('sv'+i).value,10));return a;}
 function syncServos(a){
@@ -1455,6 +2002,53 @@ function syncServos(a){
     b.classList.toggle('oor',svOor(i,a[i-1]));
   }
 }
+function updTmpOffCount(){
+  var n=0;
+  for(var i=0;i<20;i++) if(typeof tmpInitAbs[i]==='number') n++;
+  var el=document.getElementById('tmpOffOn');
+  if(el) el.textContent=n?T('tmp_off_changed')+' '+n:'';
+}
+function buildTmpOff(){
+  var h='';
+  for(var k=1;k<=20;k++){
+    h+='<label class="toi"><span>#'+k+'</span>'
+      +'<input type="number" id="toff'+k+'" min="-360" max="360" step="1" value="'+tmpInit(k)+'" title="'+T('tmp_off_base')+' '+origInit(k)+'° @ '+servoInfo[k].init+'°">'
+      +'<i>°</i></label>';
+  }
+  document.getElementById('tmpOffGrid').innerHTML=h;
+  for(var m=1;m<=20;m++)(function(kk){
+    var el=document.getElementById('toff'+kk);
+    el.addEventListener('input',function(){setTmpOff(kk,this.value);});
+    el.addEventListener('blur',function(){this.value=tmpInit(kk);});
+  })(m);
+  updTmpOffCount();
+}
+function tmpOffRefresh(){
+  // offset 改咗就重新計 FK；蹲下／前後劈腿嘅基準已失效，還原返基準再清暫態
+  if(ikSquatBase) ikSquatClear(true);
+  if(ikFSplitBase) ikFSplitClear(true);
+  if(manualAngles) renderManual(); else if(lastAngles) poseMesh(lastAngles);
+  syncServos(manualAngles||lastAngles||HOME20);
+}
+function setTmpOff(k,val){
+  ikRootClear(true);
+  var raw=String(val==null?'':val).trim();
+  if(raw===''||raw==='-'||raw==='.'||raw==='-.'||raw==='+') return;
+  var v=parseFloat(raw);
+  if(isNaN(v)) return;
+  v=Math.max(-360,Math.min(360,Math.round(v)));
+  tmpInitAbs[k-1]=(v===origInit(k))?null:v;
+  var el=document.getElementById('toff'+k);
+  if(el&&parseFloat(el.value)!==v) el.value=v;
+  updTmpOffCount(); tmpOffRefresh();
+}
+function resetTmpOff(){
+  ikRootClear();
+  for(var i=0;i<20;i++) tmpInitAbs[i]=null;
+  for(var k=1;k<=20;k++){var el=document.getElementById('toff'+k); if(el) el.value=origInit(k);}
+  updTmpOffCount(); tmpOffRefresh();
+}
+window.setTmpOff=setTmpOff; window.resetTmpOff=resetTmpOff;
 function renderManual(){
   if(!manualAngles) return;
   poseMesh(manualAngles);
@@ -1467,6 +2061,8 @@ function pausePlayback(){
 }
 function servosHome(){
   pausePlayback();
+  ikRootClear();
+  ikSquatClear(); ikSplitClear(); ikFSplitClear();
   manualAngles=[];
   for(var id=1;id<=20;id++) manualAngles.push(servoInfo[id].home);
   syncServos(manualAngles);
@@ -1476,9 +2072,11 @@ function servosHome(){
 function servosZero(){
   // 零位 q=0：servo = -offset（同 a2_viewer b-zero 一樣），跟當前 slider 範圍夾返
   pausePlayback();
+  ikRootClear();
+  ikSquatClear(); ikSplitClear(); ikFSplitClear();
   manualAngles=[];
   for(var id=1;id<=20;id++){
-    var rg=rangeOf(id), v=Math.round(-servoInfo[id].off);
+    var rg=rangeOf(id), v=Math.round(-tmpOff(id));
     if(v<rg[0])v=rg[0]; if(v>rg[1])v=rg[1];
     manualAngles.push(v);
   }

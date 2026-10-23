@@ -2,8 +2,9 @@
 """Extract full-body FK params from alpha2.urdf + servo_map.yaml -> web/fk-params.js
 
 Covers 20 servos (IDs 1..20): joint origins/axes (URDF), angle offsets
-(servo_map: q_deg = servo + offset, except ID20 uses urdf_offset),
-joint limits + servo ranges. No hand copying.
+(servo_map: q_deg = servo + effective_offset, where
+effective_offset = q_init_deg - pc_init_angle), joint limits + servo ranges.
+No hand copying.
 """
 import re, sys, os, json
 
@@ -109,6 +110,14 @@ TIPS = {
     "head": (None, [19, 20]),
 }
 
+def effective_offset(sm):
+    if "urdf_offset" in sm:
+        raise ValueError("servo %s: urdf_offset is no longer supported; set q_init_deg" % sm["servo_id"])
+    off = sm["q_init_deg"] - sm["pc_init_angle"]
+    if "servo_at_q0" in sm and sm["servo_at_q0"] != -off:
+        raise ValueError("servo %s: servo_at_q0 %s != %s" % (sm["servo_id"], sm["servo_at_q0"], -off))
+    return off
+
 out = {"chains": {}, "tips": {}, "hands": {},
        "torso": {"x": [-42.3, 52.7], "y": [-56.8, 57.4], "z": [-16.0, 104.8]}}
 for cname, jnames in CHAINS.items():
@@ -116,13 +125,14 @@ for cname, jnames in CHAINS.items():
     for jn in jnames:
         uj = joints[jn]
         sm = by_joint[jn]
-        off = sm.get("urdf_offset", sm["pc_offset"])
+        off = effective_offset(sm)
         items.append({
             "servo": sm["servo_id"], "joint": jn,
             "origin": uj["origin"], "axis": uj["axis"],
             "offset": off, "qlim": uj["qlim"],
             "srg": [sm["servo_min"], sm["servo_max"]],
             "home": sm["servo_home"],
+            "init": sm["pc_init_angle"], "qinit": sm["q_init_deg"],
         })
     out["chains"][cname] = items
     tj, _ = TIPS[cname]
@@ -138,7 +148,8 @@ for jn, sid in (("r_hand_joint", 17), ("l_hand_joint", 18)):
     sm = [r for r in smap if r["servo_id"] == sid][0]
     out["handJoints"][str(sid)] = {
         "joint": jn, "origin": joints[jn]["origin"], "axis": joints[jn]["axis"],
-        "offset": sm.get("urdf_offset", sm["pc_offset"]),
+        "offset": effective_offset(sm),
+        "init": sm["pc_init_angle"], "qinit": sm["q_init_deg"],
         "parent": "r_arm" if sid == 17 else "l_arm",
     }
 # mesh link names (meshes/visual/<link>.obj), one per joint child + base + hands
