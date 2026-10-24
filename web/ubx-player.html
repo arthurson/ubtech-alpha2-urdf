@@ -22,9 +22,9 @@
 #leftpanel{flex:1 1 auto;min-height:150px;display:flex;gap:8px;flex-direction:column;overflow:hidden}
 #leftpanel h1{font-size:17px;margin:0;display:flex;gap:4px;align-items:center;flex-wrap:nowrap}
 #leftpanel h1 button{padding:3px 7px;font-size:12px;border-radius:8px;margin:0;font-weight:700;white-space:nowrap}
-#ikSquatRow,#ikSplitRow,#ikFSplitRow{display:none;align-items:center;gap:5px;font-size:12px;white-space:nowrap;margin:4px 0 0}
-#ikSquatRow input[type=range],#ikSplitRow input[type=range],#ikFSplitRow input[type=range]{flex:1;min-width:40px;width:auto;margin:0}
-#ikSquatRow span,#ikSplitRow span,#ikFSplitRow span{flex:none;width:62px}
+#ikSquatRow,#ikYSquatRow,#ikSplitRow,#ikFSplitRow{display:none;align-items:center;gap:5px;font-size:12px;white-space:nowrap;margin:4px 0 0}
+#ikSquatRow input[type=range],#ikYSquatRow input[type=range],#ikSplitRow input[type=range],#ikFSplitRow input[type=range]{flex:1;min-width:40px;width:auto;margin:0}
+#ikSquatRow span,#ikYSquatRow span,#ikSplitRow span,#ikFSplitRow span{flex:none;width:62px}
 #ikFSplitRow{margin-bottom:3px}
 #tmpOffBox{margin:6px 0 2px;font-size:12px;border:1px solid var(--panel-bd);border-radius:8px;padding:4px 6px;background:var(--log-bg)}
 #tmpOffBox summary{cursor:pointer;font-weight:700;color:var(--accent);font-size:12px;display:flex;align-items:center;gap:6px;white-space:nowrap}
@@ -140,11 +140,16 @@
 <button onclick="setView('bottom')" data-i18n="v_bottom" data-i18n-title="t_bottom" title="底面">底</button>
 <button onclick="setView('home')" title="Default view">⌂</button>
 </div>
-<h2><span data-i18n="servos">舵機</span> <button onclick="servosHome()" data-i18n="home_all">回中</button> <button onclick="servosZero()" data-i18n="zero_all" data-i18n-title="zero_title" title="所有關節 q=0；servo 值用 q_init 導出嘅有效 offset 換算（同 FK 同一套），唔會改 q_init">零位</button> <button id="envBtn" onclick="toggleEnv()" data-i18n="env_range" data-i18n-title="env_title" title="用官方 203 招實測行程做 slider 範圍">官方行程</button> <button onclick="showJoints()" data-i18n="jinfo">ℹ 關節資料</button></h2>
+<h2><span data-i18n="servos">舵機</span> <button onclick="servosZero()" data-i18n="zero_all" data-i18n-title="zero_title" title="套用 PC 軟件企姿（企直、手垂低）嘅 20 個 servo 值；唔會改 q_init">零位</button> <button onclick="servosHome()" data-i18n="home_all">回中</button> <button id="envBtn" onclick="toggleEnv()" data-i18n="env_range" data-i18n-title="env_title" title="用官方 203 招實測行程做 slider 範圍">官方行程</button> <button onclick="showJoints()" data-i18n="jinfo">ℹ 關節資料</button></h2>
 <div id="ikSquatRow">
 <span data-i18n="ik_squat" style="flex:none">蹲下</span>
 <input type="range" id="ikSquat" min="0" max="100" step="1" value="0" oninput="setIkSquat(this.value)" data-i18n-title="ik_squat_title" title="重現官方「蹲下」pose：手垂低、深蹲、腳掌貼地（建議開錨定）">
 <b id="ikSquatV" class="mono" style="flex:none;width:44px;text-align:right">0</b>
+</div>
+<div id="ikYSquatRow">
+<span data-i18n="ik_ysquat" style="flex:none">蹲式</span>
+<input type="range" id="ikYSquat" min="0" max="100" step="1" value="0" oninput="setIkYSquat(this.value)" data-i18n-title="ik_ysquat_title" title="重現官方「蹲式」最深格：深蹲、雙臂左右張開舉起、腳掌貼地（建議開錨定）">
+<b id="ikYSquatV" class="mono" style="flex:none;width:44px;text-align:right">0</b>
 </div>
 <div id="ikSplitRow">
 <span data-i18n="ik_split" style="flex:none">左右</span>
@@ -195,6 +200,8 @@ function mMul(A,B){var C=[[0,0,0],[0,0,0],[0,0,0]];for(var i=0;i<3;i++)for(var j
 function vAdd(a,b){return [a[0]+b[0],a[1]+b[1],a[2]+b[2]];}
 var I3=function(){return [[1,0,0],[0,1,0],[0,0,1]];};
 var D2R=Math.PI/180;
+// 零位＝PC 軟件企姿（企直、手垂低）；亦係未載入／未手動擺位時嘅 preset
+var STAND20=[120,205,120,120,35,120,120,63,145,135,120,120,177,95,105,120,120,120,120,120];
 
 // ---- 中英切換 ----
 var I18N={
@@ -210,8 +217,8 @@ var I18N={
   servos:{zh:'舵機',en:'Servos'},
   home_all:{zh:'回中',en:'Center'},
   zero_all:{zh:'零位',en:'Zero'},
-  zero_title:{zh:'所有關節 q=0；servo 值用 q_init 導出嘅有效 offset 換算（同 FK 同一套），唔會改 q_init',en:'All joints at q=0; servo values use the effective offset derived from q_init (same set as FK); does not change q_init'},
-  zero_log:{zh:'全部零位 q=0',en:'All joints at q=0'},
+  zero_title:{zh:'套用 PC 軟件企姿（企直、手垂低）嘅 20 個 servo 值；唔會改 q_init',en:'Apply the PC-software standing pose (upright, arms down) servo values; does not change q_init'},
+  zero_log:{zh:'已套用企姿（企直、手垂低）',en:'Standing pose applied'},
   env_range:{zh:'官方行程',en:'Official range'},
   env_title:{zh:'用官方 203 招實測行程做 slider 範圍',en:'Slider range = travel measured over the 203 official actions'},
   cal_lbl:{zh:'校準',en:'cal'},
@@ -243,8 +250,10 @@ var I18N={
   anchor_b:{zh:'錨定',en:'Anchor'},
   ik_b:{zh:'IK',en:'IK'},
   ik_title:{zh:'IK：拖手／腳藍點擺位；拖綠色骨盆點＝拖身體（雙腳釘地、鞠躬／重心轉移）',en:'IK: drag hand/foot dots; drag the green pelvis dot to move the body with feet pinned (bow / weight shift)'},
-  ik_squat:{zh:'蹲下',en:'Squat'},
+  ik_squat:{zh:'蹲下',en:'Squat 1'},
   ik_squat_title:{zh:'重現官方「蹲下」pose：手垂低、深蹲、腳掌貼地（建議開錨定）',en:'Match the official Squat pose: arms down, deep squat, feet planted (keep Anchor on)'},
+  ik_ysquat:{zh:'蹲式',en:'Squat 2'},
+  ik_ysquat_title:{zh:'重現官方「蹲式」（1509004868066）最深格：深蹲、雙臂左右張開舉起、腳掌貼地（建議開錨定）',en:'Match the deepest frame of the official Squat Pose (1509004868066): deep squat, arms raised out to the sides, feet planted (keep Anchor on)'},
   ik_split:{zh:'左右',en:'Left/Right'},
   ik_split_title:{zh:'雙腳左右劈開：兩隻腳一齊向外撐，雙臂自動張開避手，腳掌保持貼地、機身下降（建議開錨定）',en:'Legs spread left/right: both legs push outward; arms swing outward to clear the legs; feet stay planted and the body lowers (keep Anchor on)'},
 ik_fsplit:{zh:'前後',en:'Front/Back'},
@@ -453,7 +462,7 @@ function applyTheme(){
 // ---- 腳部錨定（跟 alpha2_viewer 做法）----
 // 支撐腳＝鞋底最低嗰隻（2cm 遲滯，企定／郁手唔會左右跳）：① root 轉到 sole 法線對返世界垂直（腳板貼地）
 // ② sole 釘返站姿位置（x,z）③ 兩腳鞋底角落最低點貼地面；播片時平滑過去，seek／手擺即刻對位
-var rootRef=null, qROS=null, anchorOn=false, anchorRest=null;
+var rootRef=null, qROS=null, anchorOn=true, anchorRest=null;
 var SOLE={r:{parent:'r_ankle_roll_link',off:[0.000213,-0.016948,-0.027969]},
           l:{parent:'l_ankle_roll_link',off:[0.000213,0.016948,-0.027969]}};
 function soleWorld(F,side){
@@ -618,7 +627,7 @@ function specialPose(F,tMs){
   return {qT:qT, minY:Math.min.apply(null,pts)};
 }
 // ---- 質心標記（跟參考 viewer：橙點＋垂直投影線＋地面錐仔）----
-var comMarker=null, comOn=false;
+var comMarker=null, comOn=true;
 function setCom(v){
   comOn=!!v;
   if(comMarker) comMarker.visible=comOn;
@@ -643,7 +652,7 @@ var IK_CHAINS={
   rf:{servos:[7,8,9,10,11],eff:'soleR'},
   lf:{servos:[12,13,14,15,16],eff:'soleL'}
 };
-var ikOn=false, ikSel=null, ikDrag=null, ikJoint={}, ikMarkers={};
+var ikOn=true, ikSel=null, ikDrag=null, ikJoint={}, ikMarkers={};
 var ikRootMarker=null, ikBodyPose=null;
 var IK_ROOT_MAX_X=0.05, IK_ROOT_Z_FWD=0.045, IK_ROOT_Z_BACK=0.032;
 var IK_ROOT_Y_UP=0.008, IK_ROOT_Y_DOWN=0.055;
@@ -717,7 +726,7 @@ function ikSolveCore(a0,target,key,ch,lim,iters,prep){
 function ikSolveChain(start,target,key,ch,iters,prep,noMulti){
   var lim={};
   ch.servos.forEach(function(s){lim[s]=rangeOf(s);});
-  var a=(start||manualAngles||lastAngles||HOME20).slice();
+  var a=(start||manualAngles||lastAngles||STAND20).slice();
   var best=ikSolveCore(a,target,key,ch,lim,iters,prep);
   if(!noMulti&&best.err>0.006){
     // 奇異位（例如手臂完全伸直同軸）→ 多起點，避免卡死
@@ -770,8 +779,8 @@ function ikRootSolveLeg(a,key,b,target,iters){
 function ikRootCapture(){
   if(!rootRef) return;
   pausePlayback();
-  if(!manualAngles) manualAngles=(lastAngles||HOME20).slice();
-  ikSquatClear(); ikSplitClear(); ikFSplitClear();
+  if(!manualAngles) manualAngles=(lastAngles||STAND20).slice();
+  ikSquatClear(); ikYSquatClear(); ikSplitClear(); ikFSplitClear();
   var F=linkFrames(manualAngles);
   var p=rootRef.position.clone(), q=rootRef.quaternion.clone();
   function world(key){
@@ -798,7 +807,7 @@ function ikRootApply(noRender,iters){
   var o=ikBodyPose.off;
   var R=ikBodyPose.basePos.clone().add(new THREE.Vector3(o.x,o.y,o.z));
   var Q=ikRootQuat(), inv=Q.clone().invert();
-  var a=(manualAngles||lastAngles||HOME20).slice(), err=0;
+  var a=(manualAngles||lastAngles||STAND20).slice(), err=0;
   [['r','rf'],['l','lf']].forEach(function(sd){
     var t=ikBodyPose.feet[sd[0]];
     var l=new THREE.Vector3(t[0]-R.x,t[1]-R.y,t[2]-R.z).applyQuaternion(inv);
@@ -839,7 +848,7 @@ function ikRootRender(){
 function ikRootReach(off,pitch,roll){
   var pOff={x:ikBodyPose.off.x,y:ikBodyPose.off.y,z:ikBodyPose.off.z};
   var pPitch=ikBodyPose.rootPitch, pRoll=ikBodyPose.rootRoll, pErr=ikBodyPose.err||0;
-  var seed=(manualAngles||lastAngles||HOME20).slice();
+  var seed=(manualAngles||lastAngles||STAND20).slice();
   var e=ikRootTrial(off,pitch,roll,seed,10);
   if(e<=IK_ROOT_TOL){ ikRootRender(); return; }
   // 由現況向着目標做二分：搵最遠而又釘得住腳嘅位（3 次已夠幼）
@@ -917,7 +926,7 @@ function ikSquatWorld(F){
   return out;
 }
 function ikSquatCapture(){
-  ikSquatBase={a:(manualAngles||lastAngles||HOME20).slice()};
+  ikSquatBase={a:(manualAngles||lastAngles||STAND20).slice()};
 }
 function ikSquatRebase(){
   if(!ikSquatBase||!manualAngles||ikSquatPct<=0||ikSquatPct>=100) return;
@@ -959,9 +968,11 @@ function setIkSquat(pct){
   if(v) v.textContent=Math.round(p);
   if(!ikOn) return;
   pausePlayback();
-  if(!manualAngles) manualAngles=(lastAngles||HOME20).slice();
+  if(!manualAngles) manualAngles=(lastAngles||STAND20).slice();
   if(p>0){
     ikRootClear();
+    if(ikYSquatPct>0) ikYSquatClear(true);
+    else if(ikYSquatBase) ikYSquatClear();
     if(ikFSplitPct>0) ikFSplitClear(true);
     else if(ikFSplitBase) ikFSplitClear();
   }
@@ -988,6 +999,61 @@ function ikSquatFootFix(F){
   rootRef.position.z+=ikSquatShift.z;
 }
 window.setIkSquat=setIkSquat;
+// ---- IK 蹲式（官方 1509004868066 第 3 格）：深蹲＋雙臂左右張開舉起 ----
+// 官方 5 格（18.45s）：企 0s → 蹲低手垂低 4.35s → 深蹲雙手舉起 9.85s → 手垂低 15.35s → 企返 17.95s。
+// 呢個 slider 靜態重現第 3 格（9.85s 嗰個 yoga squat pose），0-100% 由現有姿勢過渡過去；
+// 同「蹲下」一樣，兩個 pitch pose slider 互斥；雙腳靠錨定釘地＝機身下降。
+var IK_YSQUAT_POSE=[120,61,120,120,181,120,145,29,55,187,145,88,216,182,55,89,120,120,120,120];
+var ikYSquatPct=0, ikYSquatBase=null;
+function ikYSquatCapture(){
+  ikYSquatBase={a:(manualAngles||lastAngles||STAND20).slice()};
+}
+function ikYSquatRebase(){
+  if(!ikYSquatBase||!manualAngles||ikYSquatPct<=0||ikYSquatPct>=100) return;
+  var p=ikYSquatPct/100, a=manualAngles, base=ikYSquatBase.a.slice();
+  for(var i=0;i<20;i++){
+    var rg=rangeOf(i+1), v=(a[i]-IK_YSQUAT_POSE[i]*p)/(1-p);
+    base[i]=Math.round(Math.max(rg[0],Math.min(rg[1],v)));
+  }
+  ikYSquatBase.a=base;
+}
+function ikYSquatClear(restore){
+  if(restore&&ikYSquatBase&&manualAngles) manualAngles=ikYSquatBase.a.slice();
+  ikYSquatPct=0; ikYSquatBase=null;
+  var sl=document.getElementById('ikYSquat'), v=document.getElementById('ikYSquatV');
+  if(sl) sl.value=0;
+  if(v) v.textContent='0';
+}
+function setIkYSquat(pct){
+  var p=Math.max(0,Math.min(100,parseFloat(pct)||0));
+  var sl=document.getElementById('ikYSquat'), v=document.getElementById('ikYSquatV');
+  if(sl) sl.value=Math.round(p);
+  if(v) v.textContent=Math.round(p);
+  if(!ikOn) return;
+  pausePlayback();
+  if(!manualAngles) manualAngles=(lastAngles||STAND20).slice();
+  if(p>0){
+    ikRootClear();
+    if(ikSquatPct>0) ikSquatClear(true);
+    else if(ikSquatBase) ikSquatClear();
+    if(ikFSplitPct>0) ikFSplitClear(true);
+    else if(ikFSplitBase) ikFSplitClear();
+  }
+  if(!ikYSquatBase) ikYSquatCapture();
+  if(p<=0){
+    manualAngles=ikYSquatBase.a.slice();
+    ikYSquatPct=0;
+  }else{
+    var a=ikYSquatBase.a.slice();
+    for(var i=0;i<20;i++){
+      var rg=rangeOf(i+1), val=Math.round(a[i]+(IK_YSQUAT_POSE[i]-a[i])*p/100);
+      a[i]=Math.max(rg[0],Math.min(rg[1],val));
+    }
+    manualAngles=a; ikYSquatPct=p;
+  }
+  syncServos(manualAngles); renderManual();
+}
+window.setIkYSquat=setIkYSquat;
 // ---- IK 雙腳一字馬（左右劈腿）：hip roll 向外，ankle roll 反向補償保持鞋底水平 ----
 // 劈腿時肩 roll（servo 2/5）會自動撐開到 100/140，避免大腿／膝頭撞手；收腳會還原。
 // 錨定會令機身隨住下降。
@@ -998,13 +1064,13 @@ function ikSplitMaxD(a){
   return Math.max(0,Math.min(IK_SPLIT_MAX,rH[1]-a[6],rA[1]-a[10],a[11]-lH[0],a[15]-lA[0]));
 }
 function ikSplitCapture(a){
-  a=(a||manualAngles||lastAngles||HOME20).slice();
+  a=(a||manualAngles||lastAngles||STAND20).slice();
   ikSplitBase={rolls:[a[6],a[10],a[11],a[15]],armR:a[1],armL:a[4],maxD:ikSplitMaxD(a)};
 }
 function ikSplitRebase(){
   if(!ikSplitBase) return;
   var armR=ikSplitBase.armR, armL=ikSplitBase.armL;
-  var a=(manualAngles||lastAngles||HOME20).slice();
+  var a=(manualAngles||lastAngles||STAND20).slice();
   var d=ikSplitBase.maxD*ikSplitPct/100;
   var b=a.slice();
   b[6]=a[6]-d; b[10]=a[10]-d; b[11]=a[11]+d; b[15]=a[15]+d;
@@ -1029,7 +1095,7 @@ function setIkSplit(pct){
   if(v) v.textContent=Math.round(p);
   if(!ikOn) return;
   pausePlayback();
-  if(!manualAngles) manualAngles=(lastAngles||HOME20).slice();
+  if(!manualAngles) manualAngles=(lastAngles||STAND20).slice();
   if(p>0) ikRootClear();
   if(!ikSplitBase) ikSplitCapture(manualAngles);
   var a=manualAngles.slice(), b=ikSplitBase;
@@ -1058,7 +1124,7 @@ var IK_FSPLIT_DZ_F=0.0695, IK_FSPLIT_DZ_B=0.0365;
 var IK_FSPLIT_SEED={rf:[109,125],lf:[191,10]};
 var ikFSplitPct=0, ikFSplitBase=null;
 function ikFSplitCapture(a,r,l){
-  a=(a||manualAngles||lastAngles||HOME20).slice();
+  a=(a||manualAngles||lastAngles||STAND20).slice();
   var F=linkFrames(a), br=(r||ikEff(F,'rf')).slice(), bl=(l||ikEff(F,'lf')).slice();
   var b={r:br,l:bl,legs:a.slice(6,16),
     pitchR:ikLegPitch(a,'r'),pitchL:ikLegPitch(a,'l')};
@@ -1071,7 +1137,7 @@ function ikFSplitCapture(a,r,l){
 }
 function ikFSplitRebase(){
   if(!ikFSplitBase) return;
-  var a=(manualAngles||lastAngles||HOME20).slice(), p=ikFSplitPct/100;
+  var a=(manualAngles||lastAngles||STAND20).slice(), p=ikFSplitPct/100;
   var F=linkFrames(a), r=ikEff(F,'rf'), l=ikEff(F,'lf');
   ikFSplitCapture(a,
     [r[0]+IK_FSPLIT_BACK*p,r[1],r[2]-IK_FSPLIT_DZ_B*p],
@@ -1093,9 +1159,10 @@ function setIkFSplit(pct){
   if(v) v.textContent=Math.round(p);
   if(!ikOn) return;
   pausePlayback();
-  if(!manualAngles) manualAngles=(lastAngles||HOME20).slice();
+  if(!manualAngles) manualAngles=(lastAngles||STAND20).slice();
   if(p>0) ikRootClear();
   if(p>0&&ikSquatBase) ikSquatClear(true);
+  if(p>0&&ikYSquatBase) ikYSquatClear(true);
   if(!ikFSplitBase) ikFSplitCapture(manualAngles);
   var a=manualAngles.slice(), b=ikFSplitBase;
   if(p<=0){
@@ -1184,7 +1251,7 @@ window.addEventListener('pointerdown',function(ev){
     ev.preventDefault(); ev.stopPropagation();
     return;
   }
-  if(!manualAngles) manualAngles=(lastAngles||HOME20).slice();
+  if(!manualAngles) manualAngles=(lastAngles||STAND20).slice();
   var n=new THREE.Vector3(); camera.getWorldDirection(n);
   ikDrag={key:key, plane:new THREE.Plane().setFromNormalAndCoplanarPoint(n,ikMarkers[key].position.clone())};
   controls.enabled=false;
@@ -1223,8 +1290,9 @@ window.addEventListener('pointerup',function(){
   if(ikDrag){
     var wasFoot=(ikDrag.key==='rf'||ikDrag.key==='lf');
     ikDrag=null; controls.enabled=true;
-    if(wasFoot){ // 拖過腳：蹲下／一字馬基準跟返新姿勢
+    if(wasFoot){ // 拖過腳：蹲下／蹲式／一字馬基準跟返新姿勢
       ikSquatRebase();
+      ikYSquatRebase();
       ikSplitRebase();
       ikFSplitRebase();
     }
@@ -1384,7 +1452,7 @@ function buildJointTable(){
 function syncToggles(){
   var m={anchorBtn:anchorOn, comBtn:comOn, ikBtn:ikOn};
   for(var k in m){var b=document.getElementById(k); if(b) b.classList.toggle('on',!!m[k]);}
-  ['ikSquatRow','ikSplitRow','ikFSplitRow'].forEach(function(id){
+  ['ikSquatRow','ikYSquatRow','ikSplitRow','ikFSplitRow'].forEach(function(id){
     var row=document.getElementById(id);
     if(row) row.style.display=ikOn?'flex':'none';
   });
@@ -1858,7 +1926,7 @@ function seek(ms){
   audioKey=null; // 下次起播重新對位，唔用舊 offset
   ikRootClear();
   manualAngles=null; // 播片跟 .ubx，唔跟手動位
-  ikSquatClear(); ikSplitClear(); ikFSplitClear();
+  ikSquatClear(); ikYSquatClear(); ikSplitClear(); ikFSplitClear();
   drawAt(pauseMs); audioTick(pauseMs);
 }
 function togglePlay(){
@@ -1871,7 +1939,7 @@ function togglePlay(){
     if(pauseMs>=(endMs-1)) pauseMs=0;
     ikRootClear();
     manualAngles=null; // 播片跟 .ubx，唔跟手動位
-    ikSquatClear(); ikSplitClear(); ikFSplitClear();
+    ikSquatClear(); ikYSquatClear(); ikSplitClear(); ikFSplitClear();
     t0ms=performance.now();playing=true;$('playBtn').textContent='⏸';
     var step=function(){
       if(!playing) return;
@@ -1971,7 +2039,7 @@ function buildServos(){
       pausePlayback();
       ikRootClear();
       if(kk===7||kk===11||kk===12||kk===16) ikSplitClear(true);
-      if(kk===8||kk===9||kk===10||kk===13||kk===14||kk===15){ ikSquatClear(true); ikFSplitClear(true); }
+      if(kk===8||kk===9||kk===10||kk===13||kk===14||kk===15){ ikSquatClear(true); ikYSquatClear(true); ikFSplitClear(true); }
       if(!manualAngles) manualAngles=readServos();
       manualAngles[kk-1]=parseInt(document.getElementById('sv'+kk).value,10);
       var b=document.getElementById('svv'+kk);
@@ -2026,9 +2094,10 @@ function buildTmpOff(){
 function tmpOffRefresh(){
   // offset 改咗就重新計 FK；蹲下／前後劈腿嘅基準已失效，還原返基準再清暫態
   if(ikSquatBase) ikSquatClear(true);
+  if(ikYSquatBase) ikYSquatClear(true);
   if(ikFSplitBase) ikFSplitClear(true);
   if(manualAngles) renderManual(); else if(lastAngles) poseMesh(lastAngles);
-  syncServos(manualAngles||lastAngles||HOME20);
+  syncServos(manualAngles||lastAngles||STAND20);
 }
 function setTmpOff(k,val){
   ikRootClear(true);
@@ -2062,21 +2131,22 @@ function pausePlayback(){
 function servosHome(){
   pausePlayback();
   ikRootClear();
-  ikSquatClear(); ikSplitClear(); ikFSplitClear();
+  ikSquatClear(); ikYSquatClear(); ikSplitClear(); ikFSplitClear();
   manualAngles=[];
   for(var id=1;id<=20;id++) manualAngles.push(servoInfo[id].home);
   syncServos(manualAngles);
   log(T('all_home_log'));
   renderManual();
 }
+// 零位＝PC 軟件企姿（企直、手垂低）：直接套官方企姿 servo 值（1–20），唔改 q_init。
+// 同 slider 一樣，套用前夾返當前可用行程（校準／官方行程）。
 function servosZero(){
-  // 零位 q=0：servo = -offset（同 a2_viewer b-zero 一樣），跟當前 slider 範圍夾返
   pausePlayback();
   ikRootClear();
-  ikSquatClear(); ikSplitClear(); ikFSplitClear();
+  ikSquatClear(); ikYSquatClear(); ikSplitClear(); ikFSplitClear();
   manualAngles=[];
   for(var id=1;id<=20;id++){
-    var rg=rangeOf(id), v=Math.round(-tmpOff(id));
+    var rg=rangeOf(id), v=Math.round(STAND20[id-1]);
     if(v<rg[0])v=rg[0]; if(v>rg[1])v=rg[1];
     manualAngles.push(v);
   }
@@ -2101,20 +2171,17 @@ document.getElementById('scrub').addEventListener('input',function(){
 initGL();
 applyTheme();
 loadMeshes(function(){ poseMesh(lastAngles); });
-// 預設企直位（各舵機 servo_home）
-var HOME20=new Array(20).fill(120);
-Object.keys(FK.chains).forEach(function(c){
-  FK.chains[c].forEach(function(j){ HOME20[j.servo-1]=j.home; });
-});
-var lastAngles=HOME20.slice();
-// anchor 站姿參考：預設站姿兩隻腳 sole frame 位置（three 世界座標），高度釘地面
+// 預設用零位（PC 軟件企姿）：未載入動作前、IK 未擺位時都係呢個位
+var lastAngles=STAND20.slice();
+// anchor 站姿參考：零位兩隻腳 sole frame 位置（three 世界座標），高度釘地面
 (function(){
-  var F0=linkFrames(HOME20);
+  var F0=linkFrames(STAND20);
   var rr=vApplyQ(soleWorld(F0,'r'),qROS), ll=vApplyQ(soleWorld(F0,'l'),qROS);
   anchorRest={r:[rr[0],GROUND_Y,rr[2]],l:[ll[0],GROUND_Y,ll[2]]};
 })();
-poseMesh(HOME20);
+poseMesh(STAND20);
 applyLang();
+syncServos(STAND20); // 開頁 slider 同 preset（零位）一致
 // online（http/https）：fetch 直讀，離線揀資料夾嗰格唔使見；file:// 先留返
 try{
   if(location.protocol!=='file:'){
