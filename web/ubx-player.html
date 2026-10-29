@@ -26,6 +26,9 @@
 #ikSquatRow input[type=range],#ikYSquatRow input[type=range],#ikSplitRow input[type=range],#ikFSplitRow input[type=range]{flex:1;min-width:40px;width:auto;margin:0}
 #ikSquatRow span,#ikYSquatRow span,#ikSplitRow span,#ikFSplitRow span{flex:none;width:62px}
 #ikFSplitRow{margin-bottom:3px}
+#ikLaughRow{display:none;align-items:center;gap:5px;font-size:12px;white-space:nowrap;margin:4px 0 3px}
+#ikLaughRow input[type=range]{flex:1;min-width:40px;width:auto;margin:0}
+#ikLaughRow span{flex:none;width:62px}
 #tmpOffBox{margin:6px 0 2px;font-size:12px;border:1px solid var(--panel-bd);border-radius:8px;padding:4px 6px;background:var(--log-bg)}
 #tmpOffBox summary{cursor:pointer;font-weight:700;color:var(--accent);font-size:12px;display:flex;align-items:center;gap:6px;white-space:nowrap}
 #tmpOffOn{color:var(--warn);font-size:11px}
@@ -161,6 +164,11 @@
 <input type="range" id="ikFSplit" min="-100" max="100" step="1" value="0" oninput="setIkFSplit(this.value)" data-i18n-title="ik_fsplit_title" title="雙腳前後劈開：-100＝左腳踏前、右腳踏後（右臂前擺、左臂後擺）；+100＝右腳踏前、左腳踏後（左臂前擺、右臂後擺）；0＝中立；腳掌貼地、機身下降（建議開錨定）">
 <b id="ikFSplitV" class="mono" style="flex:none;width:44px;text-align:right">0</b>
 </div>
+<div id="ikLaughRow">
+<span data-i18n="ik_laugh" style="flex:none">大笑</span>
+<input type="range" id="ikLaugh" min="0" max="100" step="1" value="0" oninput="setIkLaugh(this.value)" data-i18n-title="ik_laugh_title" title="重現官方「大笑」（1487230160190）：0＝企姿，100＝最大後仰、雙臂高舉；手／腳末端目標逐點 IK 解，腳掌貼地（建議開錨定）">
+<b id="ikLaughV" class="mono" style="flex:none;width:44px;text-align:right">0</b>
+</div>
 <details id="tmpOffBox">
 <summary data-i18n-title="tmp_off_title" title="offset：改 q_init_deg；有效 offset = q_init_deg − pc_init_angle，即時預覽，唔會寫入模型"><span data-i18n="tmp_off">offset</span><b id="tmpOffOn" class="mono"></b></summary>
 <div class="tmp-head"><button onclick="resetTmpOff()" data-i18n="tmp_off_reset">還原 URDF</button></div>
@@ -250,6 +258,8 @@ var I18N={
   anchor_b:{zh:'錨定',en:'Anchor'},
   ik_b:{zh:'IK',en:'IK'},
   ik_title:{zh:'IK：拖手／腳藍點擺位；拖綠色骨盆點＝拖身體（雙腳釘地、鞠躬／重心轉移）',en:'IK: drag hand/foot dots; drag the green pelvis dot to move the body with feet pinned (bow / weight shift)'},
+  ik_laugh:{zh:'大笑',en:'Laugh'},
+  ik_laugh_title:{zh:'重現官方「大笑」（1487230160190）：0＝企姿，100＝最大後仰、雙臂高舉；手／腳末端目標逐點 IK 解，腳掌貼地（建議開錨定）',en:'Official Laugh (1487230160190): 0 = standing, 100 = deepest lean-back with both arms raised; hand/foot targets solved point by point with IK, feet planted (keep Anchor on)'},
   ik_squat:{zh:'蹲下',en:'Squat 1'},
   ik_squat_title:{zh:'重現官方「蹲下」pose：手垂低、深蹲、腳掌貼地（建議開錨定）',en:'Match the official Squat pose: arms down, deep squat, feet planted (keep Anchor on)'},
   ik_ysquat:{zh:'蹲式',en:'Squat 2'},
@@ -1477,7 +1487,7 @@ function buildJointTable(){
 function syncToggles(){
   var m={anchorBtn:anchorOn, comBtn:comOn, ikBtn:ikOn};
   for(var k in m){var b=document.getElementById(k); if(b) b.classList.toggle('on',!!m[k]);}
-  ['ikSquatRow','ikYSquatRow','ikSplitRow','ikFSplitRow'].forEach(function(id){
+  ['ikSquatRow','ikYSquatRow','ikSplitRow','ikFSplitRow','ikLaughRow'].forEach(function(id){
     var row=document.getElementById(id);
     if(row) row.style.display=ikOn?'flex':'none';
   });
@@ -2251,6 +2261,187 @@ if(mqMobile.addEventListener) mqMobile.addEventListener('change',applyMobileLayo
 applyMobileLayout();
 window.toggleMob=toggleMob;
 syncToggles();
+</script>
+<script>
+// ===== 大笑 IK slider：喺「IK」slider 組度加一條「大笑」（0–100）=====
+// 官方 1487230160190（大笑）嘅 4 個關鍵姿勢（企 → 微後仰 → 後仰 → 最大後仰雙臂高舉）轉成機身框內嘅末端目標：
+// 右手/左手指尖＋手肘位置＋前臂朝向、右腳/左腳 sole 位置＋sole 法線（單位 m）。
+// slider 值沿 0→1→2→3 姿勢路徑（每段 1/3）內插目標，每次用阻尼最小二乘 IK（同播放器 FK）解返 servo 1–16；
+// 手：圍住肩膀球面插值；腳：地面對齊框線性（腳貼地、機身 pitch/roll 內插）。頭／手指（17–20）保持原值。
+// 每個姿勢帶 s（16 軸原始角）只作起始解，用嚟揀返同原動作一樣嘅肘／膝分支。
+(function(){
+  var IKA_WN=0.08, IKA_WE=0.15, IKA_TOL=1e-4, IKA_M=8;
+  var IKA_DATA={"poses":[{"rh":[0.04045,-0.08981,-0.02659],"lh":[0.00709,0.09621,-0.03462],"re":[0.024,-0.0853,0.02667],"le":[0.0139,0.08829,0.02541],"rx":[0.93977,0.00608,0.34176],"rz":[-0.34097,0.08694,0.93604],"lx":[0.9565,-0.02656,0.29052],"lz":[-0.29137,-0.13662,0.9468],"rf":[0.02785,-0.04676,-0.21466],"lf":[0.02775,0.04773,-0.21406],"rn":[-0.08714,-7e-05,0.9962],"ln":[-0.08714,-0.03483,0.99559],"s":[114,205,119,116,38,114,120,65,145,135,120,120,175,95,105,120]},{"rh":[0.09494,-0.09751,0.05093],"lh":[0.10745,0.10298,0.03064],"re":[0.04098,-0.09318,0.03688],"le":[0.04899,0.09221,0.04399],"rx":[-0.27813,0.2127,0.9367],"rz":[-0.9514,0.07324,-0.29912],"lx":[-0.16085,-0.16384,0.97329],"lz":[-0.97481,-0.128,-0.18265],"rf":[-0.06588,-0.05575,-0.19479],"lf":[-0.07524,0.053,-0.18915],"rn":[0.25846,0.01508,0.9659],"ln":[0.30897,-0.03234,0.95052],"s":[94,197,186,158,42,73,123,104,144,155,122,118,132,96,84,118]},{"rh":[0.09718,-0.11543,0.10675],"lh":[0.11931,0.11397,0.08338],"re":[0.05812,-0.10342,0.06857],"le":[0.06139,0.097,0.07502],"rx":[-0.63479,0.35224,0.68773],"rz":[-0.66535,0.20337,-0.71829],"lx":[-0.48889,-0.17595,0.85442],"lz":[-0.82246,-0.2335,-0.51869],"rf":[-0.11293,-0.0529,-0.15394],"lf":[-0.12392,0.05284,-0.13885],"rn":[0.48415,0.00872,0.87494],"ln":[0.57349,-0.03972,0.81825],"s":[55,186,175,194,47,88,123,128,141,168,122,117,106,100,71,118]},{"rh":[0.07599,-0.11753,0.16229],"lh":[0.09771,0.11444,0.14806],"re":[0.04967,-0.0998,0.11624],"le":[0.05017,0.097,0.11417],"rx":[-0.86564,0.12812,0.48399],"rz":[-0.42664,0.31712,-0.84701],"lx":[-0.84555,-0.1,0.52444],"lz":[-0.48313,-0.27474,-0.83133],"rf":[-0.14302,-0.05466,-0.08738],"lf":[-0.14537,0.05462,-0.07506],"rn":[0.7154,0.00483,0.6987],"ln":[0.76313,-0.02536,0.64575],"s":[0,190,137,239,47,105,128,157,138,183,125,111,79,103,56,114]}]};
+  var IKA_CH={
+    rh:{servos:[1,2,3],link:'r_hand_link',mid:'r_elbow_link'},
+    lh:{servos:[4,5,6],link:'l_hand_link',mid:'l_elbow_link'},
+    rf:{servos:[7,8,9,10,11],side:'r',link:'r_ankle_roll_link'},
+    lf:{servos:[12,13,14,15,16],side:'l',link:'l_ankle_roll_link'}
+  };
+  var IKA_SH=(function(){ // 肩膀樞軸（機身框固定點）
+    var F=linkFrames(IKA_DATA.poses[0].s.concat([120,120,120,120]));
+    return {r:F.r_shoulder_pitch_link.p.slice(),l:F.l_shoulder_pitch_link.p.slice()};
+  })();
+  function ikaRange(k){var e=ENV[k],inf=servoInfo[k];return e?e:[inf.min,inf.max];} // 官方 203 招實測行程
+  function ikaRes(a,key,tg){
+    var F=linkFrames(a),ch=IKA_CH[key],p,n;
+    if(!ch.side){ // 手：指尖位置＋手肘位置（指尖優先；手肘位置軟約束＋前臂朝向，保住肘分支同前臂扭轉唔跳）
+      p=F[ch.link].p;var e=F[ch.mid].p,R=F[ch.mid].R,x=mDot(R,[1,0,0]),z=mDot(R,[0,0,1]);
+      return [p[0]-tg.p[0],p[1]-tg.p[1],p[2]-tg.p[2],
+        IKA_WE*(e[0]-tg.e[0]),IKA_WE*(e[1]-tg.e[1]),IKA_WE*(e[2]-tg.e[2]),
+        IKA_WN*(x[0]-tg.x[0]),IKA_WN*(x[1]-tg.x[1]),IKA_WN*(x[2]-tg.x[2]),
+        IKA_WN*(z[0]-tg.z[0]),IKA_WN*(z[1]-tg.z[1]),IKA_WN*(z[2]-tg.z[2])];
+    }
+    p=soleWorld(F,ch.side); n=mDot(F[ch.link].R,[0,0,1]);
+    return [p[0]-tg.p[0],p[1]-tg.p[1],p[2]-tg.p[2],IKA_WN*(n[0]-tg.n[0]),IKA_WN*(n[1]-tg.n[1]),IKA_WN*(n[2]-tg.n[2])];
+  }
+  function ikaNorm(r){var s=0;for(var i=0;i<r.length;i++)s+=r[i]*r[i];return Math.sqrt(s);}
+  function ikaLinSolve(A,b){ // 高斯消去（n≤5）
+    var n=b.length,i,j,k,M=[];
+    for(i=0;i<n;i++){M.push(A[i].slice());M[i].push(b[i]);}
+    for(i=0;i<n;i++){
+      var piv=i;for(j=i+1;j<n;j++)if(Math.abs(M[j][i])>Math.abs(M[piv][i]))piv=j;
+      if(Math.abs(M[piv][i])<1e-14)return null;
+      var tmp=M[i];M[i]=M[piv];M[piv]=tmp;
+      for(j=i+1;j<n;j++){var f=M[j][i]/M[i][i];for(k=i;k<=n;k++)M[j][k]-=f*M[i][k];}
+    }
+    var x=new Array(n);
+    for(i=n-1;i>=0;i--){var s=M[i][n];for(j=i+1;j<n;j++)s-=M[i][j]*x[j];x[i]=s/M[i][i];}
+    return x;
+  }
+  // 阻尼最小二乘（Levenberg-Marquardt），數值 Jacobian，servo 行程夾限
+  function ikaSolve(a0,key,tg){
+    var sv=IKA_CH[key].servos,n=sv.length,a=a0.slice(),lam=1e-4,h=0.5;
+    var r=ikaRes(a,key,tg),err=ikaNorm(r),m=r.length;
+    for(var it=0;it<80&&err>IKA_TOL;it++){
+      var J=[],i,c;
+      for(i=0;i<n;i++){
+        var ap=a.slice();ap[sv[i]-1]+=h;
+        var rp=ikaRes(ap,key,tg),col=[];
+        for(c=0;c<m;c++)col.push((rp[c]-r[c])/(h*D2R));
+        J.push(col);
+      }
+      var A=[],g=[];
+      for(i=0;i<n;i++){
+        A.push([]);var s=0;
+        for(var j=0;j<n;j++){var q=0;for(c=0;c<m;c++)q+=J[i][c]*J[j][c];A[i].push(q+(i===j?lam:0));}
+        for(c=0;c<m;c++)s+=J[i][c]*r[c];g.push(-s);
+      }
+      var dq=ikaLinSolve(A,g);
+      if(!dq){lam*=10;continue;}
+      var tr=a.slice();
+      for(i=0;i<n;i++){
+        var d=dq[i]/D2R;if(d>10)d=10;if(d<-10)d=-10;
+        var rg=ikaRange(sv[i]),v=a[sv[i]-1]+d;
+        tr[sv[i]-1]=Math.max(rg[0],Math.min(rg[1],v));
+      }
+      var rt=ikaRes(tr,key,tg),et=ikaNorm(rt);
+      if(et<err){a=tr;r=rt;err=et;lam=Math.max(1e-7,lam*0.4);}else lam=Math.min(1e3,lam*5);
+    }
+    return {a:a,err:err};
+  }
+  // 機身相對地面嘅 pitch/roll：用兩隻腳 sole 法線平均（腳掌貼地 → 法線＝地面法線）
+  function ikaTilt(P){
+    var u=[P.rn[0]+P.ln[0],P.rn[1]+P.ln[1],P.rn[2]+P.ln[2]],s=Math.hypot(u[0],u[1],u[2])||1;
+    u=[u[0]/s,u[1]/s,u[2]/s];
+    var th=Math.atan2(-u[0],u[2]),z1=-u[0]*Math.sin(th)+u[2]*Math.cos(th);
+    return [th,Math.atan2(u[1],z1)];
+  }
+  function ikaToGround(t,v){ // Rx(φ)·Ry(θ)·v
+    var c=Math.cos(t[0]),s=Math.sin(t[0]),x=v[0]*c+v[2]*s,y=v[1],z=-v[0]*s+v[2]*c,c2=Math.cos(t[1]),s2=Math.sin(t[1]);
+    return [x,y*c2-z*s2,y*s2+z*c2];
+  }
+  function ikaToBody(t,v){ // (Rx·Ry)ᵀ·v
+    var c2=Math.cos(t[1]),s2=Math.sin(t[1]),y=v[1]*c2+v[2]*s2,z=-v[1]*s2+v[2]*c2,x=v[0],c=Math.cos(t[0]),s=Math.sin(t[0]);
+    return [x*c-z*s,y,x*s+z*c];
+  }
+  function ikaTargets(P,Q,u){
+    function L(x,y){return [x[0]+(y[0]-x[0])*u,x[1]+(y[1]-x[1])*u,x[2]+(y[2]-x[2])*u];}
+    function N(v){var s=Math.hypot(v[0],v[1],v[2])||1;return [v[0]/s,v[1]/s,v[2]/s];}
+    // 腳：喺「地面對齊框」（機身 pitch/roll 除返）度插值，之後轉返機身框 →
+    // 機身後仰／前傾時腳掌相對地面維持貼地，唔會喺機身框度直線穿過身體
+    var tP=ikaTilt(P),tQ=ikaTilt(Q),tu=[tP[0]+(tQ[0]-tP[0])*u,tP[1]+(tQ[1]-tP[1])*u];
+    function foot(pk,nk){
+      var g=L(ikaToGround(tP,P[pk]),ikaToGround(tQ,Q[pk])),gn=L(ikaToGround(tP,P[nk]),ikaToGround(tQ,Q[nk]));
+      return {p:ikaToBody(tu,g),n:N(ikaToBody(tu,gn))};
+    }
+    // 手：圍住肩膀樞軸（固定點）做球面插值（方向 slerp、距離線性）→ 指尖行弧線，唔會直線穿過上臂行程之內
+    function arc(S,a,b){
+      var va=[a[0]-S[0],a[1]-S[1],a[2]-S[2]],vb=[b[0]-S[0],b[1]-S[1],b[2]-S[2]];
+      var la=Math.hypot(va[0],va[1],va[2]),lb=Math.hypot(vb[0],vb[1],vb[2]);
+      var da=[va[0]/la,va[1]/la,va[2]/la],db=[vb[0]/lb,vb[1]/lb,vb[2]/lb];
+      var c=Math.max(-1,Math.min(1,da[0]*db[0]+da[1]*db[1]+da[2]*db[2])),w=Math.acos(c),d;
+      if(w<1e-4)d=N(L(da,db));
+      else{var sw=Math.sin(w),k1=Math.sin((1-u)*w)/sw,k2=Math.sin(u*w)/sw;d=[da[0]*k1+db[0]*k2,da[1]*k1+db[1]*k2,da[2]*k1+db[2]*k2];}
+      var l=la+(lb-la)*u;return [S[0]+d[0]*l,S[1]+d[1]*l,S[2]+d[2]*l];
+    }
+    var SR=IKA_SH.r,SL=IKA_SH.l;
+    return {rh:{p:arc(SR,P.rh,Q.rh),e:arc(SR,P.re,Q.re),x:N(L(P.rx,Q.rx)),z:N(L(P.rz,Q.rz))},
+            lh:{p:arc(SL,P.lh,Q.lh),e:arc(SL,P.le,Q.le),x:N(L(P.lx,Q.lx)),z:N(L(P.lz,Q.lz))},
+            rf:foot('rf','rn'),lf:foot('lf','ln')};
+  }
+  function ikaPose(a16,P,Q,u,stat){ // 由 a16 起步，四條鏈逐條解
+    var tg=ikaTargets(P,Q,u),a=a16.concat([120,120,120,120]);
+    ['rh','lh','rf','lf'].forEach(function(k){
+      var r=ikaSolve(a,k,tg[k]);a=r.a;if(stat&&r.err>stat.max)stat.max=r.err;
+    });
+    return a.slice(0,16).map(function(x){return Math.round(x);});
+  }
+  // 路徑取樣表（每段 IKA_M 點）：畀 slider 當起始解，第一次用先建（約 0.5s）
+  var IKA_TBL=null;
+  function ikaTable(){
+    if(IKA_TBL) return IKA_TBL;
+    var D=IKA_DATA,a=D.poses[0].s.slice(),tbl=[a.slice()];
+    for(var seg=0;seg<3;seg++)for(var m=1;m<=IKA_M;m++){a=ikaPose(a,D.poses[seg],D.poses[seg+1],m/IKA_M);tbl.push(a.slice());}
+    return (IKA_TBL=tbl);
+  }
+  function ikaPathPose(p){ // p：0–100 → servo 1–16
+    var D=IKA_DATA,tbl=ikaTable(),x=Math.max(0,Math.min(100,p))/100*3*IKA_M;
+    var j=Math.min(3*IKA_M-1,Math.floor(x)),f=x-j,seed=[];
+    for(var i=0;i<16;i++)seed.push(tbl[j][i]+(tbl[j+1][i]-tbl[j][i])*f);
+    var seg=Math.min(2,Math.floor(j/IKA_M)),u=Math.max(0,Math.min(1,(x-seg*IKA_M)/IKA_M));
+    return ikaPose(seed,D.poses[seg],D.poses[seg+1],u);
+  }
+  // ---- slider：同蹲下／蹲式／左右／前後一樣嘅接線（base ＋ manualAngles ＋ syncServos/renderManual）----
+  var ikLaughPct=0,ikLaughBase=null;
+  function ikLaughUi(v){var sl=document.getElementById('ikLaugh'),b=document.getElementById('ikLaughV');if(sl)sl.value=Math.round(v);if(b)b.textContent=Math.round(v);}
+  function ikLaughClear(restore){
+    if(restore&&ikLaughBase&&manualAngles)manualAngles=ikLaughBase.slice();
+    ikLaughPct=0;ikLaughBase=null;ikLaughUi(0);
+  }
+  function setIkLaugh(pct){
+    var p=Math.max(0,Math.min(100,parseFloat(pct)||0));
+    ikLaughUi(p);
+    if(!ikOn)return;
+    pausePlayback();
+    if(!manualAngles)manualAngles=(lastAngles||STAND20).slice();
+    if(p>0){
+      ikRootClear();
+      if(ikSquatPct>0)ikSquatClear(true);else if(ikSquatBase)ikSquatClear();
+      if(ikYSquatPct>0)ikYSquatClear(true);else if(ikYSquatBase)ikYSquatClear();
+      if(ikSplitPct>0)ikSplitClear(true);else if(ikSplitBase)ikSplitClear();
+      if(ikFSplitPct!==0)ikFSplitClear(true);else if(ikFSplitBase)ikFSplitClear();
+    }
+    if(!ikLaughBase)ikLaughBase=manualAngles.slice();
+    if(p<=0){manualAngles=ikLaughBase.slice();ikLaughPct=0;}
+    else{
+      var t=ikaPathPose(p),w=Math.min(1,p/8),a=ikLaughBase.slice(); // 頭 8% 由而家個 pose 過渡去路徑起點
+      for(var i=0;i<16;i++)a[i]=Math.round(a[i]+(t[i]-a[i])*w);
+      manualAngles=a;ikLaughPct=p;
+    }
+    syncServos(manualAngles);renderManual();
+  }
+  window.setIkLaugh=setIkLaugh;
+  // 其他 IK slider 一郁，大笑 slider 歸 0（保留而家個 pose 當佢哋嘅起點）；播片 seek 亦歸 0
+  ['setIkSquat','setIkYSquat','setIkSplit','setIkFSplit'].forEach(function(n){
+    var o=window[n];if(typeof o!=='function')return;
+    window[n]=function(){if(ikLaughPct>0||ikLaughBase)ikLaughClear(false);return o.apply(this,arguments);};
+  });
+  var _seek=seek;
+  seek=function(){if(ikLaughPct>0||ikLaughBase)ikLaughClear(false);return _seek.apply(this,arguments);};
+  window.__ika={path:ikaPathPose,table:ikaTable,data:IKA_DATA,targets:ikaTargets,solve:ikaSolve};
+  setTimeout(function(){try{ikaTable();}catch(e){}},2500); // 閒時預先建表，第一次拉 slider 唔卡
+})();
 </script>
 </body>
 </html>
