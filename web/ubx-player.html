@@ -24,8 +24,16 @@
 #leftpanel h1 button{padding:3px 7px;font-size:12px;border-radius:8px;margin:0;font-weight:700;white-space:nowrap}
 #ikSquatRow,#ikYSquatRow,#ikSplitRow,#ikFSplitRow{display:none;align-items:center;gap:5px;font-size:12px;white-space:nowrap;margin:4px 0 0}
 #ikSquatRow input[type=range],#ikYSquatRow input[type=range],#ikSplitRow input[type=range],#ikFSplitRow input[type=range]{flex:1;min-width:40px;width:auto;margin:0}
-#ikSquatRow span,#ikYSquatRow span,#ikSplitRow span,#ikFSplitRow span{flex:none;width:62px}
+#ikSquatRow span,#ikYSquatRow span,#ikSplitRow span,#ikFSplitRow span{flex:none;width:76px}
 #ikFSplitRow{margin-bottom:3px}
+#ikLaughSquatRow,#ikYSplitRow,#ikKickRow,#ikSiriusRow,#ikHuluRow,#ikHamletRow,#ikKneelRow{display:none;align-items:center;gap:5px;font-size:12px;white-space:nowrap;margin:4px 0 0}
+#ikLaughSquatRow input[type=range],#ikYSplitRow input[type=range],#ikKickRow input[type=range],#ikSiriusRow input[type=range],#ikHuluRow input[type=range],#ikHamletRow input[type=range],#ikKneelRow input[type=range]{flex:1;min-width:40px;width:auto;margin:0}
+#ikLaughSquatRow span,#ikYSplitRow span,#ikKickRow span,#ikSiriusRow span,#ikHuluRow span,#ikHamletRow span,#ikKneelRow span{flex:none;width:76px}
+/* IK 8 條 slider：名稱（左）＋數值（右）一行，slider 獨佔下一行全闊——名稱長／字體闊都唔會同 slider 重疊，slider 亦冇縮短 */
+#ikLaughSquatRow,#ikYSplitRow,#ikKickRow,#ikSiriusRow,#ikHuluRow,#ikHamletRow,#ikKneelRow,#ikFSplitRow{flex-wrap:wrap;gap:1px 5px;margin:5px 0 0}
+#ikLaughSquatRow > span,#ikYSplitRow > span,#ikKickRow > span,#ikSiriusRow > span,#ikHuluRow > span,#ikHamletRow > span,#ikKneelRow > span,#ikFSplitRow > span{order:1;flex:1 1 0;min-width:0;width:auto;overflow:hidden;text-overflow:ellipsis}
+#ikLaughSquatRow > b,#ikYSplitRow > b,#ikKickRow > b,#ikSiriusRow > b,#ikHuluRow > b,#ikHamletRow > b,#ikKneelRow > b,#ikFSplitRow > b{order:2;flex:none}
+#ikLaughSquatRow > input[type=range],#ikYSplitRow > input[type=range],#ikKickRow > input[type=range],#ikSiriusRow > input[type=range],#ikHuluRow > input[type=range],#ikHamletRow > input[type=range],#ikKneelRow > input[type=range],#ikFSplitRow > input[type=range]{order:3;flex:0 0 100%;width:100%;min-width:0;margin:0}
 #ikLaughRow{display:none;align-items:center;gap:5px;font-size:12px;white-space:nowrap;margin:4px 0 3px}
 #ikLaughRow input[type=range]{flex:1;min-width:40px;width:auto;margin:0}
 #ikLaughRow span{flex:none;width:62px}
@@ -144,6 +152,16 @@
 <button onclick="setView('home')" title="Default view">⌂</button>
 </div>
 <h2><span data-i18n="servos">舵機</span> <button onclick="servosZero()" data-i18n="zero_all" data-i18n-title="zero_title" title="套用 PC 軟件企姿（企直、手垂低）嘅 20 個 servo 值；唔會改 q_init">零位</button> <button onclick="servosHome()" data-i18n="home_all">回中</button> <button id="envBtn" onclick="toggleEnv()" data-i18n="env_range" data-i18n-title="env_title" title="用官方 203 招實測行程做 slider 範圍">官方行程</button> <button onclick="showJoints()" data-i18n="jinfo">ℹ 關節資料</button></h2>
+<div id="ikLaughSquatRow">
+<span data-i18n="ik_n_squatlean">蹲仰</span>
+<input type="range" id="ikLaughSquat" min="-100" max="100" step="1" value="0" oninput="setIkLaughSquat(this.value)" data-i18n-title="ik_laughsquat_title" title="蹲仰：-100＝大笑（最大後仰、雙臂高舉）；0＝中立；+100＝蹲下（手垂低、深蹲）；腳掌貼地（建議開錨定）">
+<b id="ikLaughSquatV" class="mono" style="flex:none;width:44px;text-align:right">0</b>
+</div>
+<div id="ikYSplitRow">
+<span data-i18n="ik_n_squatsplit">蹲劈</span>
+<input type="range" id="ikYSplit" min="-100" max="100" step="1" value="0" oninput="setIkYSplit(this.value)" data-i18n-title="ik_ysplit_title" title="蹲劈：-100＝蹲式（深蹲、雙臂左右張開）；0＝中立；+100＝左右一字馬；腳掌貼地（建議開錨定）">
+<b id="ikYSplitV" class="mono" style="flex:none;width:44px;text-align:right">0</b>
+</div>
 <div id="ikSquatRow">
 <span data-i18n="ik_squat" style="flex:none">蹲下</span>
 <input type="range" id="ikSquat" min="0" max="100" step="1" value="0" oninput="setIkSquat(this.value)" data-i18n-title="ik_squat_title" title="重現官方「蹲下」pose：手垂低、深蹲、腳掌貼地（建議開錨定）">
@@ -159,8 +177,33 @@
 <input type="range" id="ikSplit" min="0" max="100" step="1" value="0" oninput="setIkSplit(this.value)" data-i18n-title="ik_split_title" title="雙腳左右劈開：兩隻腳一齊向外撐，肩 roll 自動張開避手，腳掌保持貼地、機身下降（建議開錨定）">
 <b id="ikSplitV" class="mono" style="flex:none;width:44px;text-align:right">0</b>
 </div>
+<div id="ikKickRow">
+<span data-i18n="ik_n_kick">踢腿</span>
+<input type="range" id="ikKick" min="-100" max="100" step="1" value="0" oninput="setIkKick(this.value)" data-i18n-title="ik_kick_title" title="踢腿：-100＝左踢式；0＝中立；+100＝右踢式（跟官方動作「左踢式／右踢式」企直→踢腳姿勢嘅關鍵幀路徑）；建議開錨定">
+<b id="ikKickV" class="mono" style="flex:none;width:44px;text-align:right">0</b>
+</div>
+<div id="ikSiriusRow">
+<span data-i18n="ik_n_sidelunge">側弓步</span>
+<input type="range" id="ikSirius" min="-100" max="100" step="1" value="0" oninput="setIkSirius(this.value)" data-i18n-title="ik_sirius_title" title="側弓步：+100＝官方動作「Sirius」第 68 格姿勢（側弓步、雙臂展開）；0＝中立；-100＝左右反轉；建議開錨定">
+<b id="ikSiriusV" class="mono" style="flex:none;width:44px;text-align:right">0</b>
+</div>
+<div id="ikHuluRow">
+<span data-i18n="ik_n_halfsquat">半蹲</span>
+<input type="range" id="ikHulu" min="-100" max="100" step="1" value="0" oninput="setIkHulu(this.value)" data-i18n-title="ik_hulu_title" title="半蹲：+100＝官方動作「葫蘆娃」第 4 格姿勢（半蹲、雙臂展開、轉頭）；0＝中立；-100＝左右反轉；建議開錨定">
+<b id="ikHuluV" class="mono" style="flex:none;width:44px;text-align:right">0</b>
+</div>
+<div id="ikHamletRow">
+<span data-i18n="ik_n_armsfwd">屈臂前伸</span>
+<input type="range" id="ikHamlet" min="-100" max="100" step="1" value="0" oninput="setIkHamlet(this.value)" data-i18n-title="ik_hamlet_title" title="屈臂前伸：+100＝官方動作「當哈姆萊特遇到布魯克林」第 57 格姿勢（雙臂屈肘前伸、膝微屈）；0＝中立；-100＝左右反轉；建議開錨定">
+<b id="ikHamletV" class="mono" style="flex:none;width:44px;text-align:right">0</b>
+</div>
+<div id="ikKneelRow">
+<span data-i18n="ik_n_kneel">跪姿前傾</span>
+<input type="range" id="ikKneel" min="-100" max="100" step="1" value="0" oninput="setIkKneel(this.value)" data-i18n-title="ik_kneel_title" title="跪姿前傾：+100＝官方動作「前伸展式」第 8 格姿勢（跪姿、身體前傾、雙手落地）；0＝中立；-100＝左右反轉；建議開錨定">
+<b id="ikKneelV" class="mono" style="flex:none;width:44px;text-align:right">0</b>
+</div>
 <div id="ikFSplitRow">
-<span data-i18n="ik_fsplit" style="flex:none">前後</span>
+<span data-i18n="ik_fsplit">前後</span>
 <input type="range" id="ikFSplit" min="-100" max="100" step="1" value="0" oninput="setIkFSplit(this.value)" data-i18n-title="ik_fsplit_title" title="雙腳前後劈開：-100＝左腳踏前、右腳踏後（右臂前擺、左臂後擺）；+100＝右腳踏前、左腳踏後（左臂前擺、右臂後擺）；0＝中立；腳掌貼地、機身下降（建議開錨定）">
 <b id="ikFSplitV" class="mono" style="flex:none;width:44px;text-align:right">0</b>
 </div>
@@ -266,8 +309,22 @@ var I18N={
   ik_ysquat_title:{zh:'重現官方「蹲式」（1509004868066）最深格：深蹲、雙臂左右張開、腳掌貼地（建議開錨定）',en:'Match the deepest frame of the official Squat Pose (1509004868066): deep squat, arms spread out to the sides, feet planted (keep Anchor on)'},
   ik_split:{zh:'左右',en:'Left/Right'},
   ik_split_title:{zh:'雙腳左右劈開：兩隻腳一齊向外撐，雙臂自動張開避手，腳掌保持貼地、機身下降（建議開錨定）',en:'Legs spread left/right: both legs push outward; arms swing outward to clear the legs; feet stay planted and the body lowers (keep Anchor on)'},
-ik_fsplit:{zh:'前後',en:'Front/Back'},
+ik_fsplit:{zh:'前後一字馬',en:'Front split'},
+  ik_n_squatlean:{zh:'蹲仰',en:'Squat–Lean'},
+  ik_n_squatsplit:{zh:'蹲劈',en:'Squat–Split'},
+  ik_n_kick:{zh:'踢腿',en:'Kick'},
+  ik_n_sidelunge:{zh:'側弓步',en:'Side lunge'},
+  ik_n_halfsquat:{zh:'半蹲',en:'Half squat'},
+  ik_n_armsfwd:{zh:'屈臂前伸',en:'Arms forward'},
+  ik_n_kneel:{zh:'跪姿前傾',en:'Kneeling lean'},
+  ik_kneel_title:{zh:'跪姿前傾：+100＝官方動作「前伸展式」第 8 格姿勢（跪姿、身體前傾、雙手落地）；0＝中立；-100＝左右反轉；建議開錨定',en:'Kneeling lean: +100 = pose of frame 8 of the official "stretch forward" action (kneeling, torso leaning forward, hands down); 0 = neutral; -100 = mirrored left/right; keep Anchor on'},
+  ik_hamlet_title:{zh:'屈臂前伸：+100＝官方動作「當哈姆萊特遇到布魯克林」第 57 格姿勢（雙臂屈肘前伸、膝微屈）；0＝中立；-100＝左右反轉；建議開錨定',en:'Arms forward: +100 = pose of frame 57 of the official "when harlem met brooklyn" action (elbows bent, forearms forward, knees slightly bent); 0 = neutral; -100 = mirrored left/right; keep Anchor on'},
 ik_fsplit_title:{zh:'雙腳前後劈開：-100＝左腳踏前、右腳踏後（右臂前擺、左臂後擺）；+100＝右腳踏前、左腳踏後（左臂前擺、右臂後擺）；0＝中立；腳掌貼地、機身下降（建議開錨定）',en:'Front/back split: -100 = left leg forward, right leg back (right arm forward, left arm back); +100 = right leg forward, left leg back (left arm forward, right arm back); 0 = neutral; feet planted and the body lowers (keep Anchor on)'},
+  ik_hulu_title:{zh:'半蹲：+100＝官方動作「葫蘆娃」第 4 格姿勢（半蹲、雙臂展開、轉頭）；0＝中立；-100＝左右反轉；建議開錨定',en:'Half squat: +100 = pose of frame 4 of the official "Huluwa" (Calabash Brothers) action (half squat, arms spread, head turned); 0 = neutral; -100 = mirrored left/right; keep Anchor on'},
+  ik_sirius_title:{zh:'側弓步：+100＝官方動作「Sirius」第 68 格姿勢（側弓步、雙臂展開）；0＝中立；-100＝左右反轉；建議開錨定',en:'Side lunge: +100 = pose of frame 68 of the official "Sirius" action (side lunge, arms spread); 0 = neutral; -100 = mirrored left/right; keep Anchor on'},
+  ik_kick_title:{zh:'踢腿：-100＝左踢式；0＝中立；+100＝右踢式（跟官方動作「左踢式／右踢式」企直→踢腳姿勢嘅關鍵幀路徑）；建議開錨定',en:'Kick: -100 = Left kick; 0 = neutral; +100 = Right kick (follows the key-frame path of the official kick-yoga actions, standing → kick pose); keep Anchor on'},
+  ik_laughsquat_title:{zh:'蹲仰：-100＝大笑（最大後仰、雙臂高舉）；0＝中立；+100＝蹲下（手垂低、深蹲）；腳掌貼地（建議開錨定）',en:'Squat–Lean: -100 = Laugh (deepest lean-back, arms raised); 0 = neutral; +100 = Squat (arms down, deep squat); feet planted (keep Anchor on)'},
+  ik_ysplit_title:{zh:'蹲劈：-100＝蹲式（深蹲、雙臂左右張開）；0＝中立；+100＝左右一字馬；腳掌貼地（建議開錨定）',en:'Squat–Split: -100 = Squat with arms spread (deep squat); 0 = neutral; +100 = side split; feet planted (keep Anchor on)'},
   tmp_off:{zh:'offset',en:'offset'},
   tmp_off_title:{zh:'offset：改 q_init_deg；有效 offset = q_init_deg − pc_init_angle，即時預覽，唔會寫入模型',en:'offset: edit q_init_deg; effective offset = q_init_deg - pc_init_angle; live preview, not saved'},
 tmp_off_reset:{zh:'還原 URDF',en:'Restore URDF'},
@@ -1487,7 +1544,7 @@ function buildJointTable(){
 function syncToggles(){
   var m={anchorBtn:anchorOn, comBtn:comOn, ikBtn:ikOn};
   for(var k in m){var b=document.getElementById(k); if(b) b.classList.toggle('on',!!m[k]);}
-  ['ikSquatRow','ikYSquatRow','ikSplitRow','ikFSplitRow','ikLaughRow'].forEach(function(id){
+  ['ikLaughSquatRow','ikYSplitRow','ikKickRow','ikSiriusRow','ikHuluRow','ikHamletRow','ikKneelRow','ikFSplitRow'].forEach(function(id){
     var row=document.getElementById(id);
     if(row) row.style.display=ikOn?'flex':'none';
   });
@@ -2432,6 +2489,7 @@ syncToggles();
     syncServos(manualAngles);renderManual();
   }
   window.setIkLaugh=setIkLaugh;
+  window.__ikLaughClear=ikLaughClear;
   // 其他 IK slider 一郁，大笑 slider 歸 0（保留而家個 pose 當佢哋嘅起點）；播片 seek 亦歸 0
   ['setIkSquat','setIkYSquat','setIkSplit','setIkFSplit'].forEach(function(n){
     var o=window[n];if(typeof o!=='function')return;
@@ -2441,6 +2499,189 @@ syncToggles();
   seek=function(){if(ikLaughPct>0||ikLaughBase)ikLaughClear(false);return _seek.apply(this,arguments);};
   window.__ika={path:ikaPathPose,table:ikaTable,data:IKA_DATA,targets:ikaTargets,solve:ikaSolve};
   setTimeout(function(){try{ikaTable();}catch(e){}},2500); // 閒時預先建表，第一次拉 slider 唔卡
+})();
+
+// ===== 二合一 slider：大笑(-100)／蹲下(+100)、蹲式(-100)／左右一字馬(+100) =====
+// 原本 4 條 slider（#ikLaugh #ikSquat #ikYSquat #ikSplit）保留喺背後（隱藏）做狀態同互斥邏輯，
+// 新 slider 只係分正負號轉呼叫原本 setter；原本 slider 嘅 value 一變（包括各種 clear）就反向同步返新 slider。
+(function(){
+  function g(id){return document.getElementById(id);}
+  function num(id){var e=g(id);return e?(parseFloat(e.value)||0):0;}
+  function syncCombo(){
+    var a=num('ikSquat')>0?num('ikSquat'):(num('ikLaugh')>0?-num('ikLaugh'):0);
+    var b=num('ikSplit')>0?num('ikSplit'):(num('ikYSquat')>0?-num('ikYSquat'):0);
+    [['ikLaughSquat','ikLaughSquatV',a],['ikYSplit','ikYSplitV',b]].forEach(function(t){
+      var sl=g(t[0]),v=g(t[1]);
+      if(sl&&parseFloat(sl.value)!==t[2])sl.value=t[2];
+      if(v)v.textContent=Math.round(t[2]);
+    });
+  }
+  // 攔截原本 slider 嘅 value 寫入（程式 sl.value=… 唔會觸發 event）
+  var desc=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value');
+  ['ikLaugh','ikSquat','ikYSquat','ikSplit'].forEach(function(id){
+    var el=g(id); if(!el)return;
+    Object.defineProperty(el,'value',{configurable:true,
+      get:function(){return desc.get.call(this);},
+      set:function(x){desc.set.call(this,x);syncCombo();}});
+  });
+  // pos 邊：setPos(p)；neg 邊：setNeg(p)；先收返對邊（restore）再開今邊，跨過 0 都唔會用錯起點
+  function make(posId,negId,setPos,setNeg,uiId,uiV){
+    return function(val){
+      var v=Math.max(-100,Math.min(100,Math.round(parseFloat(val)||0)));
+      var sl=g(uiId),b=g(uiV);
+      if(sl)sl.value=v; if(b)b.textContent=v;
+      if(v>0){ if(num(negId)>0)window[setNeg](0); window[setPos](v); }
+      else if(v<0){ if(num(posId)>0)window[setPos](0); window[setNeg](-v); }
+      else{ if(num(negId)>0)window[setNeg](0); if(num(posId)>0)window[setPos](0); }
+      syncCombo();
+    };
+  }
+  window.setIkLaughSquat=make('ikSquat','ikLaugh','setIkSquat','setIkLaugh','ikLaughSquat','ikLaughSquatV');
+  window.setIkYSplit=make('ikSplit','ikYSquat','setIkSplit','setIkYSquat','ikYSplit','ikYSplitV');
+  syncCombo();
+})();
+
+// ===== 左踢式(-100)／右踢式(+100) IK slider =====
+// 路徑：官方動作「左踢式」(1511247506520.ubx)／「右踢式」(1511247440171.ubx) 頭 4 個關鍵幀（企直→踢腳姿勢），
+// 按關節角變化量做路徑長度參數化；slider ±100 ＝ 第 4 幀（踢腳姿勢）。頭 8% 由而家個 pose 過渡去路徑起點。
+// 只改頭 16 粒舵機（手指／頭保持原狀）；互斥／起點邏輯同大笑 slider 一致。
+(function(){
+  var KL=[[120,205,120,120,35,115,120,65,145,135,120,120,175,95,105,120],[121,179,120,119,72,115,129,54,131,137,143,127,173,80,117,133],[121,179,120,119,72,115,134,26,83,156,122,127,173,80,117,133],[120,120,120,120,120,120,163,47,129,141,124,127,175,84,115,137]];
+  var KR=[[120,205,120,120,35,115,120,65,145,135,120,120,175,95,105,120],[120,168,120,120,61,120,113,62,160,123,104,107,187,111,102,94],[120,168,120,120,61,120,113,62,160,123,104,106,214,158,84,118],[120,120,120,120,120,120,113,62,156,125,100,77,193,111,99,116]];
+  function prep(F){var d=[0],t=0;for(var i=0;i<3;i++){var s=0;for(var k=0;k<16;k++)s+=Math.abs(F[i+1][k]-F[i][k]);t+=s;d.push(t);}
+    return {F:F,C:d.map(function(x){return x/t;})};}
+  var PL=prep(KL),PR=prep(KR);
+  function pathPose(K,u){var s=0;while(s<2&&u>K.C[s+1])s++;
+    var f=(u-K.C[s])/(K.C[s+1]-K.C[s]);return K.F[s].map(function(x,i){return x+(K.F[s+1][i]-x)*f;});}
+  var kickPct=0,kickBase=null,kickSide=0,busy=false;
+  function ui(v){var sl=document.getElementById('ikKick'),b=document.getElementById('ikKickV');
+    if(sl&&parseFloat(sl.value)!==v)sl.value=v; if(b)b.textContent=v;}
+  function kickClear(restore){
+    if(restore&&kickBase&&manualAngles)manualAngles=kickBase.slice();
+    kickPct=0;kickBase=null;kickSide=0;ui(0);
+  }
+  window.setIkKick=function(val){
+    var v=Math.max(-100,Math.min(100,Math.round(parseFloat(val)||0))),p=Math.abs(v);
+    ui(v);
+    if(!ikOn)return;
+    pausePlayback();
+    if(!manualAngles)manualAngles=(lastAngles||STAND20).slice();
+    busy=true;
+    try{
+      if(p>0){
+        ikRootClear();
+        if(ikSquatPct>0)ikSquatClear(true);else if(ikSquatBase)ikSquatClear();
+        if(ikYSquatPct>0)ikYSquatClear(true);else if(ikYSquatBase)ikYSquatClear();
+        if(ikSplitPct>0)ikSplitClear(true);else if(ikSplitBase)ikSplitClear();
+        if(ikFSplitPct!==0)ikFSplitClear(true);else if(ikFSplitBase)ikFSplitClear();
+        var lg=document.getElementById('ikLaugh');
+        if(window.__ikLaughClear)window.__ikLaughClear(!!(lg&&parseFloat(lg.value)>0));
+      }
+      if(!kickBase)kickBase=manualAngles.slice();
+      if(p<=0){manualAngles=kickBase.slice();kickPct=0;kickBase=null;kickSide=0;}
+      else{
+        var t=pathPose(v<0?PL:PR,p/100),w=Math.min(1,p/8),a=kickBase.slice(),rg;
+        for(var i=0;i<16;i++){
+          var x=Math.round(a[i]+(t[i]-a[i])*w);
+          rg=rangeOf(i+1);x=Math.max(rg[0],Math.min(rg[1],x));a[i]=x;
+        }
+        manualAngles=a;kickPct=p;kickSide=v<0?-1:1;
+      }
+    }finally{busy=false;}
+    syncServos(manualAngles);renderManual();
+  };
+  window.__ikKickClear=function(){if(kickPct>0)kickClear(true);else if(kickBase)kickClear(false);};
+  // 其他 IK slider／手動舵機／播放／seek／歸零 → 踢式 slider 歸 0（保留而家個 pose）
+  function guard(){if(!busy&&(kickPct>0||kickBase))kickClear(false);}
+  ['setIkSquat','setIkYSquat','setIkSplit','setIkFSplit','setIkLaugh'].forEach(function(n){
+    var o=window[n];if(typeof o!=='function')return;
+    window[n]=function(){guard();return o.apply(this,arguments);};
+  });
+  ['seek','togglePlay','servosHome','servosZero','ikRootCapture'].forEach(function(n){
+    var o=window[n];if(typeof o!=='function')return;
+    var w=function(){guard();return o.apply(this,arguments);};
+    try{window[n]=w;}catch(e){}
+    try{ if(n==='seek')seek=w; else if(n==='togglePlay')togglePlay=w; else if(n==='servosHome')servosHome=w; else if(n==='servosZero')servosZero=w; else if(n==='ikRootCapture')ikRootCapture=w; }catch(e){}
+  });
+  document.addEventListener('input',function(e){
+    var id=e.target&&e.target.id; if(id&&/^sv\d+$/.test(id))guard();
+  },true);
+})();
+
+// ===== 單關鍵幀「姿勢」IK slider 工廠（-100＝左右反轉，+100＝官方動作某一格）=====
+// 反轉規則（同官方 左／右 成對動作逐粒比對過）：手腳左右對調並 240-x，手指左右對調（值不變），
+// 頭 #19 為 240-x、#20 不變。由而家個 pose 線性過渡去目標；互斥／起點邏輯同踢式、大笑 slider 一致。
+// 姿勢 slider 之間：啟動一條會先 restore 並收返其他姿勢 slider；其他 IK slider 一郁就令姿勢 slider 歸 0（保留 pose）。
+(function(){
+  var PAIR={1:4,2:5,3:6,4:1,5:2,6:3,7:12,8:13,9:14,10:15,11:16,12:7,13:8,14:9,15:10,16:11,17:18,18:17,19:19,20:20};
+  function mirror(P){var M=[];for(var j=1;j<=20;j++){var x=P[PAIR[j]-1];M.push((j===17||j===18||j===20)?x:240-x);}return M;}
+  var REG={};               // 各姿勢 slider 嘅「收返」函數
+  var BUSY=false;           // 任何姿勢 slider 正喺度寫 pose
+  function make(cfg){
+    var POSE=cfg.pose,MIR=mirror(POSE),sPct=0,sBase=null;
+    function ui(v){var sl=document.getElementById(cfg.id),b=document.getElementById(cfg.id+'V');
+      if(sl&&parseFloat(sl.value)!==v)sl.value=v; if(b)b.textContent=v;}
+    function sClear(restore){
+      if(restore&&sBase&&manualAngles)manualAngles=sBase.slice();
+      sPct=0;sBase=null;ui(0);
+    }
+    REG[cfg.id]=function(){if(sPct>0)sClear(true);else if(sBase)sClear(false);};
+    window[cfg.fn]=function(val){
+      var v=Math.max(-100,Math.min(100,Math.round(parseFloat(val)||0))),p=Math.abs(v);
+      ui(v);
+      if(!ikOn)return;
+      pausePlayback();
+      if(!manualAngles)manualAngles=(lastAngles||STAND20).slice();
+      BUSY=true;
+      try{
+        if(p>0){
+          ikRootClear();
+          if(ikSquatPct>0)ikSquatClear(true);else if(ikSquatBase)ikSquatClear();
+          if(ikYSquatPct>0)ikYSquatClear(true);else if(ikYSquatBase)ikYSquatClear();
+          if(ikSplitPct>0)ikSplitClear(true);else if(ikSplitBase)ikSplitClear();
+          if(ikFSplitPct!==0)ikFSplitClear(true);else if(ikFSplitBase)ikFSplitClear();
+          var lg=document.getElementById('ikLaugh');
+          if(window.__ikLaughClear)window.__ikLaughClear(!!(lg&&parseFloat(lg.value)>0));
+          if(window.__ikKickClear)window.__ikKickClear();
+          Object.keys(REG).forEach(function(k){if(k!==cfg.id)REG[k]();});
+        }
+        if(!sBase)sBase=manualAngles.slice();
+        if(p<=0){manualAngles=sBase.slice();sPct=0;sBase=null;}
+        else{
+          var t=v>0?POSE:MIR,w=p/100,a=sBase.slice(),rg;
+          for(var i=0;i<20;i++){
+            var x=Math.round(a[i]+(t[i]-a[i])*w);
+            rg=rangeOf(i+1);x=Math.max(rg[0],Math.min(rg[1],x));a[i]=x;
+          }
+          manualAngles=a;sPct=p;
+        }
+      }finally{BUSY=false;}
+      syncServos(manualAngles);renderManual();
+    };
+    function guard(){if(!BUSY&&(sPct>0||sBase))sClear(false);}
+    ['setIkSquat','setIkYSquat','setIkSplit','setIkFSplit','setIkLaugh','setIkKick'].forEach(function(n){
+      var o=window[n];if(typeof o!=='function')return;
+      window[n]=function(){guard();return o.apply(this,arguments);};
+    });
+    ['seek','togglePlay','servosHome','servosZero','ikRootCapture'].forEach(function(n){
+      var o=window[n];if(typeof o!=='function')return;
+      var w=function(){guard();return o.apply(this,arguments);};
+      try{window[n]=w;}catch(e){}
+      try{ if(n==='seek')seek=w; else if(n==='togglePlay')togglePlay=w; else if(n==='servosHome')servosHome=w; else if(n==='servosZero')servosZero=w; else if(n==='ikRootCapture')ikRootCapture=w; }catch(e){}
+    });
+    document.addEventListener('input',function(e){
+      var id=e.target&&e.target.id; if(id&&/^sv\d+$/.test(id))guard();
+    },true);
+    (window.__ikPoses=window.__ikPoses||{})[cfg.id]={pose:POSE,mirror:MIR};
+  }
+  // Sirius：1464835936110.ubx 第 68 格（index 67）
+  make({id:'ikSirius',fn:'setIkSirius',pose:[129,98,170,123,128,120,171,92,178,129,172,125,206,197,37,128,120,120,110,113]});
+  // 葫蘆娃：1496218474326.ubx 第 4 格（index 3；手指 255＝放鬆，當 120）
+  make({id:'ikHulu',fn:'setIkHulu',pose:[122,88,123,120,118,57,103,53,112,152,107,98,204,162,75,85,120,120,173,97]});
+  // 屈臂前伸：1509001595235.ubx（當哈姆萊特遇到布魯克林）第 57 格（index 56）
+  make({id:'ikHamlet',fn:'setIkHamlet',pose:[71,164,150,166,34,90,144,57,139,133,141,134,176,101,101,127,120,120,84,120]});
+  // 跪姿前傾：1509004889922.ubx（前伸展式）第 8 格（index 7）
+  make({id:'ikKneel',fn:'setIkKneel',pose:[195,205,117,55,35,123,169,175,115,201,139,117,187,177,105,115,120,120,120,120]});
 })();
 </script>
 </body>
