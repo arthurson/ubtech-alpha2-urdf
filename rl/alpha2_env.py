@@ -69,3 +69,37 @@ class Alpha2Env(gym.Env):
         r = 1.0 - 2.0 * tilt ** 2 - 1.0 * np.sum(dq ** 2) * 0.1 - 0.02 * np.sum((a - self.prev) ** 2) - 0.002 * np.sum(d.actuator_force[self.act] ** 2) - 0.5 * np.sum(d.qvel[:2] ** 2)
         self.prev = a.copy()
         return self._obs(), float(-5.0 if fallen else r), bool(fallen), self.t >= EP_STEPS, {}
+
+
+class WalkEnv(Alpha2Env):
+    """Imitation walking: track an official .ubx walk (rl/ref/*.json from rl/make_ref.mjs); the policy outputs a residual
+    around the reference joint targets so it can balance. The reference = start-up, then the exact gait loop repeated.
+    obs (65) = Alpha2Env obs (43) + (ref q - default) (20) + sin/cos of the gait phase (2; zeros during start-up)
+    ctrl = ref_q(t) + WALK_SCALE * a"""
+    WALK_SCALE = 0.2
+    def __init__(self, ref=os.path.join(PKG, 'rl', 'ref', 'forward.json'), **kw):
+        import json
+        super().__init__(**kw); R = json.load(open(ref)); self.ref = np.array(R['q']); self.loop = R['loop']; assert self.loop
+        self.observation_space = spaces.Box(-np.inf, np.inf, (65,), np.float32); self.EP = 1000
+    def ref_q(self, t):
+        a, b = self.loop
+        return self.ref[t] if t < b else self.ref[a + (t - a) % (b - a)]
+    def _wobs(self):
+        a, b = self.loop; ph = 2 * np.pi * (self.t - a) / (b - a) if self.t >= a else None
+        ex = np.concatenate([self.ref_q(self.t) - self.q0, [np.sin(ph), np.cos(ph)] if ph is not None else [0.0, 0.0]])
+        return np.concatenate([super()._obs(), ex]).astype(np.float32)
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed); d = self.d; d.qpos[self.qadr] = self.ref[0]; d.ctrl[self.act] = self.ref[0]
+        if self.randomize: d.qpos[self.qadr] += self.rng.normal(0, 0.02, 20)
+        mujoco.mj_forward(self.m, d); self.t = 0; return self._wobs(), {}
+    def step(self, a):
+        a = np.clip(a, -1, 1).astype(np.float64); self.lag.append(a); a_eff = self.lag.pop(0) if self.lag else a
+        d = self.d; qr = self.ref_q(self.t); ctrl = np.clip(qr + self.WALK_SCALE * a_eff, self.lo, self.hi)
+        if self.push and self.t % 100 == 50 and self.rng.random() < 0.7: d.xfrc_applied[1, :2] = self.rng.uniform(-1, 1, 2) * 3.0
+        for _ in range(DECIM): d.ctrl[self.act] = ctrl; mujoco.mj_step(self.m, d)
+        d.xfrc_applied[:] = 0; self.t += 1
+        zz = d.xmat[1].reshape(3, 3)[2, 2]; tilt = np.arccos(np.clip(zz, -1, 1)); z = d.qpos[2]; fallen = z < FALL_Z or tilt > FALL_TILT
+        err = np.mean((d.qpos[self.qadr] - qr) ** 2)
+        r = 0.5 + 1.0 * np.exp(-60 * err) - 2.0 * tilt ** 2 - 0.02 * np.sum((a - self.prev) ** 2) - 0.002 * np.sum(d.actuator_force[self.act] ** 2) - 0.5 * d.qvel[1] ** 2
+        self.prev = a.copy()
+        return self._wobs(), float(-5.0 if fallen else r), bool(fallen), self.t >= self.EP, {}

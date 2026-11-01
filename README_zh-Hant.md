@@ -57,7 +57,8 @@ GPL-3.0-only（見 `LICENSE`；`package.xml` license 欄）。覆蓋呢度生出
 - 模型 `mujoco/alpha2.xml` 由 `python mujoco/make_mjcf.py` 生成（160 件碰撞 STL 內嵌，冇其他檔；`--check` 同 `stand_test.py` 模型對數）。`node mujoco/test_wasm.mjs` 用 WASM 跑 5 秒站立測試（質量／機身高度／傾角同 Python 一樣）。
 - 離線（`file://`）：喺播放器揀成個 `alpha2_description` 資料夾，WASM、glue、模型都由資料夾讀。
 - 注意：物理跟動作時間行（每個顯示幀推進一次，速度 slider 有效）；時間軸暫停＝物理凍結；拖軸／seek 由該時間嘅 pose 重新開始；FrontStand／BackStand 由企姿開始（唔係瞓低）；骨盆綠點同「錨定」喺此模式冇作用；IK 手／腳點係舵機目標。
-- 播放器載入 RL policy：物理模式下揀 `rl/train.py` 匯出嘅 `policy.onnx`（「RL policy」檔案格），剔「由 policy 控制」就由 policy 控機器人（obs 43 → action 20，50 Hz，常數同 `rl/alpha2_env.py` 一致）；「推」＝推機身一下。用 onnxruntime-web 1.31.1（`web/vendor/ort/`，MIT，約 15 MB，用到先載入）；JS 推論同 Python env 對得上（obs 一樣、action 差約 1e-7）。離線 `file://` 要先揀成個資料夾。
+- 播放器載入 RL policy：物理模式下揀 `rl/train.py` 匯出嘅 `policy.onnx`（「RL policy」檔案格），撳「▶ 開始」就由 policy 控機器人（再撳變「■ 停止」）（obs 43 → action 20，50 Hz，常數同 `rl/alpha2_env.py` 一致）；「推」＝推機身一下。用 onnxruntime-web 1.31.1（`web/vendor/ort/`，MIT，約 15 MB，用到先載入）；JS 推論同 Python env 對得上（obs 一樣、action 差約 1e-7）。離線 `file://` 要先揀成個資料夾。
+- 走路 policy：`rl/train.py --task walk`（或 train-rl workflow 揀 task=walk）模仿官方前進動作（`rl/ref/forward.json`，由 `node rl/make_ref.mjs actions/1508999860568.ubx rl/ref/forward.json 300 490` 生成；第 300 至 490 幀完全重複，所以步態可以循環）。policy 輸出 reference 附近嘅殘差（obs 65）。`rl/pretrained/walk_forward.onnx` 係單核 16 分鐘煙霧訓練結果：10/10 評估 episode（有隨機化同推撞）企足 20 秒，前進約 0.24 m，開環 reference 係 0.27 m，即係企得穩但未贏過 reference；想更強要喺 Actions 跑長啲。喺播放器「RL policy」格揀（online 會自動攞 reference；離線揀成個資料夾，或者將 `ref.json` 同 .onnx 一齊揀）。
 - MuJoCo 接觸摩擦取兩個 geom 較大者。`stand_test.py` 只將地面設 0.5，機身 geom 仍係預設 1.0，所以實際腳底 μ＝1.0；播放器係全部 geom 一齊設。
 
 ## Isaac Sim

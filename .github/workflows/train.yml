@@ -4,6 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       minutes: {description: 'Training wall-clock budget (job limit is 360 min)', default: '300'}
+      task:    {description: 'stand (balance) or walk (imitate the official forward walk)', default: 'walk'}
       resume:  {description: 'Resume from the latest cached checkpoint (true/false)', default: 'true'}
 permissions:
   contents: read
@@ -19,13 +20,13 @@ jobs:
       - name: Restore latest checkpoint
         if: inputs.resume == 'true'
         uses: actions/cache/restore@v4
-        with: {path: rl/out, key: rl-ckpt-none, restore-keys: 'rl-ckpt-'}
+        with: {path: rl/out, key: 'rl-ckpt-${{ inputs.task }}-none', restore-keys: 'rl-ckpt-${{ inputs.task }}-'}
       - name: Train
-        run: python rl/train.py --minutes ${{ inputs.minutes }} --out rl/out --resume rl/out/model.zip
+        run: python rl/train.py --task ${{ inputs.task }} --minutes ${{ inputs.minutes }} --out rl/out --resume rl/out/model.zip
       - name: Save checkpoint for the next run
         if: always()
         uses: actions/cache/save@v4
-        with: {path: rl/out, key: 'rl-ckpt-${{ github.run_id }}'}
+        with: {path: rl/out, key: 'rl-ckpt-${{ inputs.task }}-${{ github.run_id }}'}
       - uses: actions/upload-artifact@v4
         if: always()
         with: {name: alpha2-policy, path: rl/out/}

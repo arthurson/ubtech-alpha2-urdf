@@ -16,9 +16,9 @@
   var FAKE_BASE = 'https://mujoco.invalid/mujoco.js';
   var S = window.MJSIM = { on: false, ready: false, loading: false, mj: null, m: null, d: null,
     mu: 0.5, wide: false, dirty: true, lastT: null, acc: 0, simT: 0, idle: false, target: null, tkey: '', still: 0, lastWall: 0, raf: 0 };
-  var LOCAL = { js: null, wasm: null, xml: null, ortjs: null, ortmjs: null, ortwasm: null };
-  var POL = { sess: null, on: false, busy: false, acc: 0, prev: new Float64Array(20), pending: null, obs: null, act: null };   // RL policy (ONNX)
-  var ACT_SCALE = 0.3, DECIM = 10, CDT = 0.02;   // must equal rl/alpha2_env.py
+  var LOCAL = { js: null, wasm: null, xml: null, ortjs: null, ortmjs: null, ortwasm: null, ref: null };
+  var POL = { sess: null, nobs: 43, ref: null, k: 0, on: false, busy: false, acc: 0, prev: new Float64Array(20), pending: null, obs: null, act: null };   // RL policy (ONNX)
+  var WALK_SCALE = 0.2, ACT_SCALE = 0.3, DECIM = 10, CDT = 0.02;   // must equal rl/alpha2_env.py
   var modP = null, statT = 0, jOrig = null, cOrig = null;
 
   // ---- i18n (keys merged into the player's table; data-i18n attributes are re-translated by applyLang) ----
@@ -41,10 +41,14 @@
     mj_sat: ['飽和', 'sat'],
     mj_pol: ['RL policy', 'RL policy'],
     mj_pol_t: ['載入 rl/train.py 匯出嘅 policy.onnx（obs 43 → action 20）', 'Load the policy.onnx exported by rl/train.py (obs 43 -> action 20)'],
-    mj_pol_on: ['policy', 'policy'],
+    mj_pol_play: ['▶ 開始', '▶ Play'],
+    mj_pol_stop: ['■ 停止', '■ Stop'],
+    mj_pol_play_t: ['載入 policy 後，由 policy 控制機器人（重置到起始姿勢）', 'Let the loaded policy control the robot (resets to its start pose)'],
+    mj_pol_stop_t: ['停止 policy，返回跟播放器 pose', 'Stop the policy and go back to the player pose'],
     mj_push: ['推', 'Push'],
     mj_push_t: ['隨機方向推機身一下（3 N，一個控制步）', 'Random 3 N push on the base for one control step'],
     mj_pol_ok: ['policy 已載入', 'policy loaded'],
+    mj_ref_need: ['呢個行路 policy 要成個 ref.json（同 policy.onnx 一齊揀）', 'This walking policy needs its ref.json (select it together with policy.onnx)'],
     mj_pol_need: ['請先載入 .onnx', 'Load a .onnx first'],
     mj_note: ['開物理後：IK 手／腳點拖到嘅係舵機目標；骨盆綠點同「錨定」冇作用；FrontStand／BackStand 由企姿開始（唔係瞓低）',
       'In physics mode: IK dots drag servo targets; the pelvis dot and Anchor have no effect; FrontStand/BackStand start upright (not lying)']
@@ -239,47 +243,67 @@
     ortP.catch(function () { ortP = null; });
     return ortP;
   }
-  S.loadPolicy = async function (file) {
+  S.loadPolicy = async function (files) {
+    var list = files && files.length !== undefined && !files.name ? Array.prototype.slice.call(files) : (files ? [files] : []);
+    var file = list.filter(function (f) { return /\.onnx$/i.test(f.name); })[0], rj = list.filter(function (f) { return /\.json$/i.test(f.name); })[0];
     if (!file) return; var st = $('mjstat');
     try {
       if (st) st.textContent = T('mj_loading'); await loadOrt();
-      POL.sess = await window.ort.InferenceSession.create(new Uint8Array(await rd(file, 'buf')), { executionProviders: ['wasm'] });
-      var c = $('mjPolOn'); if (c) c.disabled = false; if (st) st.textContent = T('mj_pol_ok') + ': ' + file.name;
+      var sess = await window.ort.InferenceSession.create(new Uint8Array(await rd(file, 'buf')), { executionProviders: ['wasm'] });
+      var md = sess.inputMetadata, nobs = md && md[0] && md[0].shape && md[0].shape[1] > 0 ? md[0].shape[1] : 43, ref = null;
+      if (nobs === 65) {   // walking policy: needs the reference trajectory it was trained against
+        if (rj) ref = JSON.parse(await rd(rj));
+        else if (location.protocol === 'file:' && LOCAL.ref) ref = JSON.parse(await rd(LOCAL.ref));
+        else if (location.protocol !== 'file:') { var r = await fetch(new URL('../rl/ref/forward.json', BASE).href); if (r.ok) ref = await r.json(); }
+        if (!ref || !ref.loop) throw new Error(T('mj_ref_need'));
+      }
+      POL.sess = sess; POL.nobs = nobs; POL.ref = ref;
+      var c = $('mjPolOn'); if (c) c.disabled = false; polBtn(); if (st) st.textContent = T('mj_pol_ok') + ': ' + file.name + ' (obs ' + nobs + ')';
     } catch (e) { POL.sess = null; log(T('mj_fail') + (e && e.message || e)); if (st) st.textContent = T('mj_fail') + (e && e.message || e); }
   };
   function polReset() {   // same reset as rl/alpha2_env.py without randomisation
     var mj = S.mj, m = S.m, d = S.d; mj.mj_resetData(m, d);
     var qp = d.qpos; qp[0] = 0; qp[1] = 0; qp[2] = 0.2206 + 0.0015; qp[3] = 1; qp[4] = 0; qp[5] = 0; qp[6] = 0;
-    for (var k = 0; k < 20; k++) { qp[S.qadr[k]] = S.q0[k]; d.ctrl[S.act[k]] = S.q0[k]; POL.prev[k] = 0; }
+    var q00 = POL.nobs === 65 ? POL.ref.q[0] : S.q0; POL.k = 0;
+    for (var k = 0; k < 20; k++) { qp[S.qadr[k]] = q00[k]; d.ctrl[S.act[k]] = q00[k]; POL.prev[k] = 0; }
     mj.mj_forward(m, d); POL.acc = 0; POL.pending = null; S.simT = 0; S.idle = false; S.still = 0;
   }
   async function polControl() {   // one 0.02 s control step: obs(43) -> ONNX -> ctrl -> 10 physics steps
-    var mj = S.mj, m = S.m, d = S.d, b = S.bid.base_link, qp = d.qpos, xm = d.xmat, o = new Float32Array(43);
+    var mj = S.mj, m = S.m, d = S.d, b = S.bid.base_link, qp = d.qpos, xm = d.xmat, o = new Float32Array(POL.nobs), walk = POL.nobs === 65, qr = null;
     for (var k = 0; k < 20; k++) { o[k] = qp[S.qadr[k]] - S.q0[k]; o[20 + k] = POL.prev[k]; }
     o[40] = -xm[9 * b + 6]; o[41] = -xm[9 * b + 7]; o[42] = -xm[9 * b + 8];   // gravity direction in the base frame (R^T * [0,0,-1])
-    var out = await POL.sess.run({ obs: new window.ort.Tensor('float32', o, [1, 43]) }), a = out.action.data;
+    if (walk) {   // same reference / phase features as rl/alpha2_env.py WalkEnv
+      var Rf = POL.ref, lp = Rf.loop, kk = POL.k; qr = kk < lp[1] ? Rf.q[kk] : Rf.q[lp[0] + (kk - lp[0]) % (lp[1] - lp[0])];
+      for (k = 0; k < 20; k++) o[43 + k] = qr[k] - S.q0[k];
+      if (kk >= lp[0]) { var ph = 2 * Math.PI * (kk - lp[0]) / (lp[1] - lp[0]); o[63] = Math.sin(ph); o[64] = Math.cos(ph); }
+    }
+    var out = await POL.sess.run({ obs: new window.ort.Tensor('float32', o, [1, POL.nobs]) }), a = out.action.data;
     POL.obs = o; POL.act = Array.prototype.slice.call(a);
     var cr = m.actuator_ctrlrange, ct = d.ctrl;
-    for (k = 0; k < 20; k++) { var u = Math.max(-1, Math.min(1, a[k])), i = S.act[k]; POL.prev[k] = u; ct[i] = Math.min(cr[2 * i + 1], Math.max(cr[2 * i], S.q0[k] + ACT_SCALE * u)); }
+    for (k = 0; k < 20; k++) { var u = Math.max(-1, Math.min(1, a[k])), i = S.act[k]; POL.prev[k] = u; ct[i] = Math.min(cr[2 * i + 1], Math.max(cr[2 * i], walk ? qr[k] + WALK_SCALE * u : S.q0[k] + ACT_SCALE * u)); }
     if (POL.pending) { var f = d.xfrc_applied; f[6 * b] = POL.pending[0]; f[6 * b + 1] = POL.pending[1]; }
     for (var n = 0; n < DECIM; n++) mj.mj_step(m, d);
     if (POL.pending) { f = d.xfrc_applied; f[6 * b] = 0; f[6 * b + 1] = 0; POL.pending = null; }
-    S.simT += CDT;
+    S.simT += CDT; POL.k++;
   }
   function polTick(dt) {
     if (!POL.sess || POL.busy) return;
     POL.acc = Math.min(POL.acc + dt, 0.1); POL.busy = true;
     (async function () {
       try { var n = 0; while (POL.acc >= CDT && n < 3) { POL.acc -= CDT; n++; await polControl(); } if (n) applyScene(); }
-      catch (e) { POL.on = false; var c = $('mjPolOn'); if (c) c.checked = false; log(T('mj_fail') + (e && e.message || e)); }
+      catch (e) { POL.on = false; polBtn(); log(T('mj_fail') + (e && e.message || e)); }
       finally { POL.busy = false; }
     })();
   }
+  function polBtn() {   // Play / Stop button label follows the state
+    var b = $('mjPolOn'); if (!b) return; var k = POL.on ? 'mj_pol_stop' : 'mj_pol_play';
+    b.setAttribute('data-i18n', k); b.setAttribute('data-i18n-title', k + '_t'); b.textContent = T(k); b.title = T(k + '_t');
+  }
   S.setPolicy = function (on) {
-    var c = $('mjPolOn');
-    if (on && !POL.sess) { if (c) c.checked = false; var st = $('mjstat'); if (st) st.textContent = T('mj_pol_need'); return; }
+    if (on && !POL.sess) { polBtn(); var st = $('mjstat'); if (st) st.textContent = T('mj_pol_need'); return; }
     POL.on = !!on && S.ready;
     if (POL.on) polReset(); else { S.dirty = true; redraw(); }
+    polBtn();
   };
   S.polSteps = async function (n) { for (var i = 0; i < n; i++) await polControl(); applyScene(); };   // deterministic stepping (tests / scripting)
   S.push = function () { var a = Math.random() * 2 * Math.PI; POL.pending = [3 * Math.cos(a), 3 * Math.sin(a)]; };
@@ -288,7 +312,7 @@
   function redraw() { if (window.TRAJ && !manualAngles) drawAt(pauseMs); else poseMesh(manualAngles || lastAngles); }
   S.toggle = function () {
     if (S.on) {   // back to the kinematic player
-      POL.on = false; var pc = $('mjPolOn'); if (pc) pc.checked = false;
+      POL.on = false; polBtn();
       S.on = false; box(false); anchorSnapReq = true; anchorInit = false; extraPos.x = 0; extraPos.z = 0; extraYaw = 0; redraw(); return;
     }
     S.on = true; S.dirty = true; S.lastT = null; box(true);
@@ -326,6 +350,7 @@
       if (/(^|\/)vendor\/mujoco\/mujoco\.js$/.test(p)) LOCAL.js = fs[i];
       else if (/(^|\/)vendor\/mujoco\/mujoco\.wasm$/.test(p)) LOCAL.wasm = fs[i];
       else if (/(^|\/)mujoco\/alpha2\.xml$/.test(p)) LOCAL.xml = fs[i];
+      else if (/(^|\/)rl\/ref\/forward\.json$/.test(p)) LOCAL.ref = fs[i];
       else if (/(^|\/)vendor\/ort\/ort\.wasm\.min\.js$/.test(p)) LOCAL.ortjs = fs[i];
       else if (/(^|\/)vendor\/ort\/ort-wasm-simd-threaded\.mjs$/.test(p)) LOCAL.ortmjs = fs[i];
       else if (/(^|\/)vendor\/ort\/ort-wasm-simd-threaded\.wasm$/.test(p)) LOCAL.ortwasm = fs[i];
