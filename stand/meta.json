@@ -1,0 +1,44 @@
+{
+  "task": "stand",
+  "seed": 0,
+  "cfg": {
+    "push_force": 3.0,
+    "push_prob": 0.7,
+    "w_tilt": 2.0,
+    "w_pose": 0.1,
+    "w_smooth": 0.02,
+    "w_torque": 0.002,
+    "w_track": 1.0
+  },
+  "timesteps": 16283992,
+  "eval_max_len": 500,
+  "eval_lens": [
+    500,
+    500,
+    500,
+    500,
+    500,
+    500,
+    500,
+    500,
+    500,
+    500
+  ],
+  "eval_mean_len": 500.0,
+  "eval_final_x": [
+    0.007,
+    0.012,
+    0.013,
+    0.012,
+    0.004,
+    0.017,
+    0.006,
+    0.011,
+    0.016,
+    0.007
+  ],
+  "run_id": "41304949556",
+  "run_url": "https://github.com/arthurson/ubtech-alpha2-urdf/actions/runs/41304949556",
+  "finished_at": "2026-11-01T17:48:22Z",
+  "minutes": 340
+}
