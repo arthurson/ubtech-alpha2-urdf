@@ -20,7 +20,7 @@
   #leftcol{position:fixed;top:10px;left:10px;bottom:70px;width:302px;display:flex;gap:8px;flex-direction:column;z-index:10}
   #leftcol .hud{position:static}
 #leftpanel{flex:1 1 auto;min-height:150px;display:flex;gap:8px;flex-direction:column;overflow:hidden}
-#leftpanel h1{font-size:17px;margin:0;display:flex;gap:4px;align-items:center;flex-wrap:nowrap}
+#leftpanel h1{font-size:17px;margin:0;display:flex;gap:4px;align-items:center;flex-wrap:wrap}
 #leftpanel h1 button{padding:3px 7px;font-size:12px;border-radius:8px;margin:0;font-weight:700;white-space:nowrap}
 #ikSquatRow,#ikYSquatRow,#ikSplitRow,#ikFSplitRow{display:none;align-items:center;gap:5px;font-size:12px;white-space:nowrap;margin:4px 0 0}
 #ikSquatRow input[type=range],#ikYSquatRow input[type=range],#ikSplitRow input[type=range],#ikFSplitRow input[type=range]{flex:1;min-width:40px;width:auto;margin:0}
@@ -132,15 +132,6 @@
 <div id="offstat" class="mono" style="color:var(--ok);display:none"></div>
 <div id="loadbar" data-i18n-title="mesh_title" title="mesh 載入進度（首次 44MB）"><div id="loadfill"></div></div>
 </div>
-<div id="mjbox" style="display:none;font-size:12px;border:1px dashed #999;border-radius:8px;padding:6px 8px;flex-direction:column;gap:4px">
-<div style="display:flex;align-items:center;gap:6px"><b data-i18n="mj_name">MuJoCo 物理</b><button onclick="MJSIM.reset()" data-i18n="mj_reset" data-i18n-title="mj_reset_t" title="重置">重置</button></div>
-<div id="mjstat" class="mono" style="min-height:1.2em"></div>
-<label style="display:flex;align-items:center;gap:6px"><span data-i18n="mj_mu" data-i18n-title="mj_mu_t" title="摩擦 μ">摩擦 μ</span><input type="range" id="mjMu" min="0.1" max="1.5" step="0.05" value="0.5" style="flex:1;min-width:0" oninput="MJSIM.setMu(this.value)"><b id="mjMuV" class="mono" style="flex:none;width:34px;text-align:right">0.50</b></label>
-<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="mjWide" onchange="MJSIM.setWiden(this.checked)"><span data-i18n="mj_wide" data-i18n-title="mj_wide_t" title="行程 +15°">行程 +15°</span></label>
-<div style="display:flex;align-items:center;gap:6px"><span data-i18n="mj_pol" data-i18n-title="mj_pol_t" title="RL policy">RL policy</span><input type="file" id="mjPol" accept=".onnx" style="flex:1;min-width:0;font-size:11px" onchange="MJSIM.loadPolicy(this.files[0])"></div>
-<div style="display:flex;align-items:center;gap:8px"><label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="mjPolOn" disabled onchange="MJSIM.setPolicy(this.checked)"><span data-i18n="mj_pol_on">由 policy 控制</span></label><button onclick="MJSIM.push()" data-i18n="mj_push" data-i18n-title="mj_push_t" title="推">推</button></div>
-<div class="foot" style="color:var(--muted2)" data-i18n="mj_note"></div>
-</div>
 <input type="file" id="file" accept=".ubx" data-i18n-title="file_title" title="由部機 /sdcard/actions/ 抄出嚟嘅 .ubx">
 <input type="text" id="actSearch" style="display:none" data-i18n-title="act_search_t" title="打名／檔案編號搵動作">
 <div id="actList"></div>
@@ -159,6 +150,11 @@
 <button onclick="setView('top')" data-i18n="v_top" data-i18n-title="t_top" title="頂面">頂</button>
 <button onclick="setView('bottom')" data-i18n="v_bottom" data-i18n-title="t_bottom" title="底面">底</button>
 <button onclick="setView('home')" title="Default view">⌂</button>
+</div>
+<div id="mjbox" style="display:none;font-size:12px;border:1px dashed #999;border-radius:8px;padding:4px 6px;margin:4px 0;flex-direction:column;gap:3px">
+<div style="display:flex;align-items:center;gap:4px"><b data-i18n="mj_name">MuJoCo</b><span id="mjstat" class="mono" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px"></span><button style="padding:2px 6px;font-size:11px;margin:0" onclick="MJSIM.reset()" data-i18n="mj_reset" data-i18n-title="mj_reset_t" title="重置">重置</button><button style="padding:2px 6px;font-size:11px;margin:0" onclick="MJSIM.push()" data-i18n="mj_push" data-i18n-title="mj_push_t" title="推">推</button></div>
+<label style="display:flex;align-items:center;gap:6px"><span data-i18n="mj_mu" data-i18n-title="mj_mu_t" title="摩擦 μ">μ</span><input type="range" id="mjMu" min="0.1" max="1.5" step="0.05" value="0.5" style="flex:1;min-width:0;margin:0" oninput="MJSIM.setMu(this.value)"><b id="mjMuV" class="mono" style="flex:none;width:30px;text-align:right">0.50</b><input type="checkbox" id="mjWide" onchange="MJSIM.setWiden(this.checked)" style="margin:0 0 0 4px"><span data-i18n="mj_wide" data-i18n-title="mj_wide_t" title="行程 +15°">+15°</span></label>
+<div style="display:flex;align-items:center;gap:4px"><input type="file" id="mjPol" accept=".onnx" style="flex:1;min-width:0;font-size:11px" onchange="MJSIM.loadPolicy(this.files[0])"><label style="display:flex;align-items:center;gap:3px;cursor:pointer;white-space:nowrap"><input type="checkbox" id="mjPolOn" disabled onchange="MJSIM.setPolicy(this.checked)" style="margin:0"><span data-i18n="mj_pol_on">policy</span></label></div>
 </div>
 <h2><span data-i18n="servos">舵機</span> <button onclick="servosZero()" data-i18n="zero_all" data-i18n-title="zero_title" title="套用 PC 軟件企姿（企直、手垂低）嘅 20 個 servo 值；唔會改 q_init">零位</button> <button onclick="servosHome()" data-i18n="home_all">回中</button> <button id="envBtn" onclick="toggleEnv()" data-i18n="env_range" data-i18n-title="env_title" title="用官方 203 招實測行程做 slider 範圍">官方行程</button> <button onclick="showJoints()" data-i18n="jinfo">ℹ 關節資料</button></h2>
 <div id="ikLaughSquatRow">
@@ -247,8 +243,8 @@
 </div>
 </div>
 
-<script src="fk-params.js?v=20261023"></script>
-<script src="ubx-parse.js?v=20261023"></script>
+<script src="fk-params.js?v=20261101"></script>
+<script src="ubx-parse.js?v=20261101"></script>
 <script>
 
 // ---- 3x3 數學 ----
@@ -2330,7 +2326,7 @@ applyMobileLayout();
 window.toggleMob=toggleMob;
 syncToggles();
 </script>
-<script src="mj-sim.js?v=20261101"></script>
+<script src="mj-sim.js?v=20261102"></script>
 <script>
 // ===== 大笑 IK slider：喺「IK」slider 組度加一條「大笑」（0–100）=====
 // 官方 1487230160190（大笑）嘅 4 個關鍵姿勢（企 → 微後仰 → 後仰 → 最大後仰雙臂高舉）轉成機身框內嘅末端目標：

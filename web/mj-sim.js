@@ -26,22 +26,22 @@
     mj_b: ['物理', 'Physics'],
     mj_title: ['MuJoCo WASM 物理模擬：動作／slider 變成舵機目標，機身受重力、摩擦、扭力上限影響，會失衡跌倒（約 11 MB，首次載入）',
       'MuJoCo WASM physics: actions / sliders become servo targets; gravity, friction and torque limits apply, the robot can fall (about 11 MB, first load)'],
-    mj_name: ['MuJoCo 物理', 'MuJoCo physics'],
+    mj_name: ['MuJoCo', 'MuJoCo'],
     mj_reset: ['重置', 'Reset'],
     mj_reset_t: ['將機身擺返企喺地面，由當前舵機目標重新開始', 'Put the robot back on the floor at the current servo targets'],
-    mj_mu: ['摩擦 μ', 'Friction μ'],
+    mj_mu: ['μ', 'μ'],
     mj_mu_t: ['腳底／地面滑動摩擦（接觸取兩邊較大值，所以全部 geom 一齊設）', 'Sliding friction (MuJoCo uses the larger of the two geoms, so every geom is set)'],
-    mj_wide: ['行程 +15°', 'Range +15°'],
+    mj_wide: ['+15°', '+15°'],
     mj_wide_t: ['關節同舵機行程各加闊 15°（官方動作有約 10% 幀超出校準行程）', 'Widen every joint / servo range by 15 deg (about 10% of official frames exceed the calibrated limits)'],
     mj_loading: ['載入 MuJoCo WASM…', 'Loading MuJoCo WASM…'],
     mj_need_dir: ['file:// 離線：請先喺「📁 選擇模型資料夾」揀成個 alpha2_description（要有 web/vendor/mujoco 同 mujoco/alpha2.xml）',
       'file:// offline: first pick the whole alpha2_description folder with the folder box (needs web/vendor/mujoco and mujoco/alpha2.xml)'],
     mj_fail: ['物理載入失敗：', 'Physics failed to load: '],
-    mj_fallen: ['已跌倒', 'fallen'],
-    mj_sat: ['扭力飽和', 'torque-saturated'],
+    mj_fallen: ['跌', 'fell'],
+    mj_sat: ['飽和', 'sat'],
     mj_pol: ['RL policy', 'RL policy'],
     mj_pol_t: ['載入 rl/train.py 匯出嘅 policy.onnx（obs 43 → action 20）', 'Load the policy.onnx exported by rl/train.py (obs 43 -> action 20)'],
-    mj_pol_on: ['由 policy 控制', 'Policy controls'],
+    mj_pol_on: ['policy', 'policy'],
     mj_push: ['推', 'Push'],
     mj_push_t: ['隨機方向推機身一下（3 N，一個控制步）', 'Random 3 N push on the base for one control step'],
     mj_pol_ok: ['policy 已載入', 'policy loaded'],
@@ -140,6 +140,12 @@
     qp[0] = 0; qp[1] = 0; qp[2] = 1; qp[3] = 1; qp[4] = 0; qp[5] = 0; qp[6] = 0;
     for (var k = 0; k < 20; k++) { var j = S.jid[k]; qp[S.qadr[k]] = Math.min(jr[2 * j + 1], Math.max(jr[2 * j], qOf(a, k))); }
     mj.mj_forward(m, d);
+    // soles flat on the floor: tilt the base about world y by minus the ankle-link pitch, so the stance starts in equilibrium
+    // (otherwise the body lunges forward / rocks to the pose's natural lean for the first ~0.5 s). Skipped for lifted / uneven feet.
+    var fp = ['r_ankle_roll_link', 'l_ankle_roll_link'].map(function (n) { var i = S.bid[n]; return Math.atan2(-d.xmat[9 * i + 6], d.xmat[9 * i]); });
+    if (Math.abs(fp[0] - fp[1]) < 0.09 && Math.abs(fp[0]) < 0.44) {
+      var th = -(fp[0] + fp[1]) / 2; qp[3] = Math.cos(th / 2); qp[4] = 0; qp[5] = Math.sin(th / 2); qp[6] = 0; mj.mj_forward(m, d);
+    }
     d.qpos[2] = 1 - lowestZ() + 0.001; mj.mj_forward(m, d);
     S.acc = 0; S.simT = 0; S.dirty = false; S.idle = false; S.still = 0; S.tkey = a.join(',');
   }
