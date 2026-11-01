@@ -51,6 +51,15 @@ GPL-3.0-only（見 `LICENSE`；`package.xml` license 欄）。覆蓋呢度生出
 - Armature 同 implicitfast 缺一不可：最輕條 link 主慣量得 ~8e-7 kg*m^2，MuJoCo 預設 explicit 積分喺舵機剛度下數值唔穩（唔加會跌／爆開）。
 - 結果（MuJoCo 3.15）：URDF 關節範圍／軸／原點同獨立 FK 對到 0.00000 mm；總質量 2.300 kg；預設企姿企得穩 5 秒（~0.5 度傾）；202 個官方動作開 position servo 重播：193 個企到，9 個跌（無平衡控制器下嘅地板／單腳動作）；mu = 1.0 嗰陣髖 roll 好似 ~30 個動作到 stall（15–37 N*m demand）：係摩擦假象（腳咬死地下、髖照指令側移）。mu = 0.5 嗰陣企得穩嗰 193 個入面得 1 個超髖 roll 死點扭力（BackStand 4.2 N*m）；其餘超 stall 係膊頭 roll（12–14 個）同頭上下（10 個），部份嚟自超校準限位嘅格，可能加自撞。
 
+## MuJoCo WASM（網頁播放器）
+
+- 撳 `web/ubx-player.html` 頂部「**物理**」：播放器嘅 pose（.ubx 播放、slider、IK 點）變成同 `mujoco/stand_test.py` 一樣物理模型嘅位置舵機目標，由官方 `@mujoco/mujoco` 3.17.0 WASM（`web/vendor/mujoco/`，Apache-2.0）喺瀏覽器行；visual mesh 跟 MuJoCo body 擺位，所以會企穩／打滑／跌。掣：重置、摩擦 μ（全部 geom 一齊設）、「行程 +15°」；狀態列＝模擬時間、機身高度、傾角、扭力飽和舵機數、已跌倒（z < 0.15 m 或傾角 > 40°）。
+- 模型 `mujoco/alpha2.xml` 由 `python mujoco/make_mjcf.py` 生成（160 件碰撞 STL 內嵌，冇其他檔；`--check` 同 `stand_test.py` 模型對數）。`node mujoco/test_wasm.mjs` 用 WASM 跑 5 秒站立測試（質量／機身高度／傾角同 Python 一樣）。
+- 離線（`file://`）：喺播放器揀成個 `alpha2_description` 資料夾，WASM、glue、模型都由資料夾讀。
+- 注意：物理跟動作時間行（每個顯示幀推進一次，速度 slider 有效）；時間軸暫停＝物理凍結；拖軸／seek 由該時間嘅 pose 重新開始；FrontStand／BackStand 由企姿開始（唔係瞓低）；骨盆綠點同「錨定」喺此模式冇作用；IK 手／腳點係舵機目標。
+- 播放器載入 RL policy：物理模式下揀 `rl/train.py` 匯出嘅 `policy.onnx`（「RL policy」檔案格），剔「由 policy 控制」就由 policy 控機器人（obs 43 → action 20，50 Hz，常數同 `rl/alpha2_env.py` 一致）；「推」＝推機身一下。用 onnxruntime-web 1.31.1（`web/vendor/ort/`，MIT，約 15 MB，用到先載入）；JS 推論同 Python env 對得上（obs 一樣、action 差約 1e-7）。離線 `file://` 要先揀成個資料夾。
+- MuJoCo 接觸摩擦取兩個 geom 較大者。`stand_test.py` 只將地面設 0.5，機身 geom 仍係預設 1.0，所以實際腳底 μ＝1.0；播放器係全部 geom 一齊設。
+
 ## Isaac Sim
 無跑過（build 環境無 GPU）。`urdf/alpha2_isaac.urdf`（相對 mesh 路徑）、`isaac/import_and_stand.py` 同 `isaac/README.md` 備好；offline pre-flight check 過咗（見 isaac/README.md）。
 

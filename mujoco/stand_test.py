@@ -11,7 +11,7 @@ for _l in open(os.path.join(PKG, 'config', 'servo_map.yaml')):
     _m = re.search(r'joint: (\w+).*?torque_nm: ([\d.]+)', _l)
     if _m: TORQUE[_m.group(1)] = float(_m.group(2))
 
-def load(kp=KP, kv=KV, armature=ARMATURE):
+def build_spec(kp=KP, kv=KV, armature=ARMATURE):
     spec = mujoco.MjSpec.from_file(os.path.join(PKG, 'urdf', 'alpha2_mujoco.urdf'))
     spec.option.timestep = 0.002
     spec.option.integrator = mujoco.mjtIntegrator.mjINT_IMPLICITFAST
@@ -27,7 +27,9 @@ def load(kp=KP, kv=KV, armature=ARMATURE):
             a.biastype = mujoco.mjtBias.mjBIAS_AFFINE; a.biasprm[1] = -kp; a.biasprm[2] = -kv
             a.forcelimited = mujoco.mjtLimited.mjLIMITED_TRUE; a.forcerange = [-TORQUE[j.name], TORQUE[j.name]]
             a.ctrllimited = mujoco.mjtLimited.mjLIMITED_TRUE; a.ctrlrange = list(j.range)
-    return spec.compile()
+    return spec
+
+def load(kp=KP, kv=KV, armature=ARMATURE): return build_spec(kp, kv, armature).compile()
 
 def default_stance():
     q = {}

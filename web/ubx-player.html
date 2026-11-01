@@ -24,8 +24,19 @@
 #leftpanel h1 button{padding:3px 7px;font-size:12px;border-radius:8px;margin:0;font-weight:700;white-space:nowrap}
 #ikSquatRow,#ikYSquatRow,#ikSplitRow,#ikFSplitRow{display:none;align-items:center;gap:5px;font-size:12px;white-space:nowrap;margin:4px 0 0}
 #ikSquatRow input[type=range],#ikYSquatRow input[type=range],#ikSplitRow input[type=range],#ikFSplitRow input[type=range]{flex:1;min-width:40px;width:auto;margin:0}
-#ikSquatRow span,#ikYSquatRow span,#ikSplitRow span,#ikFSplitRow span{flex:none;width:62px}
+#ikSquatRow span,#ikYSquatRow span,#ikSplitRow span,#ikFSplitRow span{flex:none;width:76px}
 #ikFSplitRow{margin-bottom:3px}
+#ikLaughSquatRow,#ikYSplitRow,#ikKickRow,#ikSiriusRow,#ikHuluRow,#ikHamletRow,#ikKneelRow{display:none;align-items:center;gap:5px;font-size:12px;white-space:nowrap;margin:4px 0 0}
+#ikLaughSquatRow input[type=range],#ikYSplitRow input[type=range],#ikKickRow input[type=range],#ikSiriusRow input[type=range],#ikHuluRow input[type=range],#ikHamletRow input[type=range],#ikKneelRow input[type=range]{flex:1;min-width:40px;width:auto;margin:0}
+#ikLaughSquatRow span,#ikYSplitRow span,#ikKickRow span,#ikSiriusRow span,#ikHuluRow span,#ikHamletRow span,#ikKneelRow span{flex:none;width:76px}
+/* IK 8 條 slider：名稱（左）＋數值（右）一行，slider 獨佔下一行全闊——名稱長／字體闊都唔會同 slider 重疊，slider 亦冇縮短 */
+#ikLaughSquatRow,#ikYSplitRow,#ikKickRow,#ikSiriusRow,#ikHuluRow,#ikHamletRow,#ikKneelRow,#ikFSplitRow{flex-wrap:wrap;gap:1px 5px;margin:5px 0 0}
+#ikLaughSquatRow > span,#ikYSplitRow > span,#ikKickRow > span,#ikSiriusRow > span,#ikHuluRow > span,#ikHamletRow > span,#ikKneelRow > span,#ikFSplitRow > span{order:1;flex:1 1 0;min-width:0;width:auto;overflow:hidden;text-overflow:ellipsis}
+#ikLaughSquatRow > b,#ikYSplitRow > b,#ikKickRow > b,#ikSiriusRow > b,#ikHuluRow > b,#ikHamletRow > b,#ikKneelRow > b,#ikFSplitRow > b{order:2;flex:none}
+#ikLaughSquatRow > input[type=range],#ikYSplitRow > input[type=range],#ikKickRow > input[type=range],#ikSiriusRow > input[type=range],#ikHuluRow > input[type=range],#ikHamletRow > input[type=range],#ikKneelRow > input[type=range],#ikFSplitRow > input[type=range]{order:3;flex:0 0 100%;width:100%;min-width:0;margin:0}
+#ikLaughRow{display:none;align-items:center;gap:5px;font-size:12px;white-space:nowrap;margin:4px 0 3px}
+#ikLaughRow input[type=range]{flex:1;min-width:40px;width:auto;margin:0}
+#ikLaughRow span{flex:none;width:62px}
 #tmpOffBox{margin:6px 0 2px;font-size:12px;border:1px solid var(--panel-bd);border-radius:8px;padding:4px 6px;background:var(--log-bg)}
 #tmpOffBox summary{cursor:pointer;font-weight:700;color:var(--accent);font-size:12px;display:flex;align-items:center;gap:6px;white-space:nowrap}
 #tmpOffOn{color:var(--warn);font-size:11px}
@@ -114,12 +125,21 @@
 <div id="mtop"><div id="mtabs"><button id="mobLBtn" onclick="toggleMob('l')" data-i18n="mob_actions" title="動作">動作</button><button id="mobRBtn" onclick="toggleMob('r')" data-i18n="mob_servos" title="舵機">舵機</button></div></div>
 
 <div id="leftcol"><div class="hud" id="leftpanel">
-<h1><button id="langBtn" onclick="toggleLang()" title="中文 / English">EN</button><button id="themeBtn" onclick="toggleTheme()" data-i18n-title="theme_title" title="黑/白主題">🌙</button><button id="anchorBtn" onclick="toggleAnchor()" data-i18n="anchor_b" data-i18n-title="anchor" title="腳部錨定：固定支撐腳位置，鞋底貼地">錨定</button><button id="comBtn" onclick="toggleCom()" data-i18n="com_b" data-i18n-title="com_title" title="顯示質心（用 URDF inertial 質量計）">質心</button><button id="ikBtn" onclick="toggleIK()" data-i18n="ik_b" data-i18n-title="ik_title" title="IK：拖手／腳藍點擺位；拖綠色骨盆點＝拖身體（雙腳釘地、鞠躬／重心轉移）">IK</button></h1>
+<h1><button id="langBtn" onclick="toggleLang()" title="中文 / English">EN</button><button id="themeBtn" onclick="toggleTheme()" data-i18n-title="theme_title" title="黑/白主題">🌙</button><button id="anchorBtn" onclick="toggleAnchor()" data-i18n="anchor_b" data-i18n-title="anchor" title="腳部錨定：固定支撐腳位置，鞋底貼地">錨定</button><button id="comBtn" onclick="toggleCom()" data-i18n="com_b" data-i18n-title="com_title" title="顯示質心（用 URDF inertial 質量計）">質心</button><button id="ikBtn" onclick="toggleIK()" data-i18n="ik_b" data-i18n-title="ik_title" title="IK：拖手／腳藍點擺位；拖綠色骨盆點＝拖身體（雙腳釘地、鞠躬／重心轉移）">IK</button><button id="mjBtn" onclick="MJSIM.toggle()" data-i18n="mj_b" data-i18n-title="mj_title" title="MuJoCo WASM 物理模擬">物理</button></h1>
 <div id="offlinebox" style="font-size:12px;border:1px dashed #999;border-radius:8px;padding:6px 8px;display:flex;flex-direction:column;gap:4px">
 <label style="cursor:pointer;display:flex;align-items:center;gap:6px"><span data-i18n="off_dir">📁 選擇模型資料夾</span><span id="offcount" class="mono" style="margin-left:auto;color:var(--muted2)"></span>
 <input type="file" id="offDir" webkitdirectory multiple style="display:none" data-i18n-title="off_dir_title" title="揀成個 alpha2_description：入面有 meshes/visual 同 actions（連 manifest/meta/mp3）"></label>
 <div id="offstat" class="mono" style="color:var(--ok);display:none"></div>
 <div id="loadbar" data-i18n-title="mesh_title" title="mesh 載入進度（首次 44MB）"><div id="loadfill"></div></div>
+</div>
+<div id="mjbox" style="display:none;font-size:12px;border:1px dashed #999;border-radius:8px;padding:6px 8px;flex-direction:column;gap:4px">
+<div style="display:flex;align-items:center;gap:6px"><b data-i18n="mj_name">MuJoCo 物理</b><button onclick="MJSIM.reset()" data-i18n="mj_reset" data-i18n-title="mj_reset_t" title="重置">重置</button></div>
+<div id="mjstat" class="mono" style="min-height:1.2em"></div>
+<label style="display:flex;align-items:center;gap:6px"><span data-i18n="mj_mu" data-i18n-title="mj_mu_t" title="摩擦 μ">摩擦 μ</span><input type="range" id="mjMu" min="0.1" max="1.5" step="0.05" value="0.5" style="flex:1;min-width:0" oninput="MJSIM.setMu(this.value)"><b id="mjMuV" class="mono" style="flex:none;width:34px;text-align:right">0.50</b></label>
+<label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="mjWide" onchange="MJSIM.setWiden(this.checked)"><span data-i18n="mj_wide" data-i18n-title="mj_wide_t" title="行程 +15°">行程 +15°</span></label>
+<div style="display:flex;align-items:center;gap:6px"><span data-i18n="mj_pol" data-i18n-title="mj_pol_t" title="RL policy">RL policy</span><input type="file" id="mjPol" accept=".onnx" style="flex:1;min-width:0;font-size:11px" onchange="MJSIM.loadPolicy(this.files[0])"></div>
+<div style="display:flex;align-items:center;gap:8px"><label style="display:flex;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" id="mjPolOn" disabled onchange="MJSIM.setPolicy(this.checked)"><span data-i18n="mj_pol_on">由 policy 控制</span></label><button onclick="MJSIM.push()" data-i18n="mj_push" data-i18n-title="mj_push_t" title="推">推</button></div>
+<div class="foot" style="color:var(--muted2)" data-i18n="mj_note"></div>
 </div>
 <input type="file" id="file" accept=".ubx" data-i18n-title="file_title" title="由部機 /sdcard/actions/ 抄出嚟嘅 .ubx">
 <input type="text" id="actSearch" style="display:none" data-i18n-title="act_search_t" title="打名／檔案編號搵動作">
@@ -141,6 +161,16 @@
 <button onclick="setView('home')" title="Default view">⌂</button>
 </div>
 <h2><span data-i18n="servos">舵機</span> <button onclick="servosZero()" data-i18n="zero_all" data-i18n-title="zero_title" title="套用 PC 軟件企姿（企直、手垂低）嘅 20 個 servo 值；唔會改 q_init">零位</button> <button onclick="servosHome()" data-i18n="home_all">回中</button> <button id="envBtn" onclick="toggleEnv()" data-i18n="env_range" data-i18n-title="env_title" title="用官方 203 招實測行程做 slider 範圍">官方行程</button> <button onclick="showJoints()" data-i18n="jinfo">ℹ 關節資料</button></h2>
+<div id="ikLaughSquatRow">
+<span data-i18n="ik_n_squatlean">蹲仰</span>
+<input type="range" id="ikLaughSquat" min="-100" max="100" step="1" value="0" oninput="setIkLaughSquat(this.value)" data-i18n-title="ik_laughsquat_title" title="蹲仰：-100＝大笑（最大後仰、雙臂高舉）；0＝中立；+100＝蹲下（手垂低、深蹲）；腳掌貼地（建議開錨定）">
+<b id="ikLaughSquatV" class="mono" style="flex:none;width:44px;text-align:right">0</b>
+</div>
+<div id="ikYSplitRow">
+<span data-i18n="ik_n_squatsplit">蹲劈</span>
+<input type="range" id="ikYSplit" min="-100" max="100" step="1" value="0" oninput="setIkYSplit(this.value)" data-i18n-title="ik_ysplit_title" title="蹲劈：-100＝蹲式（深蹲、雙臂左右張開）；0＝中立；+100＝左右一字馬；腳掌貼地（建議開錨定）">
+<b id="ikYSplitV" class="mono" style="flex:none;width:44px;text-align:right">0</b>
+</div>
 <div id="ikSquatRow">
 <span data-i18n="ik_squat" style="flex:none">蹲下</span>
 <input type="range" id="ikSquat" min="0" max="100" step="1" value="0" oninput="setIkSquat(this.value)" data-i18n-title="ik_squat_title" title="重現官方「蹲下」pose：手垂低、深蹲、腳掌貼地（建議開錨定）">
@@ -156,10 +186,40 @@
 <input type="range" id="ikSplit" min="0" max="100" step="1" value="0" oninput="setIkSplit(this.value)" data-i18n-title="ik_split_title" title="雙腳左右劈開：兩隻腳一齊向外撐，肩 roll 自動張開避手，腳掌保持貼地、機身下降（建議開錨定）">
 <b id="ikSplitV" class="mono" style="flex:none;width:44px;text-align:right">0</b>
 </div>
+<div id="ikKickRow">
+<span data-i18n="ik_n_kick">踢腿</span>
+<input type="range" id="ikKick" min="-100" max="100" step="1" value="0" oninput="setIkKick(this.value)" data-i18n-title="ik_kick_title" title="踢腿：-100＝左踢式；0＝中立；+100＝右踢式（跟官方動作「左踢式／右踢式」企直→踢腳姿勢嘅關鍵幀路徑）；建議開錨定">
+<b id="ikKickV" class="mono" style="flex:none;width:44px;text-align:right">0</b>
+</div>
+<div id="ikSiriusRow">
+<span data-i18n="ik_n_sidelunge">側弓步</span>
+<input type="range" id="ikSirius" min="-100" max="100" step="1" value="0" oninput="setIkSirius(this.value)" data-i18n-title="ik_sirius_title" title="側弓步：+100＝官方動作「Sirius」第 68 格姿勢（側弓步、雙臂展開）；0＝中立；-100＝左右反轉；建議開錨定">
+<b id="ikSiriusV" class="mono" style="flex:none;width:44px;text-align:right">0</b>
+</div>
+<div id="ikHuluRow">
+<span data-i18n="ik_n_halfsquat">半蹲</span>
+<input type="range" id="ikHulu" min="-100" max="100" step="1" value="0" oninput="setIkHulu(this.value)" data-i18n-title="ik_hulu_title" title="半蹲：+100＝官方動作「葫蘆娃」第 4 格姿勢（半蹲、雙臂展開、轉頭）；0＝中立；-100＝左右反轉；建議開錨定">
+<b id="ikHuluV" class="mono" style="flex:none;width:44px;text-align:right">0</b>
+</div>
+<div id="ikHamletRow">
+<span data-i18n="ik_n_armsfwd">屈臂前伸</span>
+<input type="range" id="ikHamlet" min="-100" max="100" step="1" value="0" oninput="setIkHamlet(this.value)" data-i18n-title="ik_hamlet_title" title="屈臂前伸：+100＝官方動作「當哈姆萊特遇到布魯克林」第 57 格姿勢（雙臂屈肘前伸、膝微屈）；0＝中立；-100＝左右反轉；建議開錨定">
+<b id="ikHamletV" class="mono" style="flex:none;width:44px;text-align:right">0</b>
+</div>
+<div id="ikKneelRow">
+<span data-i18n="ik_n_kneel">跪姿前傾</span>
+<input type="range" id="ikKneel" min="-100" max="100" step="1" value="0" oninput="setIkKneel(this.value)" data-i18n-title="ik_kneel_title" title="跪姿前傾：+100＝官方動作「前伸展式」第 8 格姿勢（跪姿、身體前傾、雙手落地）；0＝中立；-100＝左右反轉；建議開錨定">
+<b id="ikKneelV" class="mono" style="flex:none;width:44px;text-align:right">0</b>
+</div>
 <div id="ikFSplitRow">
-<span data-i18n="ik_fsplit" style="flex:none">前後</span>
+<span data-i18n="ik_fsplit">前後</span>
 <input type="range" id="ikFSplit" min="-100" max="100" step="1" value="0" oninput="setIkFSplit(this.value)" data-i18n-title="ik_fsplit_title" title="雙腳前後劈開：-100＝左腳踏前、右腳踏後（右臂前擺、左臂後擺）；+100＝右腳踏前、左腳踏後（左臂前擺、右臂後擺）；0＝中立；腳掌貼地、機身下降（建議開錨定）">
 <b id="ikFSplitV" class="mono" style="flex:none;width:44px;text-align:right">0</b>
+</div>
+<div id="ikLaughRow">
+<span data-i18n="ik_laugh" style="flex:none">大笑</span>
+<input type="range" id="ikLaugh" min="0" max="100" step="1" value="0" oninput="setIkLaugh(this.value)" data-i18n-title="ik_laugh_title" title="重現官方「大笑」（1487230160190）：0＝企姿，100＝最大後仰、雙臂高舉；手／腳末端目標逐點 IK 解，腳掌貼地（建議開錨定）">
+<b id="ikLaughV" class="mono" style="flex:none;width:44px;text-align:right">0</b>
 </div>
 <details id="tmpOffBox">
 <summary data-i18n-title="tmp_off_title" title="offset：改 q_init_deg；有效 offset = q_init_deg − pc_init_angle，即時預覽，唔會寫入模型"><span data-i18n="tmp_off">offset</span><b id="tmpOffOn" class="mono"></b></summary>
@@ -250,14 +310,30 @@ var I18N={
   anchor_b:{zh:'錨定',en:'Anchor'},
   ik_b:{zh:'IK',en:'IK'},
   ik_title:{zh:'IK：拖手／腳藍點擺位；拖綠色骨盆點＝拖身體（雙腳釘地、鞠躬／重心轉移）',en:'IK: drag hand/foot dots; drag the green pelvis dot to move the body with feet pinned (bow / weight shift)'},
+  ik_laugh:{zh:'大笑',en:'Laugh'},
+  ik_laugh_title:{zh:'重現官方「大笑」（1487230160190）：0＝企姿，100＝最大後仰、雙臂高舉；手／腳末端目標逐點 IK 解，腳掌貼地（建議開錨定）',en:'Official Laugh (1487230160190): 0 = standing, 100 = deepest lean-back with both arms raised; hand/foot targets solved point by point with IK, feet planted (keep Anchor on)'},
   ik_squat:{zh:'蹲下',en:'Squat 1'},
   ik_squat_title:{zh:'重現官方「蹲下」pose：手垂低、深蹲、腳掌貼地（建議開錨定）',en:'Match the official Squat pose: arms down, deep squat, feet planted (keep Anchor on)'},
   ik_ysquat:{zh:'蹲式',en:'Squat 2'},
   ik_ysquat_title:{zh:'重現官方「蹲式」（1509004868066）最深格：深蹲、雙臂左右張開、腳掌貼地（建議開錨定）',en:'Match the deepest frame of the official Squat Pose (1509004868066): deep squat, arms spread out to the sides, feet planted (keep Anchor on)'},
   ik_split:{zh:'左右',en:'Left/Right'},
   ik_split_title:{zh:'雙腳左右劈開：兩隻腳一齊向外撐，雙臂自動張開避手，腳掌保持貼地、機身下降（建議開錨定）',en:'Legs spread left/right: both legs push outward; arms swing outward to clear the legs; feet stay planted and the body lowers (keep Anchor on)'},
-ik_fsplit:{zh:'前後',en:'Front/Back'},
+ik_fsplit:{zh:'前後一字馬',en:'Front split'},
+  ik_n_squatlean:{zh:'蹲仰',en:'Squat–Lean'},
+  ik_n_squatsplit:{zh:'蹲劈',en:'Squat–Split'},
+  ik_n_kick:{zh:'踢腿',en:'Kick'},
+  ik_n_sidelunge:{zh:'側弓步',en:'Side lunge'},
+  ik_n_halfsquat:{zh:'半蹲',en:'Half squat'},
+  ik_n_armsfwd:{zh:'屈臂前伸',en:'Arms forward'},
+  ik_n_kneel:{zh:'跪姿前傾',en:'Kneeling lean'},
+  ik_kneel_title:{zh:'跪姿前傾：+100＝官方動作「前伸展式」第 8 格姿勢（跪姿、身體前傾、雙手落地）；0＝中立；-100＝左右反轉；建議開錨定',en:'Kneeling lean: +100 = pose of frame 8 of the official "stretch forward" action (kneeling, torso leaning forward, hands down); 0 = neutral; -100 = mirrored left/right; keep Anchor on'},
+  ik_hamlet_title:{zh:'屈臂前伸：+100＝官方動作「當哈姆萊特遇到布魯克林」第 57 格姿勢（雙臂屈肘前伸、膝微屈）；0＝中立；-100＝左右反轉；建議開錨定',en:'Arms forward: +100 = pose of frame 57 of the official "when harlem met brooklyn" action (elbows bent, forearms forward, knees slightly bent); 0 = neutral; -100 = mirrored left/right; keep Anchor on'},
 ik_fsplit_title:{zh:'雙腳前後劈開：-100＝左腳踏前、右腳踏後（右臂前擺、左臂後擺）；+100＝右腳踏前、左腳踏後（左臂前擺、右臂後擺）；0＝中立；腳掌貼地、機身下降（建議開錨定）',en:'Front/back split: -100 = left leg forward, right leg back (right arm forward, left arm back); +100 = right leg forward, left leg back (left arm forward, right arm back); 0 = neutral; feet planted and the body lowers (keep Anchor on)'},
+  ik_hulu_title:{zh:'半蹲：+100＝官方動作「葫蘆娃」第 4 格姿勢（半蹲、雙臂展開、轉頭）；0＝中立；-100＝左右反轉；建議開錨定',en:'Half squat: +100 = pose of frame 4 of the official "Huluwa" (Calabash Brothers) action (half squat, arms spread, head turned); 0 = neutral; -100 = mirrored left/right; keep Anchor on'},
+  ik_sirius_title:{zh:'側弓步：+100＝官方動作「Sirius」第 68 格姿勢（側弓步、雙臂展開）；0＝中立；-100＝左右反轉；建議開錨定',en:'Side lunge: +100 = pose of frame 68 of the official "Sirius" action (side lunge, arms spread); 0 = neutral; -100 = mirrored left/right; keep Anchor on'},
+  ik_kick_title:{zh:'踢腿：-100＝左踢式；0＝中立；+100＝右踢式（跟官方動作「左踢式／右踢式」企直→踢腳姿勢嘅關鍵幀路徑）；建議開錨定',en:'Kick: -100 = Left kick; 0 = neutral; +100 = Right kick (follows the key-frame path of the official kick-yoga actions, standing → kick pose); keep Anchor on'},
+  ik_laughsquat_title:{zh:'蹲仰：-100＝大笑（最大後仰、雙臂高舉）；0＝中立；+100＝蹲下（手垂低、深蹲）；腳掌貼地（建議開錨定）',en:'Squat–Lean: -100 = Laugh (deepest lean-back, arms raised); 0 = neutral; +100 = Squat (arms down, deep squat); feet planted (keep Anchor on)'},
+  ik_ysplit_title:{zh:'蹲劈：-100＝蹲式（深蹲、雙臂左右張開）；0＝中立；+100＝左右一字馬；腳掌貼地（建議開錨定）',en:'Squat–Split: -100 = Squat with arms spread (deep squat); 0 = neutral; +100 = side split; feet planted (keep Anchor on)'},
   tmp_off:{zh:'offset',en:'offset'},
   tmp_off_title:{zh:'offset：改 q_init_deg；有效 offset = q_init_deg − pc_init_angle，即時預覽，唔會寫入模型',en:'offset: edit q_init_deg; effective offset = q_init_deg - pc_init_angle; live preview, not saved'},
 tmp_off_reset:{zh:'還原 URDF',en:'Restore URDF'},
@@ -1477,7 +1553,7 @@ function buildJointTable(){
 function syncToggles(){
   var m={anchorBtn:anchorOn, comBtn:comOn, ikBtn:ikOn};
   for(var k in m){var b=document.getElementById(k); if(b) b.classList.toggle('on',!!m[k]);}
-  ['ikSquatRow','ikYSquatRow','ikSplitRow','ikFSplitRow'].forEach(function(id){
+  ['ikLaughSquatRow','ikYSplitRow','ikKickRow','ikSiriusRow','ikHuluRow','ikHamletRow','ikKneelRow','ikFSplitRow'].forEach(function(id){
     var row=document.getElementById(id);
     if(row) row.style.display=ikOn?'flex':'none';
   });
@@ -1676,6 +1752,7 @@ function loadMeshes(done){
 function poseMesh(angles20,tMs){
   // progressive：未載入嘅 link 剩隱形（visible=false），有幾多畫幾多
   if(angles20) lastAngles=angles20;
+  if(window.MJSIM&&MJSIM.pose(angles20,tMs)) return; // MuJoCo WASM 物理模式：由 mj-sim.js 擺 pose
   var F=linkFrames(angles20);
   FK.links.forEach(function(ln){
     var g=linkGroups[ln], f=F[ln];
@@ -1952,6 +2029,7 @@ function seek(ms){
   ikRootClear();
   manualAngles=null; // 播片跟 .ubx，唔跟手動位
   ikSquatClear(); ikYSquatClear(); ikSplitClear(); ikFSplitClear();
+  if(window.MJSIM) MJSIM.invalidate();
   drawAt(pauseMs); audioTick(pauseMs);
 }
 function togglePlay(){
@@ -2251,6 +2329,372 @@ if(mqMobile.addEventListener) mqMobile.addEventListener('change',applyMobileLayo
 applyMobileLayout();
 window.toggleMob=toggleMob;
 syncToggles();
+</script>
+<script src="mj-sim.js?v=20261101"></script>
+<script>
+// ===== 大笑 IK slider：喺「IK」slider 組度加一條「大笑」（0–100）=====
+// 官方 1487230160190（大笑）嘅 4 個關鍵姿勢（企 → 微後仰 → 後仰 → 最大後仰雙臂高舉）轉成機身框內嘅末端目標：
+// 右手/左手指尖＋手肘位置＋前臂朝向、右腳/左腳 sole 位置＋sole 法線（單位 m）。
+// slider 值沿 0→1→2→3 姿勢路徑（每段 1/3）內插目標，每次用阻尼最小二乘 IK（同播放器 FK）解返 servo 1–16；
+// 手：圍住肩膀球面插值；腳：地面對齊框線性（腳貼地、機身 pitch/roll 內插）。頭／手指（17–20）保持原值。
+// 每個姿勢帶 s（16 軸原始角）只作起始解，用嚟揀返同原動作一樣嘅肘／膝分支。
+(function(){
+  var IKA_WN=0.08, IKA_WE=0.15, IKA_TOL=1e-4, IKA_M=8;
+  var IKA_DATA={"poses":[{"rh":[0.04045,-0.08981,-0.02659],"lh":[0.00709,0.09621,-0.03462],"re":[0.024,-0.0853,0.02667],"le":[0.0139,0.08829,0.02541],"rx":[0.93977,0.00608,0.34176],"rz":[-0.34097,0.08694,0.93604],"lx":[0.9565,-0.02656,0.29052],"lz":[-0.29137,-0.13662,0.9468],"rf":[0.02785,-0.04676,-0.21466],"lf":[0.02775,0.04773,-0.21406],"rn":[-0.08714,-7e-05,0.9962],"ln":[-0.08714,-0.03483,0.99559],"s":[114,205,119,116,38,114,120,65,145,135,120,120,175,95,105,120]},{"rh":[0.09494,-0.09751,0.05093],"lh":[0.10745,0.10298,0.03064],"re":[0.04098,-0.09318,0.03688],"le":[0.04899,0.09221,0.04399],"rx":[-0.27813,0.2127,0.9367],"rz":[-0.9514,0.07324,-0.29912],"lx":[-0.16085,-0.16384,0.97329],"lz":[-0.97481,-0.128,-0.18265],"rf":[-0.06588,-0.05575,-0.19479],"lf":[-0.07524,0.053,-0.18915],"rn":[0.25846,0.01508,0.9659],"ln":[0.30897,-0.03234,0.95052],"s":[94,197,186,158,42,73,123,104,144,155,122,118,132,96,84,118]},{"rh":[0.09718,-0.11543,0.10675],"lh":[0.11931,0.11397,0.08338],"re":[0.05812,-0.10342,0.06857],"le":[0.06139,0.097,0.07502],"rx":[-0.63479,0.35224,0.68773],"rz":[-0.66535,0.20337,-0.71829],"lx":[-0.48889,-0.17595,0.85442],"lz":[-0.82246,-0.2335,-0.51869],"rf":[-0.11293,-0.0529,-0.15394],"lf":[-0.12392,0.05284,-0.13885],"rn":[0.48415,0.00872,0.87494],"ln":[0.57349,-0.03972,0.81825],"s":[55,186,175,194,47,88,123,128,141,168,122,117,106,100,71,118]},{"rh":[0.07599,-0.11753,0.16229],"lh":[0.09771,0.11444,0.14806],"re":[0.04967,-0.0998,0.11624],"le":[0.05017,0.097,0.11417],"rx":[-0.86564,0.12812,0.48399],"rz":[-0.42664,0.31712,-0.84701],"lx":[-0.84555,-0.1,0.52444],"lz":[-0.48313,-0.27474,-0.83133],"rf":[-0.14302,-0.05466,-0.08738],"lf":[-0.14537,0.05462,-0.07506],"rn":[0.7154,0.00483,0.6987],"ln":[0.76313,-0.02536,0.64575],"s":[0,190,137,239,47,105,128,157,138,183,125,111,79,103,56,114]}]};
+  var IKA_CH={
+    rh:{servos:[1,2,3],link:'r_hand_link',mid:'r_elbow_link'},
+    lh:{servos:[4,5,6],link:'l_hand_link',mid:'l_elbow_link'},
+    rf:{servos:[7,8,9,10,11],side:'r',link:'r_ankle_roll_link'},
+    lf:{servos:[12,13,14,15,16],side:'l',link:'l_ankle_roll_link'}
+  };
+  var IKA_SH=(function(){ // 肩膀樞軸（機身框固定點）
+    var F=linkFrames(IKA_DATA.poses[0].s.concat([120,120,120,120]));
+    return {r:F.r_shoulder_pitch_link.p.slice(),l:F.l_shoulder_pitch_link.p.slice()};
+  })();
+  function ikaRange(k){var e=ENV[k],inf=servoInfo[k];return e?e:[inf.min,inf.max];} // 官方 203 招實測行程
+  function ikaRes(a,key,tg){
+    var F=linkFrames(a),ch=IKA_CH[key],p,n;
+    if(!ch.side){ // 手：指尖位置＋手肘位置（指尖優先；手肘位置軟約束＋前臂朝向，保住肘分支同前臂扭轉唔跳）
+      p=F[ch.link].p;var e=F[ch.mid].p,R=F[ch.mid].R,x=mDot(R,[1,0,0]),z=mDot(R,[0,0,1]);
+      return [p[0]-tg.p[0],p[1]-tg.p[1],p[2]-tg.p[2],
+        IKA_WE*(e[0]-tg.e[0]),IKA_WE*(e[1]-tg.e[1]),IKA_WE*(e[2]-tg.e[2]),
+        IKA_WN*(x[0]-tg.x[0]),IKA_WN*(x[1]-tg.x[1]),IKA_WN*(x[2]-tg.x[2]),
+        IKA_WN*(z[0]-tg.z[0]),IKA_WN*(z[1]-tg.z[1]),IKA_WN*(z[2]-tg.z[2])];
+    }
+    p=soleWorld(F,ch.side); n=mDot(F[ch.link].R,[0,0,1]);
+    return [p[0]-tg.p[0],p[1]-tg.p[1],p[2]-tg.p[2],IKA_WN*(n[0]-tg.n[0]),IKA_WN*(n[1]-tg.n[1]),IKA_WN*(n[2]-tg.n[2])];
+  }
+  function ikaNorm(r){var s=0;for(var i=0;i<r.length;i++)s+=r[i]*r[i];return Math.sqrt(s);}
+  function ikaLinSolve(A,b){ // 高斯消去（n≤5）
+    var n=b.length,i,j,k,M=[];
+    for(i=0;i<n;i++){M.push(A[i].slice());M[i].push(b[i]);}
+    for(i=0;i<n;i++){
+      var piv=i;for(j=i+1;j<n;j++)if(Math.abs(M[j][i])>Math.abs(M[piv][i]))piv=j;
+      if(Math.abs(M[piv][i])<1e-14)return null;
+      var tmp=M[i];M[i]=M[piv];M[piv]=tmp;
+      for(j=i+1;j<n;j++){var f=M[j][i]/M[i][i];for(k=i;k<=n;k++)M[j][k]-=f*M[i][k];}
+    }
+    var x=new Array(n);
+    for(i=n-1;i>=0;i--){var s=M[i][n];for(j=i+1;j<n;j++)s-=M[i][j]*x[j];x[i]=s/M[i][i];}
+    return x;
+  }
+  // 阻尼最小二乘（Levenberg-Marquardt），數值 Jacobian，servo 行程夾限
+  function ikaSolve(a0,key,tg){
+    var sv=IKA_CH[key].servos,n=sv.length,a=a0.slice(),lam=1e-4,h=0.5;
+    var r=ikaRes(a,key,tg),err=ikaNorm(r),m=r.length;
+    for(var it=0;it<80&&err>IKA_TOL;it++){
+      var J=[],i,c;
+      for(i=0;i<n;i++){
+        var ap=a.slice();ap[sv[i]-1]+=h;
+        var rp=ikaRes(ap,key,tg),col=[];
+        for(c=0;c<m;c++)col.push((rp[c]-r[c])/(h*D2R));
+        J.push(col);
+      }
+      var A=[],g=[];
+      for(i=0;i<n;i++){
+        A.push([]);var s=0;
+        for(var j=0;j<n;j++){var q=0;for(c=0;c<m;c++)q+=J[i][c]*J[j][c];A[i].push(q+(i===j?lam:0));}
+        for(c=0;c<m;c++)s+=J[i][c]*r[c];g.push(-s);
+      }
+      var dq=ikaLinSolve(A,g);
+      if(!dq){lam*=10;continue;}
+      var tr=a.slice();
+      for(i=0;i<n;i++){
+        var d=dq[i]/D2R;if(d>10)d=10;if(d<-10)d=-10;
+        var rg=ikaRange(sv[i]),v=a[sv[i]-1]+d;
+        tr[sv[i]-1]=Math.max(rg[0],Math.min(rg[1],v));
+      }
+      var rt=ikaRes(tr,key,tg),et=ikaNorm(rt);
+      if(et<err){a=tr;r=rt;err=et;lam=Math.max(1e-7,lam*0.4);}else lam=Math.min(1e3,lam*5);
+    }
+    return {a:a,err:err};
+  }
+  // 機身相對地面嘅 pitch/roll：用兩隻腳 sole 法線平均（腳掌貼地 → 法線＝地面法線）
+  function ikaTilt(P){
+    var u=[P.rn[0]+P.ln[0],P.rn[1]+P.ln[1],P.rn[2]+P.ln[2]],s=Math.hypot(u[0],u[1],u[2])||1;
+    u=[u[0]/s,u[1]/s,u[2]/s];
+    var th=Math.atan2(-u[0],u[2]),z1=-u[0]*Math.sin(th)+u[2]*Math.cos(th);
+    return [th,Math.atan2(u[1],z1)];
+  }
+  function ikaToGround(t,v){ // Rx(φ)·Ry(θ)·v
+    var c=Math.cos(t[0]),s=Math.sin(t[0]),x=v[0]*c+v[2]*s,y=v[1],z=-v[0]*s+v[2]*c,c2=Math.cos(t[1]),s2=Math.sin(t[1]);
+    return [x,y*c2-z*s2,y*s2+z*c2];
+  }
+  function ikaToBody(t,v){ // (Rx·Ry)ᵀ·v
+    var c2=Math.cos(t[1]),s2=Math.sin(t[1]),y=v[1]*c2+v[2]*s2,z=-v[1]*s2+v[2]*c2,x=v[0],c=Math.cos(t[0]),s=Math.sin(t[0]);
+    return [x*c-z*s,y,x*s+z*c];
+  }
+  function ikaTargets(P,Q,u){
+    function L(x,y){return [x[0]+(y[0]-x[0])*u,x[1]+(y[1]-x[1])*u,x[2]+(y[2]-x[2])*u];}
+    function N(v){var s=Math.hypot(v[0],v[1],v[2])||1;return [v[0]/s,v[1]/s,v[2]/s];}
+    // 腳：喺「地面對齊框」（機身 pitch/roll 除返）度插值，之後轉返機身框 →
+    // 機身後仰／前傾時腳掌相對地面維持貼地，唔會喺機身框度直線穿過身體
+    var tP=ikaTilt(P),tQ=ikaTilt(Q),tu=[tP[0]+(tQ[0]-tP[0])*u,tP[1]+(tQ[1]-tP[1])*u];
+    function foot(pk,nk){
+      var g=L(ikaToGround(tP,P[pk]),ikaToGround(tQ,Q[pk])),gn=L(ikaToGround(tP,P[nk]),ikaToGround(tQ,Q[nk]));
+      return {p:ikaToBody(tu,g),n:N(ikaToBody(tu,gn))};
+    }
+    // 手：圍住肩膀樞軸（固定點）做球面插值（方向 slerp、距離線性）→ 指尖行弧線，唔會直線穿過上臂行程之內
+    function arc(S,a,b){
+      var va=[a[0]-S[0],a[1]-S[1],a[2]-S[2]],vb=[b[0]-S[0],b[1]-S[1],b[2]-S[2]];
+      var la=Math.hypot(va[0],va[1],va[2]),lb=Math.hypot(vb[0],vb[1],vb[2]);
+      var da=[va[0]/la,va[1]/la,va[2]/la],db=[vb[0]/lb,vb[1]/lb,vb[2]/lb];
+      var c=Math.max(-1,Math.min(1,da[0]*db[0]+da[1]*db[1]+da[2]*db[2])),w=Math.acos(c),d;
+      if(w<1e-4)d=N(L(da,db));
+      else{var sw=Math.sin(w),k1=Math.sin((1-u)*w)/sw,k2=Math.sin(u*w)/sw;d=[da[0]*k1+db[0]*k2,da[1]*k1+db[1]*k2,da[2]*k1+db[2]*k2];}
+      var l=la+(lb-la)*u;return [S[0]+d[0]*l,S[1]+d[1]*l,S[2]+d[2]*l];
+    }
+    var SR=IKA_SH.r,SL=IKA_SH.l;
+    return {rh:{p:arc(SR,P.rh,Q.rh),e:arc(SR,P.re,Q.re),x:N(L(P.rx,Q.rx)),z:N(L(P.rz,Q.rz))},
+            lh:{p:arc(SL,P.lh,Q.lh),e:arc(SL,P.le,Q.le),x:N(L(P.lx,Q.lx)),z:N(L(P.lz,Q.lz))},
+            rf:foot('rf','rn'),lf:foot('lf','ln')};
+  }
+  function ikaPose(a16,P,Q,u,stat){ // 由 a16 起步，四條鏈逐條解
+    var tg=ikaTargets(P,Q,u),a=a16.concat([120,120,120,120]);
+    ['rh','lh','rf','lf'].forEach(function(k){
+      var r=ikaSolve(a,k,tg[k]);a=r.a;if(stat&&r.err>stat.max)stat.max=r.err;
+    });
+    return a.slice(0,16).map(function(x){return Math.round(x);});
+  }
+  // 路徑取樣表（每段 IKA_M 點）：畀 slider 當起始解，第一次用先建（約 0.5s）
+  var IKA_TBL=null;
+  function ikaTable(){
+    if(IKA_TBL) return IKA_TBL;
+    var D=IKA_DATA,a=D.poses[0].s.slice(),tbl=[a.slice()];
+    for(var seg=0;seg<3;seg++)for(var m=1;m<=IKA_M;m++){a=ikaPose(a,D.poses[seg],D.poses[seg+1],m/IKA_M);tbl.push(a.slice());}
+    return (IKA_TBL=tbl);
+  }
+  function ikaPathPose(p){ // p：0–100 → servo 1–16
+    var D=IKA_DATA,tbl=ikaTable(),x=Math.max(0,Math.min(100,p))/100*3*IKA_M;
+    var j=Math.min(3*IKA_M-1,Math.floor(x)),f=x-j,seed=[];
+    for(var i=0;i<16;i++)seed.push(tbl[j][i]+(tbl[j+1][i]-tbl[j][i])*f);
+    var seg=Math.min(2,Math.floor(j/IKA_M)),u=Math.max(0,Math.min(1,(x-seg*IKA_M)/IKA_M));
+    return ikaPose(seed,D.poses[seg],D.poses[seg+1],u);
+  }
+  // ---- slider：同蹲下／蹲式／左右／前後一樣嘅接線（base ＋ manualAngles ＋ syncServos/renderManual）----
+  var ikLaughPct=0,ikLaughBase=null;
+  function ikLaughUi(v){var sl=document.getElementById('ikLaugh'),b=document.getElementById('ikLaughV');if(sl)sl.value=Math.round(v);if(b)b.textContent=Math.round(v);}
+  function ikLaughClear(restore){
+    if(restore&&ikLaughBase&&manualAngles)manualAngles=ikLaughBase.slice();
+    ikLaughPct=0;ikLaughBase=null;ikLaughUi(0);
+  }
+  function setIkLaugh(pct){
+    var p=Math.max(0,Math.min(100,parseFloat(pct)||0));
+    ikLaughUi(p);
+    if(!ikOn)return;
+    pausePlayback();
+    if(!manualAngles)manualAngles=(lastAngles||STAND20).slice();
+    if(p>0){
+      ikRootClear();
+      if(ikSquatPct>0)ikSquatClear(true);else if(ikSquatBase)ikSquatClear();
+      if(ikYSquatPct>0)ikYSquatClear(true);else if(ikYSquatBase)ikYSquatClear();
+      if(ikSplitPct>0)ikSplitClear(true);else if(ikSplitBase)ikSplitClear();
+      if(ikFSplitPct!==0)ikFSplitClear(true);else if(ikFSplitBase)ikFSplitClear();
+    }
+    if(!ikLaughBase)ikLaughBase=manualAngles.slice();
+    if(p<=0){manualAngles=ikLaughBase.slice();ikLaughPct=0;}
+    else{
+      var t=ikaPathPose(p),w=Math.min(1,p/8),a=ikLaughBase.slice(); // 頭 8% 由而家個 pose 過渡去路徑起點
+      for(var i=0;i<16;i++)a[i]=Math.round(a[i]+(t[i]-a[i])*w);
+      manualAngles=a;ikLaughPct=p;
+    }
+    syncServos(manualAngles);renderManual();
+  }
+  window.setIkLaugh=setIkLaugh;
+  window.__ikLaughClear=ikLaughClear;
+  // 其他 IK slider 一郁，大笑 slider 歸 0（保留而家個 pose 當佢哋嘅起點）；播片 seek 亦歸 0
+  ['setIkSquat','setIkYSquat','setIkSplit','setIkFSplit'].forEach(function(n){
+    var o=window[n];if(typeof o!=='function')return;
+    window[n]=function(){if(ikLaughPct>0||ikLaughBase)ikLaughClear(false);return o.apply(this,arguments);};
+  });
+  var _seek=seek;
+  seek=function(){if(ikLaughPct>0||ikLaughBase)ikLaughClear(false);return _seek.apply(this,arguments);};
+  window.__ika={path:ikaPathPose,table:ikaTable,data:IKA_DATA,targets:ikaTargets,solve:ikaSolve};
+  setTimeout(function(){try{ikaTable();}catch(e){}},2500); // 閒時預先建表，第一次拉 slider 唔卡
+})();
+
+// ===== 二合一 slider：大笑(-100)／蹲下(+100)、蹲式(-100)／左右一字馬(+100) =====
+// 原本 4 條 slider（#ikLaugh #ikSquat #ikYSquat #ikSplit）保留喺背後（隱藏）做狀態同互斥邏輯，
+// 新 slider 只係分正負號轉呼叫原本 setter；原本 slider 嘅 value 一變（包括各種 clear）就反向同步返新 slider。
+(function(){
+  function g(id){return document.getElementById(id);}
+  function num(id){var e=g(id);return e?(parseFloat(e.value)||0):0;}
+  function syncCombo(){
+    var a=num('ikSquat')>0?num('ikSquat'):(num('ikLaugh')>0?-num('ikLaugh'):0);
+    var b=num('ikSplit')>0?num('ikSplit'):(num('ikYSquat')>0?-num('ikYSquat'):0);
+    [['ikLaughSquat','ikLaughSquatV',a],['ikYSplit','ikYSplitV',b]].forEach(function(t){
+      var sl=g(t[0]),v=g(t[1]);
+      if(sl&&parseFloat(sl.value)!==t[2])sl.value=t[2];
+      if(v)v.textContent=Math.round(t[2]);
+    });
+  }
+  // 攔截原本 slider 嘅 value 寫入（程式 sl.value=… 唔會觸發 event）
+  var desc=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value');
+  ['ikLaugh','ikSquat','ikYSquat','ikSplit'].forEach(function(id){
+    var el=g(id); if(!el)return;
+    Object.defineProperty(el,'value',{configurable:true,
+      get:function(){return desc.get.call(this);},
+      set:function(x){desc.set.call(this,x);syncCombo();}});
+  });
+  // pos 邊：setPos(p)；neg 邊：setNeg(p)；先收返對邊（restore）再開今邊，跨過 0 都唔會用錯起點
+  function make(posId,negId,setPos,setNeg,uiId,uiV){
+    return function(val){
+      var v=Math.max(-100,Math.min(100,Math.round(parseFloat(val)||0)));
+      var sl=g(uiId),b=g(uiV);
+      if(sl)sl.value=v; if(b)b.textContent=v;
+      if(v>0){ if(num(negId)>0)window[setNeg](0); window[setPos](v); }
+      else if(v<0){ if(num(posId)>0)window[setPos](0); window[setNeg](-v); }
+      else{ if(num(negId)>0)window[setNeg](0); if(num(posId)>0)window[setPos](0); }
+      syncCombo();
+    };
+  }
+  window.setIkLaughSquat=make('ikSquat','ikLaugh','setIkSquat','setIkLaugh','ikLaughSquat','ikLaughSquatV');
+  window.setIkYSplit=make('ikSplit','ikYSquat','setIkSplit','setIkYSquat','ikYSplit','ikYSplitV');
+  syncCombo();
+})();
+
+// ===== 左踢式(-100)／右踢式(+100) IK slider =====
+// 路徑：官方動作「左踢式」(1511247506520.ubx)／「右踢式」(1511247440171.ubx) 頭 4 個關鍵幀（企直→踢腳姿勢），
+// 按關節角變化量做路徑長度參數化；slider ±100 ＝ 第 4 幀（踢腳姿勢）。頭 8% 由而家個 pose 過渡去路徑起點。
+// 只改頭 16 粒舵機（手指／頭保持原狀）；互斥／起點邏輯同大笑 slider 一致。
+(function(){
+  var KL=[[120,205,120,120,35,115,120,65,145,135,120,120,175,95,105,120],[121,179,120,119,72,115,129,54,131,137,143,127,173,80,117,133],[121,179,120,119,72,115,134,26,83,156,122,127,173,80,117,133],[120,120,120,120,120,120,163,47,129,141,124,127,175,84,115,137]];
+  var KR=[[120,205,120,120,35,115,120,65,145,135,120,120,175,95,105,120],[120,168,120,120,61,120,113,62,160,123,104,107,187,111,102,94],[120,168,120,120,61,120,113,62,160,123,104,106,214,158,84,118],[120,120,120,120,120,120,113,62,156,125,100,77,193,111,99,116]];
+  function prep(F){var d=[0],t=0;for(var i=0;i<3;i++){var s=0;for(var k=0;k<16;k++)s+=Math.abs(F[i+1][k]-F[i][k]);t+=s;d.push(t);}
+    return {F:F,C:d.map(function(x){return x/t;})};}
+  var PL=prep(KL),PR=prep(KR);
+  function pathPose(K,u){var s=0;while(s<2&&u>K.C[s+1])s++;
+    var f=(u-K.C[s])/(K.C[s+1]-K.C[s]);return K.F[s].map(function(x,i){return x+(K.F[s+1][i]-x)*f;});}
+  var kickPct=0,kickBase=null,kickSide=0,busy=false;
+  function ui(v){var sl=document.getElementById('ikKick'),b=document.getElementById('ikKickV');
+    if(sl&&parseFloat(sl.value)!==v)sl.value=v; if(b)b.textContent=v;}
+  function kickClear(restore){
+    if(restore&&kickBase&&manualAngles)manualAngles=kickBase.slice();
+    kickPct=0;kickBase=null;kickSide=0;ui(0);
+  }
+  window.setIkKick=function(val){
+    var v=Math.max(-100,Math.min(100,Math.round(parseFloat(val)||0))),p=Math.abs(v);
+    ui(v);
+    if(!ikOn)return;
+    pausePlayback();
+    if(!manualAngles)manualAngles=(lastAngles||STAND20).slice();
+    busy=true;
+    try{
+      if(p>0){
+        ikRootClear();
+        if(ikSquatPct>0)ikSquatClear(true);else if(ikSquatBase)ikSquatClear();
+        if(ikYSquatPct>0)ikYSquatClear(true);else if(ikYSquatBase)ikYSquatClear();
+        if(ikSplitPct>0)ikSplitClear(true);else if(ikSplitBase)ikSplitClear();
+        if(ikFSplitPct!==0)ikFSplitClear(true);else if(ikFSplitBase)ikFSplitClear();
+        var lg=document.getElementById('ikLaugh');
+        if(window.__ikLaughClear)window.__ikLaughClear(!!(lg&&parseFloat(lg.value)>0));
+      }
+      if(!kickBase)kickBase=manualAngles.slice();
+      if(p<=0){manualAngles=kickBase.slice();kickPct=0;kickBase=null;kickSide=0;}
+      else{
+        var t=pathPose(v<0?PL:PR,p/100),w=Math.min(1,p/8),a=kickBase.slice(),rg;
+        for(var i=0;i<16;i++){
+          var x=Math.round(a[i]+(t[i]-a[i])*w);
+          rg=rangeOf(i+1);x=Math.max(rg[0],Math.min(rg[1],x));a[i]=x;
+        }
+        manualAngles=a;kickPct=p;kickSide=v<0?-1:1;
+      }
+    }finally{busy=false;}
+    syncServos(manualAngles);renderManual();
+  };
+  window.__ikKickClear=function(){if(kickPct>0)kickClear(true);else if(kickBase)kickClear(false);};
+  // 其他 IK slider／手動舵機／播放／seek／歸零 → 踢式 slider 歸 0（保留而家個 pose）
+  function guard(){if(!busy&&(kickPct>0||kickBase))kickClear(false);}
+  ['setIkSquat','setIkYSquat','setIkSplit','setIkFSplit','setIkLaugh'].forEach(function(n){
+    var o=window[n];if(typeof o!=='function')return;
+    window[n]=function(){guard();return o.apply(this,arguments);};
+  });
+  ['seek','togglePlay','servosHome','servosZero','ikRootCapture'].forEach(function(n){
+    var o=window[n];if(typeof o!=='function')return;
+    var w=function(){guard();return o.apply(this,arguments);};
+    try{window[n]=w;}catch(e){}
+    try{ if(n==='seek')seek=w; else if(n==='togglePlay')togglePlay=w; else if(n==='servosHome')servosHome=w; else if(n==='servosZero')servosZero=w; else if(n==='ikRootCapture')ikRootCapture=w; }catch(e){}
+  });
+  document.addEventListener('input',function(e){
+    var id=e.target&&e.target.id; if(id&&/^sv\d+$/.test(id))guard();
+  },true);
+})();
+
+// ===== 單關鍵幀「姿勢」IK slider 工廠（-100＝左右反轉，+100＝官方動作某一格）=====
+// 反轉規則（同官方 左／右 成對動作逐粒比對過）：手腳左右對調並 240-x，手指左右對調（值不變），
+// 頭 #19 為 240-x、#20 不變。由而家個 pose 線性過渡去目標；互斥／起點邏輯同踢式、大笑 slider 一致。
+// 姿勢 slider 之間：啟動一條會先 restore 並收返其他姿勢 slider；其他 IK slider 一郁就令姿勢 slider 歸 0（保留 pose）。
+(function(){
+  var PAIR={1:4,2:5,3:6,4:1,5:2,6:3,7:12,8:13,9:14,10:15,11:16,12:7,13:8,14:9,15:10,16:11,17:18,18:17,19:19,20:20};
+  function mirror(P){var M=[];for(var j=1;j<=20;j++){var x=P[PAIR[j]-1];M.push((j===17||j===18||j===20)?x:240-x);}return M;}
+  var REG={};               // 各姿勢 slider 嘅「收返」函數
+  var BUSY=false;           // 任何姿勢 slider 正喺度寫 pose
+  function make(cfg){
+    var POSE=cfg.pose,MIR=mirror(POSE),sPct=0,sBase=null;
+    function ui(v){var sl=document.getElementById(cfg.id),b=document.getElementById(cfg.id+'V');
+      if(sl&&parseFloat(sl.value)!==v)sl.value=v; if(b)b.textContent=v;}
+    function sClear(restore){
+      if(restore&&sBase&&manualAngles)manualAngles=sBase.slice();
+      sPct=0;sBase=null;ui(0);
+    }
+    REG[cfg.id]=function(){if(sPct>0)sClear(true);else if(sBase)sClear(false);};
+    window[cfg.fn]=function(val){
+      var v=Math.max(-100,Math.min(100,Math.round(parseFloat(val)||0))),p=Math.abs(v);
+      ui(v);
+      if(!ikOn)return;
+      pausePlayback();
+      if(!manualAngles)manualAngles=(lastAngles||STAND20).slice();
+      BUSY=true;
+      try{
+        if(p>0){
+          ikRootClear();
+          if(ikSquatPct>0)ikSquatClear(true);else if(ikSquatBase)ikSquatClear();
+          if(ikYSquatPct>0)ikYSquatClear(true);else if(ikYSquatBase)ikYSquatClear();
+          if(ikSplitPct>0)ikSplitClear(true);else if(ikSplitBase)ikSplitClear();
+          if(ikFSplitPct!==0)ikFSplitClear(true);else if(ikFSplitBase)ikFSplitClear();
+          var lg=document.getElementById('ikLaugh');
+          if(window.__ikLaughClear)window.__ikLaughClear(!!(lg&&parseFloat(lg.value)>0));
+          if(window.__ikKickClear)window.__ikKickClear();
+          Object.keys(REG).forEach(function(k){if(k!==cfg.id)REG[k]();});
+        }
+        if(!sBase)sBase=manualAngles.slice();
+        if(p<=0){manualAngles=sBase.slice();sPct=0;sBase=null;}
+        else{
+          var t=v>0?POSE:MIR,w=p/100,a=sBase.slice(),rg;
+          for(var i=0;i<20;i++){
+            var x=Math.round(a[i]+(t[i]-a[i])*w);
+            rg=rangeOf(i+1);x=Math.max(rg[0],Math.min(rg[1],x));a[i]=x;
+          }
+          manualAngles=a;sPct=p;
+        }
+      }finally{BUSY=false;}
+      syncServos(manualAngles);renderManual();
+    };
+    function guard(){if(!BUSY&&(sPct>0||sBase))sClear(false);}
+    ['setIkSquat','setIkYSquat','setIkSplit','setIkFSplit','setIkLaugh','setIkKick'].forEach(function(n){
+      var o=window[n];if(typeof o!=='function')return;
+      window[n]=function(){guard();return o.apply(this,arguments);};
+    });
+    ['seek','togglePlay','servosHome','servosZero','ikRootCapture'].forEach(function(n){
+      var o=window[n];if(typeof o!=='function')return;
+      var w=function(){guard();return o.apply(this,arguments);};
+      try{window[n]=w;}catch(e){}
+      try{ if(n==='seek')seek=w; else if(n==='togglePlay')togglePlay=w; else if(n==='servosHome')servosHome=w; else if(n==='servosZero')servosZero=w; else if(n==='ikRootCapture')ikRootCapture=w; }catch(e){}
+    });
+    document.addEventListener('input',function(e){
+      var id=e.target&&e.target.id; if(id&&/^sv\d+$/.test(id))guard();
+    },true);
+    (window.__ikPoses=window.__ikPoses||{})[cfg.id]={pose:POSE,mirror:MIR};
+  }
+  // Sirius：1464835936110.ubx 第 68 格（index 67）
+  make({id:'ikSirius',fn:'setIkSirius',pose:[129,98,170,123,128,120,171,92,178,129,172,125,206,197,37,128,120,120,110,113]});
+  // 葫蘆娃：1496218474326.ubx 第 4 格（index 3；手指 255＝放鬆，當 120）
+  make({id:'ikHulu',fn:'setIkHulu',pose:[122,88,123,120,118,57,103,53,112,152,107,98,204,162,75,85,120,120,173,97]});
+  // 屈臂前伸：1509001595235.ubx（當哈姆萊特遇到布魯克林）第 57 格（index 56）
+  make({id:'ikHamlet',fn:'setIkHamlet',pose:[71,164,150,166,34,90,144,57,139,133,141,134,176,101,101,127,120,120,84,120]});
+  // 跪姿前傾：1509004889922.ubx（前伸展式）第 8 格（index 7）
+  make({id:'ikKneel',fn:'setIkKneel',pose:[195,205,117,55,35,123,169,175,115,201,139,117,187,177,105,115,120,120,120,120]});
+})();
 </script>
 </body>
 </html>
