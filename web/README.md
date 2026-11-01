@@ -59,12 +59,22 @@
 ## GitHub 雲端訓練（rl-cloud.js）
 
 播放器「物理」面板下面有「☁ GitHub 雲端訓練」：喺網頁設定參數，撳「開始訓練」就經 GitHub API 觸發 `.github/workflows/train.yml`
-（`workflow_dispatch`），訓練喺 GitHub Actions 跑（CPU，最長約 6 小時）；完成後 policy 會推去 `policies` branch
-（`policies/<task>/{policy.onnx,ref.json,meta.json}`），網頁再由 `raw.githubusercontent.com` 載入，直接交俾 RL policy 載入器。
+（`workflow_dispatch`），訓練喺 GitHub Actions 跑（CPU，最長約 6 小時）。
 
-- 第一次用：喺 GitHub → Settings → Developer settings → Fine-grained tokens 建立 token，**只揀呢個 repo**，權限 **Actions: Read and write**，貼入面板。
-  Token 只會傳去 `api.github.com`；除非剔「記住」，否則唔會存入瀏覽器。唔好將 token 寫入 html／commit。
-- 淨係睇狀態同載入結果（public repo）唔使 token。
-- 可調：任務（站穩／步行）、時長、接續上次 checkpoint、推力、推嘅機率、傾斜／偏離企姿／跟隨動作／動作平滑／扭力權重、seed。
+**結果保存**：每次訓練完成會推去 `policies` branch：`policies/<任務>/<名稱>/{policy.onnx,ref.json,meta.json,curve.json}`，
+並更新 `policies/index.json`（所有 policy 嘅清單，最新排最前）。名稱留空＝自動（`<任務>-YYYYMMDD-HHMM`），同任務同名先會覆蓋。
+舊格式（`policies/<任務>/policy.onnx`）會自動搬去 `<任務>/legacy/`。Checkpoint（接續訓練用）仍然每個任務一份。
+
+**面板功能**
+- 設定：任務（站穩／步行）、名稱、時長、接續上次 checkpoint；進階：推力、推嘅機率、傾斜／偏離企姿／跟隨動作／動作平滑／扭力權重、seed。
   預設值同原本寫死嘅一樣（見 `rl/alpha2_env.py` 嘅 `CFG`）；obs／action 格式同 `ACT_SCALE`／`DECIM` 唔開放（要同 `mj-sim.js` 一致）。
-- 手動都得：Actions → train-rl → Run workflow，`cfg` 填 JSON，例如 `{"push_force": 5, "w_smooth": 0.05}`。
+- 「已訓練嘅 policy」清單：揀一個再撳「⬇ 載入」就交俾 RL policy 載入器（會自動開物理）。完成一次訓練後會自動揀返同載入嗰個 run 嘅結果。
+- 「比較／訓練曲線」：表格列出每個 policy 嘅時長、步數、評估存活、基準、同預設唔同嘅參數（撳一行就揀嗰個）；
+  曲線圖畫訓練期間 `ep_len_mean`／`ep_rew_mean`，可以揀第二個 policy 疊埋一齊比較。
+  曲線係訓練期間（有推力、隨機動作）嘅成績，通常低過最後評估。
+- 淨係睇清單、曲線同載入結果（public repo）唔使 token。
+
+**Token**：喺 GitHub → Settings → Developer settings → Fine-grained tokens 建立，**只揀呢個 repo**，權限 **Actions: Read and write**，貼入面板。
+Token 只會傳去 `api.github.com`；除非剔「記住」，否則唔會存入瀏覽器。唔好將 token 寫入 html／commit。
+
+**手動觸發**：Actions → train-rl → Run workflow，`cfg` 填 JSON，例如 `{"push_force": 5, "w_smooth": 0.05}`，`name` 填名稱。

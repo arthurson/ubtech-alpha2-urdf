@@ -1,7 +1,7 @@
 name: train-rl
 # Run from the Actions tab, or from the web player (cloud-training panel -> workflow_dispatch API).
 # CPU only (standard GitHub runners have no GPU). The finished policy is also pushed to the `policies` branch
-# (policies/<task>/{policy.onnx,ref.json,meta.json}) so the web player can load it straight from raw.githubusercontent.com.
+# (policies/<task>/<name>/{policy.onnx,ref.json,meta.json,curve.json} + policies/index.json) so the web player can load it from raw.githubusercontent.com.
 on:
   workflow_dispatch:
     inputs:
@@ -10,6 +10,7 @@ on:
       resume:  {description: 'Resume from the latest cached checkpoint (true/false)', default: 'true'}
       seed:    {description: 'Random seed', default: '0'}
       cfg:     {description: 'JSON overrides for push / reward weights, see CFG in rl/alpha2_env.py', default: '{}'}
+      name:    {description: 'Name to keep this policy under (letters, digits, - _ ; empty = auto). Same task+name overwrites.', default: ''}
 permissions:
   contents: write   # push the result to the `policies` branch
 jobs:
@@ -22,12 +23,14 @@ jobs:
       MINUTES: ${{ inputs.minutes }}
       SEED: ${{ inputs.seed }}
       ALPHA2_CFG: ${{ inputs.cfg }}
+      POLICY_NAME: ${{ inputs.name }}
     steps:
       - name: Validate inputs
         run: |
           case "$TASK" in stand|walk) ;; *) echo "task must be stand or walk"; exit 1;; esac
           [[ "$MINUTES" =~ ^[0-9]+$ ]] && [ "$MINUTES" -ge 1 ] && [ "$MINUTES" -le 340 ] || { echo "minutes must be 1..340"; exit 1; }
           [[ "$SEED" =~ ^[0-9]+$ ]] || { echo "seed must be a non-negative integer"; exit 1; }
+          [[ -z "$POLICY_NAME" || ( "$POLICY_NAME" =~ ^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$ && "$POLICY_NAME" != legacy ) ]] || { echo "name must be letters/digits/-/_ (max 32), not 'legacy'"; exit 1; }
           echo "$ALPHA2_CFG" | jq -e 'type == "object"' >/dev/null || { echo "cfg must be a JSON object"; exit 1; }
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -53,26 +56,20 @@ jobs:
         run: |
           set -euo pipefail
           URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
-          rm -rf /tmp/pol
-          if git ls-remote --exit-code --heads "$URL" policies >/dev/null 2>&1; then
-            git clone -q --depth 1 --branch policies "$URL" /tmp/pol
-          else
-            git init -q -b policies /tmp/pol && git -C /tmp/pol remote add origin "$URL"
-          fi
-          mkdir -p "/tmp/pol/$TASK"
-          cp rl/out/policy.onnx "/tmp/pol/$TASK/policy.onnx"
-          if [ -f rl/out/ref.json ]; then cp rl/out/ref.json "/tmp/pol/$TASK/ref.json"; else rm -f "/tmp/pol/$TASK/ref.json"; fi
-          jq --arg run "$GITHUB_RUN_ID" --arg url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
-             --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --argjson minutes "$MINUTES" \
-             '. + {run_id: $run, run_url: $url, finished_at: $at, minutes: $minutes}' rl/out/meta.json > "/tmp/pol/$TASK/meta.json"
-          cd /tmp/pol
-          git config user.name "github-actions[bot]"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git diff --cached --quiet || git commit -q -m "policy: $TASK (run $GITHUB_RUN_ID)"
-          ok=0
+          # each attempt starts from a fresh clone, so two runs finishing together never produce an index.json merge conflict
           for i in 1 2 3 4; do
-            if git push -q origin policies; then ok=1; break; fi
-            git pull -q --rebase origin policies || true
-            sleep 3
+            rm -rf /tmp/pol
+            if git ls-remote --exit-code --heads "$URL" policies >/dev/null 2>&1; then
+              git clone -q --depth 1 --branch policies "$URL" /tmp/pol
+            else
+              git init -q -b policies /tmp/pol && git -C /tmp/pol remote add origin "$URL"
+            fi
+            python rl/publish.py --dest /tmp/pol --out rl/out --task "$TASK" --name "$POLICY_NAME" \
+              --run-id "$GITHUB_RUN_ID" --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --minutes "$MINUTES"
+            git -C /tmp/pol config user.name "github-actions[bot]"; git -C /tmp/pol config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git -C /tmp/pol add -A
+            git -C /tmp/pol diff --cached --quiet || git -C /tmp/pol commit -q -m "policy: $TASK ${POLICY_NAME:-auto} (run $GITHUB_RUN_ID)"
+            if git -C /tmp/pol push -q origin policies; then exit 0; fi
+            sleep 5
           done
-          [ "$ok" = 1 ] || { echo "push to policies failed"; exit 1; }
+          echo "push to policies failed"; exit 1

@@ -1,7 +1,8 @@
 // rl-cloud.js - "GitHub 雲端訓練" panel for ubx-player.html (GPL-3.0-only, same as the package).
 // Sets the training options in the page, starts .github/workflows/train.yml through the GitHub REST API
 // (workflow_dispatch), follows the run, then loads the finished policy from the `policies` branch
-// (raw.githubusercontent.com/<repo>/policies/<task>/{policy.onnx,ref.json,meta.json}) into the existing RL-policy loader (MJSIM.loadPolicy).
+// (raw.githubusercontent.com/<repo>/policies/<task>/<name>/{policy.onnx,ref.json,meta.json,curve.json}, listed in policies/index.json)
+// into the existing RL-policy loader (MJSIM.loadPolicy). Every named policy is kept; the panel lists, compares and plots them.
 // The training itself runs on GitHub Actions (CPU); this page never runs it.
 // Token: a fine-grained personal access token for THIS repo only, permission "Actions: Read and write". It is typed in
 // the page, kept in memory (or localStorage if "remember" is ticked) and sent only to api.github.com. Never put it in the html.
@@ -55,8 +56,26 @@
     rc_start: ['▶ 開始訓練', '▶ Start training'],
     rc_stop: ['■ 取消', '■ Cancel run'],
     rc_refresh: ['↻ 狀態', '↻ Status'],
-    rc_load: ['⬇ 載入最新 policy', '⬇ Load latest policy'],
-    rc_load_t: ['由 policies branch 攞最新結果，載入上面嘅 RL policy', 'Fetch the latest result from the policies branch into the RL policy box above'],
+    rc_load: ['⬇ 載入', '⬇ Load'],
+    rc_load_t: ['載入揀咗嗰個 policy 到上面嘅 RL policy', 'Load the selected policy into the RL policy box above'],
+    rc_name: ['名稱', 'Name'],
+    rc_name_t: ['留空＝自動（任務＋時間）。英文、數字、- 同 _，最多 32 字；同任務同名會覆蓋。', 'Empty = automatic (task + time). Letters, digits, - and _, max 32; the same task + name is overwritten.'],
+    rc_bad_name: ['名稱只可用英文、數字、- 同 _（最多 32 字），而且唔可以係 legacy', 'Name: letters, digits, - and _ only (max 32), and not "legacy"'],
+    rc_list: ['已訓練嘅 policy', 'Trained policies'],
+    rc_list_t: ['重新讀取清單', 'Reload the list'],
+    rc_empty: ['（未有 policy，先跑一次訓練）', '(no policies yet, run a training first)'],
+    rc_pick: ['請先揀一個 policy', 'Pick a policy first'],
+    rc_cmp: ['比較／訓練曲線', 'Compare / learning curves'],
+    rc_b: ['對比', 'vs'],
+    rc_none: ['（無）', '(none)'],
+    rc_m_len: ['平均存活步數', 'mean episode length'],
+    rc_m_rew: ['平均獎勵', 'mean reward'],
+    rc_nocurve: ['呢個 policy 冇訓練曲線（舊版訓練）', 'This policy has no learning curve (older training)'],
+    rc_curve_note: ['曲線係訓練期間（加推力、隨機動作）嘅成績，通常低過最後評估。', 'Curve = performance during training (pushes, stochastic actions); usually lower than the final evaluation.'],
+    rc_xaxis: ['訓練步數', 'training steps'],
+    th_name: ['名稱', 'name'], th_task: ['任務', 'task'], th_min: ['分鐘', 'min'], th_steps: ['步數', 'steps'],
+    th_eval: ['評估', 'eval'], th_base: ['基準', 'base'], th_cfg: ['參數（唔同預設）', 'params (non-default)'],
+    rc_default: ['預設', 'default'],
     rc_run: ['查看 run ↗', 'View run ↗'],
     rc_no_repo: ['請輸入 repo（owner/名）', 'Enter the repo as owner/name'],
     rc_no_token: ['要先貼 token 先可以開始訓練（只睇狀態同載入結果就唔使）', 'A token is needed to start training (not needed to just view status or load results)'],
@@ -72,7 +91,6 @@
     rc_loaded: ['已載入', 'Loaded'],
     rc_eval: ['評估平均存活', 'eval mean survival'],
     rc_steps: ['步', 'steps'],
-    rc_no_result: ['policies branch 暫時冇呢個任務嘅結果：先跑一次訓練', 'No result for this task on the policies branch yet: run a training first'],
     rc_e401: ['Token 無效或已過期', 'Token invalid or expired'],
     rc_e403: ['Token 冇權限：要 Actions: Read and write，同埋揀咗呢個 repo', 'Token lacks permission: needs Actions: Read and write on this repo'],
     rc_e404: ['搵唔到 workflow／repo（repo 名錯，或者 token 冇揀呢個 repo，或者 train.yml 未 push）', 'Workflow/repo not found (wrong repo name, token not scoped to this repo, or train.yml not pushed yet)'],
@@ -84,12 +102,13 @@
   function $(id) { return document.getElementById(id); }
 
   // ---- state (persisted in localStorage when available) ----
-  var ST = { repo: '', token: '', remember: false, task: 'walk', minutes: 60, resume: true, seed: 0, params: {}, runId: 0, t0: 0, task0: 'walk' };
+  var ST = { repo: '', token: '', remember: false, task: 'walk', name: '', minutes: 60, resume: true, seed: 0, params: {}, runId: 0, t0: 0, task0: 'walk' };
+  var IDX = [], CURVES = {}, chartTok = 0, NAME_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$/, PATH_RE = /^(stand|walk)(\/[A-Za-z0-9_-]{1,32})?$/;
   var timer = 0, branchCache = {}, busy = false;
   function lsGet() { try { return JSON.parse(localStorage.getItem(LSK) || '{}'); } catch (e) { return {}; } }
   function lsSet() {
     try {
-      var o = { repo: ST.repo, remember: ST.remember, task: ST.task, minutes: ST.minutes, resume: ST.resume, seed: ST.seed, params: ST.params, runId: ST.runId, t0: ST.t0, task0: ST.task0 };
+      var o = { repo: ST.repo, remember: ST.remember, task: ST.task, name: ST.name, minutes: ST.minutes, resume: ST.resume, seed: ST.seed, params: ST.params, runId: ST.runId, t0: ST.t0, task0: ST.task0 };
       if (ST.remember) o.token = ST.token;
       localStorage.setItem(LSK, JSON.stringify(o));
     } catch (e) { /* storage unavailable: keep working in memory */ }
@@ -113,7 +132,8 @@
       minutes: String(Math.round(clampNum(s.minutes, 1, 340, 60))),
       resume: s.resume ? 'true' : 'false',
       seed: String(Math.max(0, Math.round(clampNum(s.seed, 0, 1e9, 0)))),
-      cfg: JSON.stringify(cfg)
+      cfg: JSON.stringify(cfg),
+      name: String(s.name || '').trim()
     };
   }
   function fmtDur(ms) { var s = Math.max(0, Math.round(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return (h ? h + 'h ' : '') + m + 'm'; }
@@ -140,12 +160,12 @@
   function setLink(url) { var a = $('rlcRun'); if (!a) return; if (url) { a.href = url; a.style.display = ''; } else a.style.display = 'none'; }
   function readForm() {
     ST.repo = ($('rlcRepo').value || '').trim(); ST.token = ($('rlcToken').value || '').trim(); ST.remember = $('rlcRem').checked;
-    ST.task = $('rlcTask').value; ST.minutes = $('rlcMin').value; ST.resume = $('rlcResume').checked; ST.seed = $('rlcSeed').value;
+    ST.task = $('rlcTask').value; ST.name = ($('rlcName').value || '').trim(); ST.minutes = $('rlcMin').value; ST.resume = $('rlcResume').checked; ST.seed = $('rlcSeed').value;
     PARAMS.forEach(function (p) { ST.params[p.k] = $('rlcP_' + p.k).value; });
   }
   function writeForm() {
     $('rlcRepo').value = ST.repo; $('rlcToken').value = ST.token; $('rlcRem').checked = !!ST.remember;
-    $('rlcTask').value = ST.task; $('rlcMin').value = ST.minutes; $('rlcResume').checked = !!ST.resume; $('rlcSeed').value = ST.seed;
+    $('rlcTask').value = ST.task; $('rlcName').value = ST.name || ''; $('rlcMin').value = ST.minutes; $('rlcResume').checked = !!ST.resume; $('rlcSeed').value = ST.seed;
     PARAMS.forEach(function (p) { var v = ST.params[p.k]; $('rlcP_' + p.k).value = (v === undefined || v === '') ? p.def : v; });
   }
   function build() {
@@ -164,6 +184,7 @@
       '<div ' + row + '><span ' + lab + '></span><label style="display:flex;align-items:center;gap:3px"><input id="rlcRem" type="checkbox" style="margin:0"><span data-i18n="rc_remember" data-i18n-title="rc_remember_t"></span></label>' +
       '<a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener" style="margin-left:auto" data-i18n="rc_new_token"></a></div>' +
       '<label ' + row + '><span ' + lab + ' data-i18n="rc_task"></span><select id="rlcTask" ' + inp + '><option value="stand" data-i18n="rc_stand"></option><option value="walk" data-i18n="rc_walk"></option></select></label>' +
+      '<label ' + row + '><span ' + lab + ' data-i18n="rc_name" data-i18n-title="rc_name_t"></span><input id="rlcName" type="text" maxlength="32" spellcheck="false" placeholder="auto" ' + inp + '></label>' +
       '<label ' + row + '><span ' + lab + ' data-i18n="rc_minutes" data-i18n-title="rc_minutes_t"></span><input id="rlcMin" type="number" min="1" max="340" step="1" ' + inp + '></label>' +
       '<label style="display:flex;align-items:center;gap:4px;margin:3px 0"><input id="rlcResume" type="checkbox" style="margin:0"><span data-i18n="rc_resume"></span></label>' +
       '<details style="margin:3px 0"><summary style="cursor:pointer;color:#666" data-i18n="rc_adv"></summary>' + adv +
@@ -172,16 +193,26 @@
       '<div style="display:flex;flex-wrap:wrap;gap:4px;margin:4px 0">' +
       '<button id="rlcStart" style="padding:2px 6px;font-size:11px;margin:0" data-i18n="rc_start"></button>' +
       '<button id="rlcStop" style="padding:2px 6px;font-size:11px;margin:0" data-i18n="rc_stop"></button>' +
-      '<button id="rlcRefresh" style="padding:2px 6px;font-size:11px;margin:0" data-i18n="rc_refresh"></button>' +
-      '<button id="rlcLoad" style="padding:2px 6px;font-size:11px;margin:0" data-i18n="rc_load" data-i18n-title="rc_load_t"></button></div>' +
-      '<div style="display:flex;gap:6px;align-items:baseline"><span id="rlcStat" class="mono" style="flex:1;min-width:0;font-size:11px;white-space:normal;word-break:break-word"></span><a id="rlcRun" href="#" target="_blank" rel="noopener" style="display:none;flex:none" data-i18n="rc_run"></a></div>';
+      '<button id="rlcRefresh" style="padding:2px 6px;font-size:11px;margin:0" data-i18n="rc_refresh"></button></div>' +
+      '<div style="display:flex;gap:6px;align-items:baseline"><span id="rlcStat" class="mono" style="flex:1;min-width:0;font-size:11px;white-space:normal;word-break:break-word"></span><a id="rlcRun" href="#" target="_blank" rel="noopener" style="display:none;flex:none" data-i18n="rc_run"></a></div>' +
+      '<div style="margin-top:6px"><b data-i18n="rc_list"></b></div>' +
+      '<div ' + row + '><select id="rlcSel" style="flex:1;min-width:0;font-size:11px"></select>' +
+      '<button id="rlcLoad" style="padding:2px 6px;font-size:11px;margin:0" data-i18n="rc_load" data-i18n-title="rc_load_t"></button>' +
+      '<button id="rlcListRef" style="padding:2px 6px;font-size:11px;margin:0" data-i18n-title="rc_list_t">↻</button></div>' +
+      '<details id="rlcCmp" style="margin:3px 0"><summary style="cursor:pointer;color:#666" data-i18n="rc_cmp"></summary>' +
+      '<div ' + row + '><span data-i18n="rc_b"></span><select id="rlcSelB" style="flex:1;min-width:0;font-size:11px"></select>' +
+      '<select id="rlcMetric" style="font-size:11px"><option value="len" data-i18n="rc_m_len"></option><option value="rew" data-i18n="rc_m_rew"></option></select></div>' +
+      '<svg id="rlcChart" viewBox="0 0 300 130" style="width:100%;height:auto;display:block"></svg>' +
+      '<div id="rlcCurveMsg" style="font-size:10px;color:#666;margin:2px 0"></div>' +
+      '<div style="overflow-x:auto"><table id="rlcTable" style="border-collapse:collapse;font-size:10px;width:100%"></table></div></details>';
     mb.insertAdjacentElement('afterend', d);
     return true;
   }
   function wire() {
-    $('rlcStart').onclick = start; $('rlcStop').onclick = cancel; $('rlcRefresh').onclick = function () { refresh(true); }; $('rlcLoad').onclick = function () { loadLatest(false); };
+    $('rlcStart').onclick = start; $('rlcStop').onclick = cancel; $('rlcRefresh').onclick = function () { refresh(true); }; $('rlcLoad').onclick = function () { loadSelected(); }; $('rlcListRef').onclick = function () { refreshList(); };
+    $('rlcSel').addEventListener('change', function () { renderTable(); drawChart(); }); $('rlcSelB').addEventListener('change', drawChart); $('rlcMetric').addEventListener('change', drawChart);
     $('rlcReset').onclick = function (e) { e.preventDefault(); ST.params = {}; ST.seed = 0; writeForm(); lsSet(); };
-    forIds(['rlcRepo', 'rlcToken', 'rlcRem', 'rlcTask', 'rlcMin', 'rlcResume', 'rlcSeed'].concat(PARAMS.map(function (p) { return 'rlcP_' + p.k; })), function (el) {
+    forIds(['rlcRepo', 'rlcToken', 'rlcRem', 'rlcTask', 'rlcName', 'rlcMin', 'rlcResume', 'rlcSeed'].concat(PARAMS.map(function (p) { return 'rlcP_' + p.k; })), function (el) {
       el.addEventListener('change', function () { readForm(); lsSet(); });
     });
   }
@@ -192,6 +223,7 @@
   async function start() {
     if (busy || !needRepo()) return;
     if (!ST.token) { stat(tt('rc_no_token'), true); return; }
+    if (ST.name && (!NAME_RE.test(ST.name) || ST.name === 'legacy')) { stat(tt('rc_bad_name'), true); return; }
     busy = true; setLink('');
     try {
       var ref = await defaultBranch(ST.repo), inputs = buildInputs(ST), t0 = Date.now();
@@ -221,7 +253,7 @@
       var el = tt('rc_elapsed') + ' ' + fmtDur(Date.now() - Date.parse(run.run_started_at || run.created_at));
       if (run.status === 'completed') {
         clearTimeout(timer);
-        if (run.conclusion === 'success') { stat(tt('rc_done_ok') + ' · ' + el); ST.t0 = 0; lsSet(); if (tracking) await loadLatest(true); }
+        if (run.conclusion === 'success') { stat(tt('rc_done_ok') + ' · ' + el); ST.t0 = 0; lsSet(); if (tracking) { var en = await refreshList(String(run.id), ST.task0); if (en) await loadEntry(en); } }
         else { stat(tt('rc_done_bad') + run.conclusion, true); ST.t0 = 0; lsSet(); }
       } else {
         stat((run.status === 'queued' || run.status === 'waiting' || run.status === 'pending' ? tt('rc_queued') : tt('rc_running')) + ' · ' + el);
@@ -229,36 +261,118 @@
       }
     } catch (e) { stat(String(e.message || e), true); }
   }
-  async function loadLatest(fromRun) {
-    if (!needRepo()) return;
-    var task = fromRun === true ? ST.task0 : ST.task;   // after a finished run: the task that run was started with
-    var base = 'https://raw.githubusercontent.com/' + ST.repo + '/policies/' + task + '/', bust = '?t=' + Date.now();
+  // ---- policy list (policies/index.json), comparison table, learning curve ----
+  var RAW = 'https://raw.githubusercontent.com/';
+  function rawBase(path) { return RAW + ST.repo + '/policies/' + path + '/'; }
+  async function fetchJson(url) {
+    var r = await fetch(url + '?t=' + Date.now());   // the query string bypasses the 5 min cache of raw.githubusercontent.com
+    if (r.status === 404) return null; if (!r.ok) throw new Error(tt('rc_ehttp') + ' ' + r.status);
+    return r.json();
+  }
+  function validEntry(e) { return e && typeof e === 'object' && typeof e.path === 'string' && PATH_RE.test(e.path) && (e.task === 'stand' || e.task === 'walk'); }
+  function entryById(id) { for (var i = 0; i < IDX.length; i++) if (IDX[i].path === id) return IDX[i]; return null; }
+  function evalTxt(e) { return typeof e.eval_mean_len === 'number' ? Math.round(e.eval_mean_len) + '/' + (e.eval_max_len || '?') : '-'; }
+  function cfgTxt(e) { var k = Object.keys(e.cfg || {}); return k.length ? k.map(function (x) { return x + '=' + e.cfg[x]; }).join(', ') : tt('rc_default'); }
+  function label(e) { return e.task + ' · ' + (e.name || e.path) + ' · ' + evalTxt(e) + (e.finished_at ? ' · ' + String(e.finished_at).slice(0, 10) : ''); }
+  function fillSelect(sel, withNone, keep) {
+    sel.textContent = '';
+    if (withNone) { var o0 = document.createElement('option'); o0.value = ''; o0.textContent = tt('rc_none'); sel.appendChild(o0); }
+    IDX.forEach(function (e) { var o = document.createElement('option'); o.value = e.path; o.textContent = label(e); sel.appendChild(o); });
+    if (!IDX.length && !withNone) { var oe = document.createElement('option'); oe.value = ''; oe.textContent = tt('rc_empty'); sel.appendChild(oe); }
+    if (keep && entryById(keep)) sel.value = keep;
+  }
+  async function refreshList(runId, task, quiet) {   // -> the entry of that run (or the newest of `task`), selected in the list
+    if (!needRepo()) return null;
+    try {
+      var j = await fetchJson(RAW + ST.repo + '/policies/index.json');
+      IDX = j && Array.isArray(j.policies) ? j.policies.filter(validEntry) : [];
+      if (!j) {   // branch from before named policies existed: policies/<task>/{policy.onnx,meta.json}
+        for (var t of ['walk', 'stand']) { var m = await fetchJson(RAW + ST.repo + '/policies/' + t + '/meta.json'); if (m) IDX.push({ id: t, path: t, task: t, name: 'latest', eval_mean_len: m.eval_mean_len, eval_max_len: m.eval_max_len, finished_at: m.finished_at, cfg: m.cfg, timesteps: m.timesteps, minutes: m.minutes, run_url: m.run_url }); }
+      }
+    } catch (e) { if (!quiet) stat(String(e.message || e), true); return null; }
+    var keepA = $('rlcSel').value, keepB = $('rlcSelB').value, pick = null;
+    if (runId) IDX.forEach(function (e) { if (!pick && String(e.run_id) === String(runId)) pick = e; });
+    if (!pick && runId && task) IDX.forEach(function (e) { if (!pick && e.task === task) pick = e; });   // list is newest first
+    fillSelect($('rlcSel'), false, pick ? pick.path : keepA); fillSelect($('rlcSelB'), true, keepB);
+    renderTable(); drawChart();
+    return pick || entryById($('rlcSel').value);
+  }
+  function renderTable() {
+    var t = $('rlcTable'); t.textContent = ''; if (!IDX.length) return;
+    var sel = $('rlcSel').value, heads = ['th_name', 'th_task', 'th_min', 'th_steps', 'th_eval', 'th_base', 'th_cfg'];
+    var hr = document.createElement('tr');
+    heads.forEach(function (k) { var th = document.createElement('th'); th.textContent = tt(k); th.style.cssText = 'text-align:left;padding:1px 3px;border-bottom:1px solid #999;white-space:nowrap'; hr.appendChild(th); });
+    t.appendChild(hr);
+    IDX.forEach(function (e) {
+      var tr = document.createElement('tr'); tr.style.cursor = 'pointer'; if (e.path === sel) tr.style.fontWeight = 'bold';
+      [e.name || e.path, e.task, e.minutes != null ? e.minutes : '-', e.timesteps != null ? (e.timesteps / 1e6).toFixed(2) + 'M' : '-', evalTxt(e), typeof e.baseline_mean_len === 'number' ? Math.round(e.baseline_mean_len) : '-', cfgTxt(e)].forEach(function (v) {
+        var td = document.createElement('td'); td.textContent = String(v); td.style.cssText = 'padding:1px 3px;border-bottom:1px solid rgba(128,128,128,.3)'; tr.appendChild(td);
+      });
+      tr.onclick = function () { $('rlcSel').value = e.path; renderTable(); drawChart(); };
+      t.appendChild(tr);
+    });
+  }
+  async function getCurve(e) {
+    if (!e) return null; if (e.path in CURVES) return CURVES[e.path];
+    var c = null; try { c = await fetchJson(rawBase(e.path) + 'curve.json'); } catch (x) { c = null; }
+    if (!Array.isArray(c) || !c.length) c = null; CURVES[e.path] = c; return c;
+  }
+  var SVGNS = 'http://www.w3.org/2000/svg';
+  function svgEl(name, attrs, text) { var n = document.createElementNS(SVGNS, name); for (var k in attrs) n.setAttribute(k, attrs[k]); if (text !== undefined) n.textContent = text; return n; }
+  function drawChart() {
+    var svg = $('rlcChart'), msg = $('rlcCurveMsg'), tok = ++chartTok; if (!svg) return;
+    var A = entryById($('rlcSel').value), B = entryById($('rlcSelB').value), metric = $('rlcMetric').value === 'rew' ? 'rew' : 'len';
+    svg.textContent = ''; msg.textContent = '';
+    if (!A) return;
+    Promise.all([getCurve(A), getCurve(B)]).then(function (cs) {
+      if (tok !== chartTok) return;   // a newer selection was made meanwhile
+      var series = [[A, cs[0], '#2e86de'], [B, cs[1], '#e67e22']].filter(function (x) { return x[0] && x[1]; });
+      if (!series.length) { msg.textContent = tt('rc_nocurve'); return; }
+      var L = 36, R = 6, Tp = 14, Bt = 18, W = 300, H = 130, xmax = 1, ymin = 0, ymax = metric === 'len' ? 0 : -Infinity;
+      series.forEach(function (x) { x[1].forEach(function (p) { xmax = Math.max(xmax, p.t); ymax = Math.max(ymax, p[metric]); ymin = Math.min(ymin, p[metric]); }); });
+      if (metric === 'len') series.forEach(function (x) { ymax = Math.max(ymax, x[0].eval_max_len || 0); });
+      if (!(ymax > ymin)) ymax = ymin + 1;
+      var X = function (t) { return L + (W - L - R) * t / xmax; }, Y = function (v) { return H - Bt - (H - Bt - Tp) * (v - ymin) / (ymax - ymin); };
+      svg.appendChild(svgEl('line', { x1: L, y1: Y(ymin), x2: W - R, y2: Y(ymin), stroke: '#888', 'stroke-width': 0.6 }));
+      svg.appendChild(svgEl('line', { x1: L, y1: Tp, x2: L, y2: Y(ymin), stroke: '#888', 'stroke-width': 0.6 }));
+      var fmt = function (v) { return Math.abs(v) >= 100 ? String(Math.round(v)) : String(Math.round(v * 10) / 10); };
+      svg.appendChild(svgEl('text', { x: L - 3, y: Tp + 3, 'text-anchor': 'end', 'font-size': 8, fill: 'currentColor' }, fmt(ymax)));
+      svg.appendChild(svgEl('text', { x: L - 3, y: Y(ymin), 'text-anchor': 'end', 'font-size': 8, fill: 'currentColor' }, fmt(ymin)));
+      svg.appendChild(svgEl('text', { x: W - R, y: H - 6, 'text-anchor': 'end', 'font-size': 8, fill: 'currentColor' }, (xmax / 1e6).toFixed(2) + 'M ' + tt('rc_xaxis')));
+      series.forEach(function (x, i) {
+        svg.appendChild(svgEl('polyline', { points: x[1].map(function (p) { return X(p.t).toFixed(1) + ',' + Y(p[metric]).toFixed(1); }).join(' '), fill: 'none', stroke: x[2], 'stroke-width': 1.2 }));
+        svg.appendChild(svgEl('text', { x: L + 4 + i * 110, y: 9, 'font-size': 8, fill: x[2] }, (x[0].name || x[0].path) + ' (' + x[0].task + ')'));
+      });
+      msg.textContent = tt('rc_curve_note');
+    });
+  }
+  async function loadEntry(e) {
+    if (!e) { stat(tt('rc_pick'), true); return; }
+    var base = rawBase(e.path), bust = '?t=' + Date.now();
     try {
       stat(tt('rc_loading'));
-      var mr = await fetch(base + 'meta.json' + bust); if (mr.status === 404) { stat(tt('rc_no_result'), true); return; } if (!mr.ok) throw new Error(tt('rc_ehttp') + ' ' + mr.status);
-      var meta = await mr.json();
       var pr = await fetch(base + 'policy.onnx' + bust); if (!pr.ok) throw new Error(tt('rc_ehttp') + ' ' + pr.status);
       var files = [new File([await pr.arrayBuffer()], 'policy.onnx')];
-      if (task === 'walk') { var rr = await fetch(base + 'ref.json' + bust); if (!rr.ok) throw new Error(tt('rc_ehttp') + ' ' + rr.status); files.push(new File([await rr.text()], 'ref.json')); }
+      if (e.task === 'walk') { var rr = await fetch(base + 'ref.json' + bust); if (!rr.ok) throw new Error(tt('rc_ehttp') + ' ' + rr.status); files.push(new File([await rr.text()], 'ref.json')); }
       if (!window.MJSIM) throw new Error('MJSIM not available');
       if (!MJSIM.on) MJSIM.toggle();   // the policy runs in the physics mode
       await MJSIM.loadPolicy(files);
-      var ok = MJSIM.pol && MJSIM.pol.sess;
-      if (ok) stat(tt('rc_loaded') + ' ' + task + ' · ' + tt('rc_eval') + ' ' + Math.round(meta.eval_mean_len) + '/' + meta.eval_max_len + ' ' + tt('rc_steps') + (meta.finished_at ? ' · ' + meta.finished_at : ''));
-      if (meta.run_url) setLink(meta.run_url);
-    } catch (e) { stat(String(e.message || e), true); }
+      if (MJSIM.pol && MJSIM.pol.sess) stat(tt('rc_loaded') + ' ' + (e.name || e.path) + ' (' + e.task + ') · ' + tt('rc_eval') + ' ' + evalTxt(e) + ' ' + tt('rc_steps') + (e.finished_at ? ' · ' + e.finished_at : ''));
+      if (e.run_url) setLink(e.run_url);
+    } catch (x) { stat(String(x.message || x), true); }
   }
+  async function loadSelected() { if (!needRepo()) return; var e = entryById($('rlcSel').value); if (!e && !IDX.length) await refreshList(); e = e || entryById($('rlcSel').value); await loadEntry(e); }
 
   function init() {
     if (!build()) return;
     addI18n(); var s = lsGet();
     ST.repo = s.repo || guessRepo(); ST.remember = !!s.remember; ST.token = s.token || '';
-    ST.task = s.task === 'stand' ? 'stand' : 'walk'; ST.minutes = s.minutes || 60; ST.resume = s.resume !== false; ST.seed = s.seed || 0; ST.params = s.params || {};
+    ST.task = s.task === 'stand' ? 'stand' : 'walk'; ST.name = s.name || ''; ST.minutes = s.minutes || 60; ST.resume = s.resume !== false; ST.seed = s.seed || 0; ST.params = s.params || {};
     ST.runId = s.runId || 0; ST.t0 = s.t0 || 0; ST.task0 = s.task0 || ST.task;
     if (typeof applyLang === 'function') applyLang();
-    writeForm(); wire();
+    writeForm(); wire(); refreshList(null, null, true);   // the list of already trained policies (public repo: no token needed)
     if (ST.t0 && ST.runId) { $('rlcBox').open = true; refresh(false); }   // a run was in progress when the page was closed
   }
-  window.RLCLOUD = { buildInputs: buildInputs, PARAMS: PARAMS, state: ST, start: start, refresh: refresh, loadLatest: loadLatest, cancel: cancel, init: init };
+  window.RLCLOUD = { buildInputs: buildInputs, PARAMS: PARAMS, state: ST, start: start, refresh: refresh, refreshList: refreshList, loadEntry: loadEntry, loadSelected: loadSelected, drawChart: drawChart, cancel: cancel, init: init };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
