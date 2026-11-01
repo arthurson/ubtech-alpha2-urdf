@@ -1,18 +1,34 @@
 name: train-rl
-# Manual run: Actions tab -> train-rl -> Run workflow. CPU only (standard GitHub runners have no GPU).
+# Run from the Actions tab, or from the web player (cloud-training panel -> workflow_dispatch API).
+# CPU only (standard GitHub runners have no GPU). The finished policy is also pushed to the `policies` branch
+# (policies/<task>/{policy.onnx,ref.json,meta.json}) so the web player can load it straight from raw.githubusercontent.com.
 on:
   workflow_dispatch:
     inputs:
-      minutes: {description: 'Training wall-clock budget (job limit is 360 min)', default: '300'}
+      minutes: {description: 'Training wall-clock budget in minutes (job limit is 360)', default: '300'}
       task:    {description: 'stand (balance) or walk (imitate the official forward walk)', default: 'walk'}
       resume:  {description: 'Resume from the latest cached checkpoint (true/false)', default: 'true'}
+      seed:    {description: 'Random seed', default: '0'}
+      cfg:     {description: 'JSON overrides for push / reward weights, see CFG in rl/alpha2_env.py', default: '{}'}
 permissions:
-  contents: read
+  contents: write   # push the result to the `policies` branch
 jobs:
   train:
     runs-on: ubuntu-latest
     timeout-minutes: 355
+    env:
+      # inputs go through env vars (never interpolated into the shell script)
+      TASK: ${{ inputs.task }}
+      MINUTES: ${{ inputs.minutes }}
+      SEED: ${{ inputs.seed }}
+      ALPHA2_CFG: ${{ inputs.cfg }}
     steps:
+      - name: Validate inputs
+        run: |
+          case "$TASK" in stand|walk) ;; *) echo "task must be stand or walk"; exit 1;; esac
+          [[ "$MINUTES" =~ ^[0-9]+$ ]] && [ "$MINUTES" -ge 1 ] && [ "$MINUTES" -le 340 ] || { echo "minutes must be 1..340"; exit 1; }
+          [[ "$SEED" =~ ^[0-9]+$ ]] || { echo "seed must be a non-negative integer"; exit 1; }
+          echo "$ALPHA2_CFG" | jq -e 'type == "object"' >/dev/null || { echo "cfg must be a JSON object"; exit 1; }
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: '3.12', cache: pip, cache-dependency-path: rl/requirements.txt}
@@ -22,7 +38,7 @@ jobs:
         uses: actions/cache/restore@v4
         with: {path: rl/out, key: 'rl-ckpt-${{ inputs.task }}-none', restore-keys: 'rl-ckpt-${{ inputs.task }}-'}
       - name: Train
-        run: python rl/train.py --task ${{ inputs.task }} --minutes ${{ inputs.minutes }} --out rl/out --resume rl/out/model.zip
+        run: python rl/train.py --task "$TASK" --minutes "$MINUTES" --seed "$SEED" --out rl/out --resume rl/out/model.zip
       - name: Save checkpoint for the next run
         if: always()
         uses: actions/cache/save@v4
@@ -30,3 +46,33 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with: {name: alpha2-policy, path: rl/out/}
+      - name: Publish to the policies branch
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          rm -rf /tmp/pol
+          if git ls-remote --exit-code --heads "$URL" policies >/dev/null 2>&1; then
+            git clone -q --depth 1 --branch policies "$URL" /tmp/pol
+          else
+            git init -q -b policies /tmp/pol && git -C /tmp/pol remote add origin "$URL"
+          fi
+          mkdir -p "/tmp/pol/$TASK"
+          cp rl/out/policy.onnx "/tmp/pol/$TASK/policy.onnx"
+          if [ -f rl/out/ref.json ]; then cp rl/out/ref.json "/tmp/pol/$TASK/ref.json"; else rm -f "/tmp/pol/$TASK/ref.json"; fi
+          jq --arg run "$GITHUB_RUN_ID" --arg url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+             --arg at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --argjson minutes "$MINUTES" \
+             '. + {run_id: $run, run_url: $url, finished_at: $at, minutes: $minutes}' rl/out/meta.json > "/tmp/pol/$TASK/meta.json"
+          cd /tmp/pol
+          git config user.name "github-actions[bot]"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -q -m "policy: $TASK (run $GITHUB_RUN_ID)"
+          ok=0
+          for i in 1 2 3 4; do
+            if git push -q origin policies; then ok=1; break; fi
+            git pull -q --rebase origin policies || true
+            sleep 3
+          done
+          [ "$ok" = 1 ] || { echo "push to policies failed"; exit 1; }

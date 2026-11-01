@@ -1,10 +1,10 @@
 """PPO training for Alpha2Env on CPU (GitHub Actions). Saves checkpoints + policy.onnx.
   python rl/train.py --minutes 300 --out rl/out [--resume rl/out/model.zip]"""
-import argparse, os, time, numpy as np, torch
+import argparse, os, time, json, numpy as np, torch
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import SubprocVecEnv, DummyVecEnv
 from stable_baselines3.common.callbacks import BaseCallback
-from alpha2_env import Alpha2Env, WalkEnv
+from alpha2_env import Alpha2Env, WalkEnv, CFG
 
 class Budget(BaseCallback):   # stop + checkpoint when the wall-clock budget is used up
     def __init__(self, minutes, out, every=600):
@@ -27,7 +27,7 @@ if __name__ == '__main__':
     ap = argparse.ArgumentParser(); ap.add_argument('--minutes', type=float, default=20); ap.add_argument('--out', default='rl/out')
     ap.add_argument('--task', default='stand', choices=['stand', 'walk']); ap.add_argument('--ref', default='rl/ref/forward.json')
     ap.add_argument('--resume', default=''); ap.add_argument('--envs', type=int, default=os.cpu_count() or 2); ap.add_argument('--seed', type=int, default=0)
-    a = ap.parse_args(); os.makedirs(a.out, exist_ok=True); torch.set_num_threads(1)
+    a = ap.parse_args(); os.makedirs(a.out, exist_ok=True); torch.set_num_threads(1); print('env cfg:', CFG, flush=True)
     mk = lambda i: (lambda: (WalkEnv(ref=a.ref, seed=a.seed * 1000 + i) if a.task == 'walk' else Alpha2Env(seed=a.seed * 1000 + i)))
     env = (SubprocVecEnv if a.envs > 1 else DummyVecEnv)([mk(i) for i in range(a.envs)])
     if a.resume and os.path.exists(a.resume): model = PPO.load(a.resume, env=env); print('resumed', a.resume)
@@ -53,3 +53,7 @@ if __name__ == '__main__':
             B.append(n); Bx.append(ev.d.qpos[0])
         print('baseline (zero residual) episode length:', B, 'mean', np.mean(B), '| final x [m]:', np.round(Bx, 2).tolist())
     print('eval episode length (max %d = never fell):' % (1000 if a.task == 'walk' else 500), L, 'mean', np.mean(L), '| final x [m]:', np.round(X, 2).tolist())
+    meta = dict(task=a.task, seed=a.seed, cfg=CFG, timesteps=int(model.num_timesteps), eval_max_len=(1000 if a.task == 'walk' else 500),
+                eval_lens=[int(x) for x in L], eval_mean_len=float(np.mean(L)), eval_final_x=[round(float(x), 3) for x in X])
+    if a.task == 'walk': meta['baseline_mean_len'] = float(np.mean(B))
+    json.dump(meta, open(os.path.join(a.out, 'meta.json'), 'w'), indent=1)   # picked up by .github/workflows/train.yml -> policies branch

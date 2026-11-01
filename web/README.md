@@ -55,3 +55,16 @@
   逐 block timebase（static 後蓋前）。
 - 舵機值 255（真機＝該舵機放鬆斷力）：呢頁冇力學，非手指舵機沿用上一幀、
   手指當 120 近似顯示（corpus 255 只見於雙手同 1509001441250 嘅左肘）。
+
+## GitHub 雲端訓練（rl-cloud.js）
+
+播放器「物理」面板下面有「☁ GitHub 雲端訓練」：喺網頁設定參數，撳「開始訓練」就經 GitHub API 觸發 `.github/workflows/train.yml`
+（`workflow_dispatch`），訓練喺 GitHub Actions 跑（CPU，最長約 6 小時）；完成後 policy 會推去 `policies` branch
+（`policies/<task>/{policy.onnx,ref.json,meta.json}`），網頁再由 `raw.githubusercontent.com` 載入，直接交俾 RL policy 載入器。
+
+- 第一次用：喺 GitHub → Settings → Developer settings → Fine-grained tokens 建立 token，**只揀呢個 repo**，權限 **Actions: Read and write**，貼入面板。
+  Token 只會傳去 `api.github.com`；除非剔「記住」，否則唔會存入瀏覽器。唔好將 token 寫入 html／commit。
+- 淨係睇狀態同載入結果（public repo）唔使 token。
+- 可調：任務（站穩／步行）、時長、接續上次 checkpoint、推力、推嘅機率、傾斜／偏離企姿／跟隨動作／動作平滑／扭力權重、seed。
+  預設值同原本寫死嘅一樣（見 `rl/alpha2_env.py` 嘅 `CFG`）；obs／action 格式同 `ACT_SCALE`／`DECIM` 唔開放（要同 `mj-sim.js` 一致）。
+- 手動都得：Actions → train-rl → Run workflow，`cfg` 填 JSON，例如 `{"push_force": 5, "w_smooth": 0.05}`。

@@ -4,11 +4,28 @@ obs (43) : joint pos - default (20), previous action (20), gravity direction in 
            inertial sensor is the head accelerometer, so no base angular velocity / linear velocity is given)
 action(20): ctrl = q_default + ACT_SCALE * a   (clamped to the actuator ctrl range = joint limits)
 """
-import os, re, numpy as np, mujoco, gymnasium as gym
+import os, re, json, numpy as np, mujoco, gymnasium as gym
 from gymnasium import spaces
 HERE = os.path.dirname(os.path.abspath(__file__)); PKG = os.path.dirname(HERE)
 ACT_SCALE, DECIM, EP_STEPS = 0.3, 10, 500          # 0.02 s control step, 10 s episodes
 FALL_Z, FALL_TILT = 0.15, np.radians(40)           # same fallen criterion as the README / web player
+
+# Tunable push / reward weights. Defaults = the original hard-coded values. Override with env var ALPHA2_CFG (JSON), e.g.
+# ALPHA2_CFG='{"push_force": 5, "w_smooth": 0.05}' (the web player's cloud-training panel / train.yml `cfg` input sets it).
+# Values are clamped to the ranges below; unknown keys are ignored. obs / action layout and ACT_SCALE / DECIM are NOT tunable
+# (they must match web/mj-sim.js).
+_DEF = dict(push_force=3.0, push_prob=0.7, w_tilt=2.0, w_pose=0.1, w_smooth=0.02, w_torque=0.002, w_track=1.0)
+_LIM = dict(push_force=(0, 10), push_prob=(0, 1), w_tilt=(0, 10), w_pose=(0, 2), w_smooth=(0, 1), w_torque=(0, 0.05), w_track=(0, 5))
+def _load_cfg():
+    c = dict(_DEF)
+    try: u = json.loads(os.environ.get('ALPHA2_CFG') or '{}')
+    except ValueError: u = {}
+    if isinstance(u, dict):
+        for k, (lo, hi) in _LIM.items():
+            v = u.get(k)
+            if isinstance(v, (int, float)) and not isinstance(v, bool) and np.isfinite(v): c[k] = float(min(hi, max(lo, v)))
+    return c
+CFG = _load_cfg()
 
 def _q_default():
     q = {}
@@ -56,8 +73,8 @@ class Alpha2Env(gym.Env):
     def step(self, a):
         a = np.clip(a, -1, 1).astype(np.float64); self.lag.append(a); a_eff = self.lag.pop(0) if self.lag else a   # 0-2 step action delay
         d = self.d; ctrl = np.clip(self.q0 + ACT_SCALE * a_eff, self.lo, self.hi)
-        if self.push and self.t % 100 == 50 and self.rng.random() < 0.7:
-            d.xfrc_applied[1, :2] = self.rng.uniform(-1, 1, 2) * 3.0     # N, held for one control step
+        if self.push and self.t % 100 == 50 and self.rng.random() < CFG['push_prob']:
+            d.xfrc_applied[1, :2] = self.rng.uniform(-1, 1, 2) * CFG['push_force']     # N, held for one control step
         for k in range(DECIM):
             d.ctrl[self.act] = ctrl
             mujoco.mj_step(self.m, d)
@@ -66,7 +83,7 @@ class Alpha2Env(gym.Env):
         zz = d.xmat[1].reshape(3, 3)[2, 2]; tilt = np.arccos(np.clip(zz, -1, 1)); z = d.qpos[2]
         fallen = z < FALL_Z or tilt > FALL_TILT
         dq = d.qpos[self.qadr] - self.q0
-        r = 1.0 - 2.0 * tilt ** 2 - 1.0 * np.sum(dq ** 2) * 0.1 - 0.02 * np.sum((a - self.prev) ** 2) - 0.002 * np.sum(d.actuator_force[self.act] ** 2) - 0.5 * np.sum(d.qvel[:2] ** 2)
+        r = 1.0 - CFG['w_tilt'] * tilt ** 2 - CFG['w_pose'] * np.sum(dq ** 2) - CFG['w_smooth'] * np.sum((a - self.prev) ** 2) - CFG['w_torque'] * np.sum(d.actuator_force[self.act] ** 2) - 0.5 * np.sum(d.qvel[:2] ** 2)
         self.prev = a.copy()
         return self._obs(), float(-5.0 if fallen else r), bool(fallen), self.t >= EP_STEPS, {}
 
@@ -95,11 +112,11 @@ class WalkEnv(Alpha2Env):
     def step(self, a):
         a = np.clip(a, -1, 1).astype(np.float64); self.lag.append(a); a_eff = self.lag.pop(0) if self.lag else a
         d = self.d; qr = self.ref_q(self.t); ctrl = np.clip(qr + self.WALK_SCALE * a_eff, self.lo, self.hi)
-        if self.push and self.t % 100 == 50 and self.rng.random() < 0.7: d.xfrc_applied[1, :2] = self.rng.uniform(-1, 1, 2) * 3.0
+        if self.push and self.t % 100 == 50 and self.rng.random() < CFG['push_prob']: d.xfrc_applied[1, :2] = self.rng.uniform(-1, 1, 2) * CFG['push_force']
         for _ in range(DECIM): d.ctrl[self.act] = ctrl; mujoco.mj_step(self.m, d)
         d.xfrc_applied[:] = 0; self.t += 1
         zz = d.xmat[1].reshape(3, 3)[2, 2]; tilt = np.arccos(np.clip(zz, -1, 1)); z = d.qpos[2]; fallen = z < FALL_Z or tilt > FALL_TILT
         err = np.mean((d.qpos[self.qadr] - qr) ** 2)
-        r = 0.5 + 1.0 * np.exp(-60 * err) - 2.0 * tilt ** 2 - 0.02 * np.sum((a - self.prev) ** 2) - 0.002 * np.sum(d.actuator_force[self.act] ** 2) - 0.5 * d.qvel[1] ** 2
+        r = 0.5 + CFG['w_track'] * np.exp(-60 * err) - CFG['w_tilt'] * tilt ** 2 - CFG['w_smooth'] * np.sum((a - self.prev) ** 2) - CFG['w_torque'] * np.sum(d.actuator_force[self.act] ** 2) - 0.5 * d.qvel[1] ** 2
         self.prev = a.copy()
         return self._wobs(), float(-5.0 if fallen else r), bool(fallen), self.t >= self.EP, {}
