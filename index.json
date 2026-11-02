@@ -2,6 +2,34 @@
  "version": 1,
  "policies": [
   {
+   "task": "getup_back",
+   "name": "getup_back-20261102-1748",
+   "path": "getup_back/getup_back-20261102-1748",
+   "finished_at": "2026-11-02T17:48:58Z",
+   "minutes": 340,
+   "run_id": "41442177220",
+   "run_url": "https://github.com/arthurson/ubtech-alpha2-urdf/actions/runs/41442177220",
+   "timesteps": 21104336,
+   "eval_mean_len": 551.0,
+   "eval_max_len": 551,
+   "cfg": {
+    "push_force": 3.0,
+    "push_steps": 1.0,
+    "push_prob": 0.6,
+    "w_tilt": 2.0,
+    "w_pose": 0.2,
+    "w_smooth": 0.03,
+    "w_torque": 0.002,
+    "w_track": 0.2,
+    "w_up": 0.5,
+    "w_stand": 1.0
+   },
+   "seed": 0,
+   "success": 0.5,
+   "baseline_success": 0.9,
+   "id": "getup_back/getup_back-20261102-1748"
+  },
+  {
    "task": "getup_front",
    "name": "getup_front-20261102-1747",
    "path": "getup_front/getup_front-20261102-1747",
