@@ -92,7 +92,7 @@ Token 只會傳去 `api.github.com`；除非剔「記住」，否則唔會存入
 5. **重複**：用 `GITHUB_TOKEN` 自動 dispatch 下一個世代。
 
 **停止條件**：評分達 0.95、連續 `耐性` 個世代冇進步、到最多世代、全部候選失敗、你撳「■ 停止循環」（取消 run）、
-喺 `policies` branch 建立 `loop/<名稱>/STOP` 檔案，或者喺 Actions 頁停用 workflow。預設最多 10 個世代、每個 60 分鐘、3 個候選。
+喺 `policies` branch 建立 `loop/<名稱>/STOP` 檔案，或者喺 Actions 頁停用 workflow。預設最多 10 個世代、每個候選 330 分鐘（5.5 小時，GitHub 單個 job 上限 6 小時連安裝同評估，所以 330 係安全上限）、3 個候選。想先試流程可以將分鐘改成 30、最多世代改成 2。
 
 **狀態**：`policies/loop/<名稱>/state.json`（世代、champion、baseline、每個候選嘅參數同成績）；champion 嘅 checkpoint 喺 `loop/<名稱>/champion/`。
 同一個名稱再撳「開始」會由狀態繼續（候選數、分鐘等設定唔會改）；新名稱係新 loop（由頭練起）。

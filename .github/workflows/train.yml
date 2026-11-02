@@ -5,7 +5,7 @@ name: train-rl
 on:
   workflow_dispatch:
     inputs:
-      minutes: {description: 'Training wall-clock budget in minutes (job limit is 360)', default: '300'}
+      minutes: {description: 'Training wall-clock budget in minutes, 1-340 (a GitHub job is limited to 360 min including setup; 330 is the safe maximum)', default: '330'}
       task:    {description: 'stand (balance) or walk (imitate the official forward walk)', default: 'walk'}
       resume:  {description: 'Resume from the latest cached checkpoint (true/false)', default: 'true'}
       seed:    {description: 'Random seed', default: '0'}

@@ -11,7 +11,7 @@ on:
       loop_id:         {description: 'Loop name (letters, digits, - _ ; max 20). A new name starts a new loop, an existing one continues from its state', default: 'auto1'}
       task:            {description: 'stand or walk (only used when the loop is created)', default: 'walk'}
       candidates:      {description: 'Candidates trained in parallel per generation, 1-6 (only used when the loop is created)', default: '3'}
-      minutes:         {description: 'Training minutes per candidate per generation, 1-300 (only used when the loop is created)', default: '60'}
+      minutes:         {description: 'Training minutes per candidate per generation, 1-330 (a GitHub job is limited to 360 min including setup and evaluation; only used when the loop is created)', default: '330'}
       max_generations: {description: 'Stop after this many generations, 1-100 (only used when the loop is created)', default: '10'}
       patience:        {description: 'Stop after this many generations in a row without improvement (only used when the loop is created)', default: '3'}
       seed:            {description: 'Random seed (only used when the loop is created)', default: '0'}

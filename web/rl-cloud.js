@@ -35,7 +35,7 @@
     rc_stand: ['站穩抗推', 'Stand / balance'],
     rc_walk: ['步行（模仿官方前行）', 'Walk (imitate official forward walk)'],
     rc_minutes: ['時長（分鐘）', 'Minutes'],
-    rc_minutes_t: ['1–340。第一次試跑建議 30–60；之後用「接續」累積。', '1-340. Try 30-60 first; then keep going with Resume.'],
+    rc_minutes_t: ['1–340。GitHub 單個 job 最長 6 小時（連安裝同評估），所以 330（5.5 小時）係安全上限。想試流程可以先用 30。', '1-340. A GitHub job is limited to 6 h including setup and evaluation, so 330 (5.5 h) is the safe maximum. Use 30 to just try the flow.'],
     rc_resume: ['接續上次 checkpoint', 'Resume from the last checkpoint'],
     rc_adv: ['進階（唔識可以唔郁）', 'Advanced (leave as is if unsure)'],
     rc_reset: ['還原預設', 'Reset defaults'],
@@ -120,8 +120,8 @@
   function $(id) { return document.getElementById(id); }
 
   // ---- state (persisted in localStorage when available) ----
-  var ST = { repo: '', token: '', remember: false, task: 'walk', name: '', minutes: 60, resume: true, seed: 0, params: {}, runId: 0, t0: 0, task0: 'walk' };
-  var LOOP = { id: 'auto1', k: 3, min: 60, gens: 10, pat: 3 }, loopTimer = 0, loopChamp = '', IDX = [], CURVES = {}, chartTok = 0, NAME_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$/, PATH_RE = /^(stand|walk)(\/[A-Za-z0-9_-]{1,32})?$/;
+  var ST = { repo: '', token: '', remember: false, task: 'walk', name: '', minutes: 330, resume: true, seed: 0, params: {}, runId: 0, t0: 0, task0: 'walk' };
+  var LOOP = { id: 'auto1', k: 3, min: 330, gens: 10, pat: 3 }, loopTimer = 0, loopChamp = '', IDX = [], CURVES = {}, chartTok = 0, NAME_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$/, PATH_RE = /^(stand|walk)(\/[A-Za-z0-9_-]{1,32})?$/;
   var timer = 0, branchCache = {}, busy = false;
   function lsGet() { try { return JSON.parse(localStorage.getItem(LSK) || '{}'); } catch (e) { return {}; } }
   function lsSet() {
@@ -227,7 +227,7 @@
       '<div style="margin:3px 0;color:#666;font-size:11px" data-i18n="rc_loop_intro"></div>' +
       '<label ' + row + '><span ' + lab + ' data-i18n="rc_loop_id"></span><input id="rlcLoopId" type="text" maxlength="20" spellcheck="false" ' + inp + '></label>' +
       '<label ' + row + '><span ' + lab + ' data-i18n="rc_loop_k"></span><input id="rlcLoopK" type="number" min="1" max="6" step="1" ' + inp + '></label>' +
-      '<label ' + row + '><span ' + lab + ' data-i18n="rc_loop_min"></span><input id="rlcLoopMin" type="number" min="1" max="300" step="1" ' + inp + '></label>' +
+      '<label ' + row + '><span ' + lab + ' data-i18n="rc_loop_min"></span><input id="rlcLoopMin" type="number" min="1" max="330" step="1" ' + inp + '></label>' +
       '<label ' + row + '><span ' + lab + ' data-i18n="rc_loop_gens"></span><input id="rlcLoopGens" type="number" min="1" max="100" step="1" ' + inp + '></label>' +
       '<label ' + row + '><span ' + lab + ' data-i18n="rc_loop_pat"></span><input id="rlcLoopPat" type="number" min="1" max="20" step="1" ' + inp + '></label>' +
       '<div style="display:flex;flex-wrap:wrap;gap:4px;margin:4px 0">' +
@@ -402,7 +402,7 @@
   function writeLoop() { $('rlcLoopId').value = LOOP.id; $('rlcLoopK').value = LOOP.k; $('rlcLoopMin').value = LOOP.min; $('rlcLoopGens').value = LOOP.gens; $('rlcLoopPat').value = LOOP.pat; }
   function loopStat(txt, bad) { var e = $('rlcLoopStat'); if (!e) return; e.textContent = txt; e.style.color = bad ? '#c0392b' : ''; }
   function loopInputs() {
-    return { loop_id: LOOP.id, task: ST.task === 'stand' ? 'stand' : 'walk', candidates: String(Math.round(clampNum(LOOP.k, 1, 6, 3))), minutes: String(Math.round(clampNum(LOOP.min, 1, 300, 60))),
+    return { loop_id: LOOP.id, task: ST.task === 'stand' ? 'stand' : 'walk', candidates: String(Math.round(clampNum(LOOP.k, 1, 6, 3))), minutes: String(Math.round(clampNum(LOOP.min, 1, 330, 330))),
       max_generations: String(Math.round(clampNum(LOOP.gens, 1, 100, 10))), patience: String(Math.round(clampNum(LOOP.pat, 1, 20, 3))), seed: String(Math.max(0, Math.round(clampNum(ST.seed, 0, 1e9, 0)))) };
   }
   async function activeLoopRuns() {   // autoloop runs that are not finished (needs the API; works without a token for a public repo, within the 60 / h limit)
@@ -462,7 +462,7 @@
     if (!build()) return;
     addI18n(); var s = lsGet();
     ST.repo = s.repo || guessRepo(); ST.remember = !!s.remember; ST.token = s.token || '';
-    ST.task = s.task === 'stand' ? 'stand' : 'walk'; ST.name = s.name || ''; ST.minutes = s.minutes || 60; ST.resume = s.resume !== false; ST.seed = s.seed || 0; ST.params = s.params || {};
+    ST.task = s.task === 'stand' ? 'stand' : 'walk'; ST.name = s.name || ''; ST.minutes = s.minutes || 330; ST.resume = s.resume !== false; ST.seed = s.seed || 0; ST.params = s.params || {};
     ST.runId = s.runId || 0; ST.t0 = s.t0 || 0; ST.task0 = s.task0 || ST.task;
     if (typeof applyLang === 'function') applyLang();
     if (s.loop && typeof s.loop === 'object') { LOOP.id = String(s.loop.id || LOOP.id); LOOP.k = s.loop.k || LOOP.k; LOOP.min = s.loop.min || LOOP.min; LOOP.gens = s.loop.gens || LOOP.gens; LOOP.pat = s.loop.pat || LOOP.pat; }

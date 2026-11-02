@@ -143,7 +143,7 @@ def main():
         import re
         if not re.match(r'^[A-Za-z0-9][A-Za-z0-9_-]{0,%d}$' % (ID_RE_MAX - 1), a.loop_id): sys.exit('loop id: letters/digits/-/_, max %d chars' % ID_RE_MAX)
         st = load_state(a.state_dir)
-        if st is None: st = new_state(a.loop_id, a.task, max(1, min(6, a.k)), max(1, min(300, a.minutes)), max(1, min(100, a.max_gens)), max(1, a.patience), a.seed)
+        if st is None: st = new_state(a.loop_id, a.task, max(1, min(6, a.k)), max(1, min(330, a.minutes)), max(1, min(100, a.max_gens)), max(1, a.patience), a.seed)
         out = plan(st, stop_file=os.path.exists(os.path.join(a.state_dir, 'STOP'))); save_state(a.state_dir, st)
         print(json.dumps(out, indent=1))
         emit('stop', 'true' if out['stop'] else 'false'); emit('gen', out['gen']); emit('reason', out['reason'])
