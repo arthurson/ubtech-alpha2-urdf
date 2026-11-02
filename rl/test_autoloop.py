@@ -52,6 +52,25 @@ st = A.new_state('t3', 'walk', 1, 60, 6, 3, 0); d = A.review(st, res(st, [ev(pus
 st = A.new_state('t4', 'walk', 1, 60, 2, 3, 0); A.review(st, res(st, [ev(push=.5)]), BASE); d = A.review(st, res(st, [ev(push=.9)])); assert d['stop'] and d['reason'] == 'max generations reached'
 st = A.new_state('t5', 'walk', 2, 60, 5, 3, 0); d = A.review(st, res(st, [None, None])); assert d['stop'] and d['reason'] == 'all candidates failed' and A.plan(st)['stop']
 st = A.new_state('t6', 'walk', 2, 60, 5, 3, 0); assert A.plan(st, stop_file=True)['stop'] and st['stopped']
+
+# --- get-up tasks: scoring, planned candidates, curriculum
+def gev(success=1.0, tilt=8.0, z=0.215, push=0.5, task='getup_front'):
+    F = [8, 12, 16, 20, 26]; return dict(task=task, clean=dict(survive=success, tilt_mean=tilt, tilt_max=20, x_mean=0.0, x_std=0, y_abs=0, torque=.1, n=8, z_final=z, stand_time=9.0),
+                                          push=dict(forces=F, steps=5, survive=[push] * 5, mean=push, f50=f50(F, [push] * 5)))
+assert score(gev(0, 90, 0.06, 0)) < 0.05 and score(gev(1, 0, 0.22, 1)) > 0.99, 'absolute get-up score 0..1'
+assert score(gev(success=0, tilt=40, z=0.12, push=0)) > 0, 'partial credit for getting partly up'
+assert score(gev(1.0, push=0.5)) < score(gev(1.0, push=0.9)) and score(gev(0.5)) < score(gev(1.0))
+for t in ('getup_back', 'getup_front'):
+    stg = A.new_state('g_' + t, t, 3, 5, 2, 2, 1); pg = A.plan(stg)
+    for c in pg['candidates']:
+        cfg = json.loads(c['cfg']); assert set(cfg) == set(A.TASK_KEYS[t]) and 'w_tilt' not in cfg and 'w_stand' in cfg
+        for k, v in cfg.items(): lo, hi, _ = A.TUNE[k]; assert lo <= v <= hi, (k, v)
+    d = A.review(stg, res(stg, [gev(task=t, success=.5), gev(task=t, success=.9), None])); assert d['accepted'] and stg['champion']['id'] == 'g0c1'
+    assert not A.plan(stg)['stop']
+cg = {k: A.START[k] for k in A.TASK_KEYS['getup_front']}
+c = A.curriculum(cg, gev(success=0.5), 'getup_front'); assert c['w_stand'] > cg['w_stand'] and c['push_force'] == cg['push_force']      # not reliable yet: reward standing more
+c = A.curriculum(cg, gev(success=1.0, push=0.9), 'getup_front'); assert c['push_force'] > cg['push_force']
+c = A.curriculum(cg, gev(success=1.0, push=0.3), 'getup_front'); assert c['w_stand'] > cg['w_stand'] and set(c) == set(cg)      # reliable but weak against pushes (used to raise KeyError: w_tilt)                               # reliable: ask for push robustness
 # --- CLI end to end (plan -> fake candidate artifacts -> select)
 T = tempfile.mkdtemp(); S = T + '/state'; C = T + '/cands'; W = T + '/winner'; me = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'autoloop.py')
 out = subprocess.run([sys.executable, me, 'plan', '--state-dir', S, '--loop-id', 'cli', '--task', 'stand', '--k', '3', '--minutes', '5', '--max-gens', '3', '--patience', '2', '--seed', '1'],

@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       loop_id:         {description: 'Loop name (letters, digits, - _ ; max 20). A new name starts a new loop, an existing one continues from its state', default: 'auto1'}
-      task:            {description: 'stand or walk (only used when the loop is created)', default: 'walk'}
+      task:            {description: 'stand, walk, getup_back or getup_front (only used when the loop is created)', default: 'walk'}
       candidates:      {description: 'Candidates trained in parallel per generation, 1-6 (only used when the loop is created)', default: '3'}
       minutes:         {description: 'Training minutes per candidate per generation, 1-330 (a GitHub job is limited to 360 min including setup and evaluation; only used when the loop is created)', default: '330'}
       max_generations: {description: 'Stop after this many generations, 1-100 (only used when the loop is created)', default: '10'}
@@ -44,7 +44,7 @@ jobs:
       - name: Validate inputs
         run: |
           [[ "$LOOP_ID" =~ ^[A-Za-z0-9][A-Za-z0-9_-]{0,19}$ ]] || { echo "loop_id: letters/digits/-/_, max 20"; exit 1; }
-          case "$IN_TASK" in stand|walk) ;; *) echo "task must be stand or walk"; exit 1;; esac
+          case "$IN_TASK" in stand|walk|getup_back|getup_front) ;; *) echo "task must be stand, walk, getup_back or getup_front"; exit 1;; esac
           for v in IN_K IN_MINUTES IN_MAXGENS IN_PATIENCE IN_SEED; do [[ "${!v}" =~ ^[0-9]+$ ]] || { echo "$v must be a non-negative integer"; exit 1; }; done
       - uses: actions/checkout@v4
       - name: Plan the next generation

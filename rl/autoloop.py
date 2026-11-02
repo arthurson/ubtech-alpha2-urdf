@@ -22,11 +22,12 @@ MARGIN, TARGET, SIGMA0, SIGMA_MIN = 0.01, 0.95, 0.35, 0.1
 TUNE = {   # key: (lo, hi, kind)   kind: log = multiplicative noise, lin = additive, int = rounded multiplicative
     'push_force': (4.0, 24.0, 'log'), 'push_steps': (1, 10, 'int'), 'push_prob': (0.3, 1.0, 'lin'),
     'w_tilt': (0.5, 8.0, 'log'), 'w_smooth': (0.003, 0.3, 'log'), 'w_torque': (0.0003, 0.02, 'log'),
-    'w_pose': (0.02, 1.0, 'log'), 'w_track': (0.3, 3.0, 'log'),
+    'w_pose': (0.02, 1.0, 'log'), 'w_track': (0.3, 3.0, 'log'), 'w_up': (0.1, 3.0, 'log'), 'w_stand': (0.3, 6.0, 'log'),
 }
 TASK_KEYS = {'stand': ['push_force', 'push_steps', 'push_prob', 'w_tilt', 'w_smooth', 'w_torque', 'w_pose'],
              'walk': ['push_force', 'push_steps', 'push_prob', 'w_tilt', 'w_smooth', 'w_torque', 'w_track']}
-START = {'push_force': 6.0, 'push_steps': 5, 'push_prob': 0.7, 'w_tilt': 2.0, 'w_smooth': 0.02, 'w_torque': 0.002, 'w_pose': 0.1, 'w_track': 1.0}
+for _t in ('getup_back', 'getup_front'): TASK_KEYS[_t] = ['push_force', 'push_steps', 'push_prob', 'w_up', 'w_stand', 'w_track', 'w_smooth', 'w_torque']
+START = {'push_force': 6.0, 'push_steps': 5, 'push_prob': 0.7, 'w_tilt': 2.0, 'w_smooth': 0.02, 'w_torque': 0.002, 'w_pose': 0.1, 'w_track': 1.0, 'w_up': 0.5, 'w_stand': 1.0}
 ID_RE_MAX = 20
 
 
@@ -57,8 +58,13 @@ def mutate(cfg, keys, rng, sigma):
     return c
 
 
-def curriculum(cfg, champ_eval):
+def curriculum(cfg, champ_eval, task='walk'):
     c = dict(cfg); pm = ((champ_eval or {}).get('push') or {}).get('mean', 0)
+    if task.startswith('getup'):   # get-up: first make it stand up reliably, then ask for robustness against pushes
+        if ((champ_eval or {}).get('clean') or {}).get('survive', 0) < 0.9: c['w_stand'] = clamp('w_stand', cfg['w_stand'] * 1.4)
+        elif pm >= 0.7: c['push_force'] = clamp('push_force', cfg['push_force'] * 1.35); c['push_steps'] = clamp('push_steps', cfg['push_steps'] + 1)
+        else: c['w_stand'] = clamp('w_stand', cfg['w_stand'] * 1.2)
+        return c
     if pm >= 0.7: c['push_force'] = clamp('push_force', cfg['push_force'] * 1.35); c['push_steps'] = clamp('push_steps', cfg['push_steps'] + 1)   # it copes: push harder
     else: c['w_tilt'] = clamp('w_tilt', cfg['w_tilt'] * 1.4)                                                                                         # it does not: care more about staying upright
     return c
@@ -72,7 +78,7 @@ def plan(state, stop_file=False):
     keys = TASK_KEYS[state['task']]; rng = random.Random('%s-%d' % (state['seed'], state['gen']))
     champ = state['champion']; base = {k: START[k] for k in keys} if not champ else {k: clamp(k, champ['cfg'].get(k, START[k])) for k in keys}
     cfgs = [base]                                                   # 0: hold
-    if state['k'] > 1: cfgs.append(curriculum(base, champ['eval'] if champ else None) if champ else mutate(base, keys, rng, state['sigma']))
+    if state['k'] > 1: cfgs.append(curriculum(base, champ['eval'] if champ else None, state['task']) if champ else mutate(base, keys, rng, state['sigma']))
     while len(cfgs) < state['k']: cfgs.append(mutate(base, keys, rng, state['sigma']))
     cands = [dict(id='g%dc%d' % (state['gen'], i), cand=i, seed=int(state['seed']) + state['gen'] * 100 + i, cfg=json.dumps(c, separators=(',', ':')),
                   baseline=(i == 0 and state['baseline'] is None)) for i, c in enumerate(cfgs)]
@@ -134,7 +140,7 @@ def rj(path):
 
 def main():
     ap = argparse.ArgumentParser(); sub = ap.add_subparsers(dest='cmd', required=True)
-    p = sub.add_parser('plan'); p.add_argument('--state-dir', required=True); p.add_argument('--loop-id', required=True); p.add_argument('--task', default='walk', choices=['stand', 'walk'])
+    p = sub.add_parser('plan'); p.add_argument('--state-dir', required=True); p.add_argument('--loop-id', required=True); p.add_argument('--task', default='walk', choices=['stand', 'walk', 'getup_back', 'getup_front'])
     p.add_argument('--k', type=int, default=3); p.add_argument('--minutes', type=int, default=60); p.add_argument('--max-gens', type=int, default=10)
     p.add_argument('--patience', type=int, default=3); p.add_argument('--seed', type=int, default=0)
     s = sub.add_parser('select'); s.add_argument('--state-dir', required=True); s.add_argument('--cands-dir', required=True); s.add_argument('--winner-dir', required=True)

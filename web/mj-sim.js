@@ -48,7 +48,7 @@
     mj_push: ['推', 'Push'],
     mj_push_t: ['隨機方向推機身一下（3 N，一個控制步）', 'Random 3 N push on the base for one control step'],
     mj_pol_ok: ['policy 已載入', 'policy loaded'],
-    mj_ref_need: ['呢個行路 policy 要成個 ref.json（同 policy.onnx 一齊揀）', 'This walking policy needs its ref.json (select it together with policy.onnx)'],
+    mj_ref_need: ['呢個 policy（步行／起身）要成個 ref.json（同 policy.onnx 一齊揀）', 'This policy (walk / get-up) needs its ref.json (select it together with policy.onnx)'],
     mj_pol_need: ['請先載入 .onnx', 'Load a .onnx first'],
     mj_note: ['開物理後：IK 手／腳點拖到嘅係舵機目標；骨盆綠點同「錨定」冇作用；FrontStand／BackStand 由企姿開始（唔係瞓低）',
       'In physics mode: IK dots drag servo targets; the pelvis dot and Anchor have no effect; FrontStand/BackStand start upright (not lying)']
@@ -251,11 +251,11 @@
       if (st) st.textContent = T('mj_loading'); await loadOrt();
       var sess = await window.ort.InferenceSession.create(new Uint8Array(await rd(file, 'buf')), { executionProviders: ['wasm'] });
       var md = sess.inputMetadata, nobs = md && md[0] && md[0].shape && md[0].shape[1] > 0 ? md[0].shape[1] : 43, ref = null;
-      if (nobs === 65) {   // walking policy: needs the reference trajectory it was trained against
+      if (nobs === 65) {   // walking / get-up policy: needs the reference trajectory it was trained against
         if (rj) ref = JSON.parse(await rd(rj));
         else if (location.protocol === 'file:' && LOCAL.ref) ref = JSON.parse(await rd(LOCAL.ref));
         else if (location.protocol !== 'file:') { var r = await fetch(new URL('../rl/ref/forward.json', BASE).href); if (r.ok) ref = await r.json(); }
-        if (!ref || !ref.loop) throw new Error(T('mj_ref_need'));
+        if (!ref || (!ref.loop && !ref.getup)) throw new Error(T('mj_ref_need'));
       }
       POL.sess = sess; POL.nobs = nobs; POL.ref = ref;
       var c = $('mjPolOn'); if (c) c.disabled = false; polBtn(); if (st) st.textContent = T('mj_pol_ok') + ': ' + file.name + ' (obs ' + nobs + ')';
@@ -266,16 +266,24 @@
     var qp = d.qpos; qp[0] = 0; qp[1] = 0; qp[2] = 0.2206 + 0.0015; qp[3] = 1; qp[4] = 0; qp[5] = 0; qp[6] = 0;
     var q00 = POL.nobs === 65 ? POL.ref.q[0] : S.q0; POL.k = 0;
     for (var k = 0; k < 20; k++) { qp[S.qadr[k]] = q00[k]; d.ctrl[S.act[k]] = q00[k]; POL.prev[k] = 0; }
-    mj.mj_forward(m, d); POL.acc = 0; POL.pending = null; S.simT = 0; S.idle = false; S.still = 0;
+    if (POL.nobs === 65 && POL.ref.getup) {   // get-up: lie on the back ('back', face up) or the front ('front', face down), settle 1 s holding the first reference pose
+      var h = Math.SQRT1_2, gq = POL.ref.getup === 'front' ? [h, 0, h, 0] : [h, 0, -h, 0];
+      qp[0] = 0; qp[1] = 0; qp[2] = 0.10; for (k = 0; k < 4; k++) qp[3 + k] = gq[k];
+      mj.mj_forward(m, d);
+      for (var sn = 0; sn < 50 * DECIM; sn++) { for (k = 0; k < 20; k++) d.ctrl[S.act[k]] = q00[k]; mj.mj_step(m, d); }
+    } else mj.mj_forward(m, d);
+    POL.acc = 0; POL.pending = null; S.simT = 0; S.idle = false; S.still = 0;
   }
   async function polControl() {   // one 0.02 s control step: obs(43) -> ONNX -> ctrl -> 10 physics steps
     var mj = S.mj, m = S.m, d = S.d, b = S.bid.base_link, qp = d.qpos, xm = d.xmat, o = new Float32Array(POL.nobs), walk = POL.nobs === 65, qr = null;
     for (var k = 0; k < 20; k++) { o[k] = qp[S.qadr[k]] - S.q0[k]; o[20 + k] = POL.prev[k]; }
     o[40] = -xm[9 * b + 6]; o[41] = -xm[9 * b + 7]; o[42] = -xm[9 * b + 8];   // gravity direction in the base frame (R^T * [0,0,-1])
-    if (walk) {   // same reference / phase features as rl/alpha2_env.py WalkEnv
-      var Rf = POL.ref, lp = Rf.loop, kk = POL.k; qr = kk < lp[1] ? Rf.q[kk] : Rf.q[lp[0] + (kk - lp[0]) % (lp[1] - lp[0])];
+    if (walk) {   // same reference / phase features as rl/alpha2_env.py WalkEnv (gait phase) / GetUpEnv (progress, reference over)
+      var Rf = POL.ref, lp = Rf.loop, kk = POL.k;
+      if (Rf.getup) { var Tn = Rf.q.length; qr = Rf.q[Math.min(kk, Tn - 1)]; o[63] = Math.min(kk / Tn, 1); o[64] = kk >= Tn ? 1 : 0; }
+      else qr = kk < lp[1] ? Rf.q[kk] : Rf.q[lp[0] + (kk - lp[0]) % (lp[1] - lp[0])];
       for (k = 0; k < 20; k++) o[43 + k] = qr[k] - S.q0[k];
-      if (kk >= lp[0]) { var ph = 2 * Math.PI * (kk - lp[0]) / (lp[1] - lp[0]); o[63] = Math.sin(ph); o[64] = Math.cos(ph); }
+      if (!Rf.getup && kk >= lp[0]) { var ph = 2 * Math.PI * (kk - lp[0]) / (lp[1] - lp[0]); o[63] = Math.sin(ph); o[64] = Math.cos(ph); }
     }
     var out = await POL.sess.run({ obs: new window.ort.Tensor('float32', o, [1, POL.nobs]) }), a = out.action.data;
     POL.obs = o; POL.act = Array.prototype.slice.call(a);
@@ -307,7 +315,7 @@
   };
   S.polSteps = async function (n) { for (var i = 0; i < n; i++) await polControl(); applyScene(); };   // deterministic stepping (tests / scripting)
   S.push = function () { var a = Math.random() * 2 * Math.PI; POL.pending = [3 * Math.cos(a), 3 * Math.sin(a)]; };
-  S.pol = POL;
+  S.pol = POL; S.polReset = polReset; S.polControl = polControl;   // (also used by the node parity test)
   function box(show) { var b = $('mjbox'); if (b) b.style.display = show ? 'flex' : 'none'; var t = $('mjBtn'); if (t) t.classList.toggle('on', !!show); }
   function redraw() { if (window.TRAJ && !manualAngles) drawAt(pauseMs); else poseMesh(manualAngles || lastAngles); }
   S.toggle = function () {

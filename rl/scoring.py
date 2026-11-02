@@ -20,6 +20,11 @@ def score(m, base=None):
     dist    (weight .2, walk only): clip(x_mean / baseline x_mean - 0.5, 0, 1)   (1.5x the baseline distance -> 1.0, same -> 0.5)
     `base` = evaluation of the zero-action baseline (same task); without it fixed constants (10 deg, 0.27 m) are used."""
     c, p = m['clean'], m['push']
+    if str(m.get('task', '')).startswith('getup'):
+        # get-up tasks: success = standing (tilt < 20 deg, torso > 0.19 m) during the last 0.5 s.  No baseline needed (absolute measure).
+        # 0.5 success rate + 0.2 progress (final tilt / height, partial credit when it does not make it) + 0.3 push survival after standing
+        prog = 0.5 * clip(1 - c['tilt_mean'] / 90.0, 0, 1) + 0.5 * clip(c.get('z_final', 0) / 0.2, 0, 1)
+        return float(0.5 * c['survive'] + 0.2 * prog + 0.3 * p['mean'])
     if c['survive'] < 0.95: return 0.0
     bt = ((base or {}).get('clean') or {}).get('tilt_mean') or 10.0
     parts = [(0.5, p['mean']), (0.3, clip(1.5 - c['tilt_mean'] / bt, 0, 1))]

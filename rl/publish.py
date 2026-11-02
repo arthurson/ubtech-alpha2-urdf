@@ -10,7 +10,7 @@ import argparse, json, os, re, shutil, sys, time
 
 NAME_RE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$')
 KEEP = ('task', 'name', 'path', 'finished_at', 'minutes', 'run_id', 'run_url', 'timesteps', 'eval_mean_len', 'eval_max_len', 'baseline_mean_len', 'cfg', 'seed',
-        'score', 'push_mean', 'push_f50', 'tilt_mean', 'x_mean', 'loop', 'gen')   # the last group comes from rl/autoloop.py
+        'score', 'push_mean', 'push_f50', 'tilt_mean', 'x_mean', 'loop', 'gen', 'success', 'baseline_success')   # the last group comes from rl/autoloop.py
 
 
 def entry_from(meta, task, name):
@@ -26,7 +26,7 @@ def load_json(path, default):
 
 
 def publish(dest, out, task, name, run_id='', run_url='', minutes=0, now=None):
-    if task not in ('stand', 'walk'): raise SystemExit('task must be stand or walk')
+    if task not in ('stand', 'walk', 'getup_back', 'getup_front'): raise SystemExit('task must be stand, walk, getup_back or getup_front')
     now = now or time.gmtime()
     name = (name or '').strip() or '%s-%s' % (task, time.strftime('%Y%m%d-%H%M', now))
     if not NAME_RE.match(name) or name == 'legacy': raise SystemExit('name must match %s (and not be "legacy")' % NAME_RE.pattern)

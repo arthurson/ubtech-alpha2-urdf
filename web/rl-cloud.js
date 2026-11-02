@@ -34,6 +34,8 @@
     rc_task: ['任務', 'Task'],
     rc_stand: ['站穩抗推', 'Stand / balance'],
     rc_walk: ['步行（模仿官方前行）', 'Walk (imitate official forward walk)'],
+    rc_getup_back: ['起身（仰躺・頭向上，官方 BackStand）', 'Get up (on the back, face up; official BackStand)'],
+    rc_getup_front: ['起身（趴著・頭向下，官方 FrontStand）', 'Get up (on the front, face down; official FrontStand)'],
     rc_minutes: ['時長（分鐘）', 'Minutes'],
     rc_minutes_t: ['1–340。GitHub 單個 job 最長 6 小時（連安裝同評估），所以 330（5.5 小時）係安全上限。想試流程可以先用 30。', '1-340. A GitHub job is limited to 6 h including setup and evaluation, so 330 (5.5 h) is the safe maximum. Use 30 to just try the flow.'],
     rc_resume: ['接續上次 checkpoint', 'Resume from the last checkpoint'],
@@ -79,6 +81,7 @@
     th_name: ['名稱', 'name'], th_task: ['任務', 'task'], th_min: ['分鐘', 'min'], th_steps: ['步數', 'steps'],
     th_eval: ['評估', 'eval'], th_base: ['基準', 'base'], th_cfg: ['參數（唔同預設）', 'params (non-default)'],
     rc_default: ['預設', 'default'],
+    rc_success: ['起身成功率', 'get-up success'],
     rc_score: ['評分', 'score'],
     th_score: ['評分', 'score'], th_gen: ['世代', 'gen'], th_push: ['抗推', 'push'], th_tilt: ['傾斜°', 'tilt°'], th_x: ['距離m', 'x m'], th_ok: ['採用', 'kept'],
     rc_loop: ['♻ 自動循環（訓練→評估→調整→再訓練）', '♻ Auto loop (train → evaluate → adjust → train again)'],
@@ -121,7 +124,9 @@
 
   // ---- state (persisted in localStorage when available) ----
   var ST = { repo: '', token: '', remember: false, task: 'walk', name: '', minutes: 330, resume: true, seed: 0, params: {}, runId: 0, t0: 0, task0: 'walk' };
-  var LOOP = { id: 'auto1', k: 3, min: 330, gens: 10, pat: 3 }, loopTimer = 0, loopChamp = '', IDX = [], CURVES = {}, chartTok = 0, NAME_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$/, PATH_RE = /^(stand|walk)(\/[A-Za-z0-9_-]{1,32})?$/;
+  var TASKS = ['stand', 'walk', 'getup_back', 'getup_front'];
+  function taskOf(t) { return TASKS.indexOf(t) >= 0 ? t : 'walk'; }
+  var LOOP = { id: 'auto1', k: 3, min: 330, gens: 10, pat: 3 }, loopTimer = 0, loopChamp = '', IDX = [], CURVES = {}, chartTok = 0, NAME_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$/, PATH_RE = /^(stand|walk|getup_back|getup_front)(\/[A-Za-z0-9_-]{1,32})?$/;
   var timer = 0, branchCache = {}, busy = false;
   function lsGet() { try { return JSON.parse(localStorage.getItem(LSK) || '{}'); } catch (e) { return {}; } }
   function lsSet() {
@@ -146,7 +151,7 @@
       v = clampNum(v, p.min, p.max, p.def); if (Math.abs(v - p.def) > 1e-12) cfg[p.k] = v;
     });
     return {
-      task: s.task === 'stand' ? 'stand' : 'walk',
+      task: taskOf(s.task),
       minutes: String(Math.round(clampNum(s.minutes, 1, 340, 60))),
       resume: s.resume ? 'true' : 'false',
       seed: String(Math.max(0, Math.round(clampNum(s.seed, 0, 1e9, 0)))),
@@ -201,7 +206,7 @@
       '<label ' + row + '><span ' + lab + ' data-i18n="rc_token" data-i18n-title="rc_token_t"></span><input id="rlcToken" type="password" autocomplete="off" spellcheck="false" ' + inp + '></label>' +
       '<div ' + row + '><span ' + lab + '></span><label style="display:flex;align-items:center;gap:3px"><input id="rlcRem" type="checkbox" style="margin:0"><span data-i18n="rc_remember" data-i18n-title="rc_remember_t"></span></label>' +
       '<a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener" style="margin-left:auto" data-i18n="rc_new_token"></a></div>' +
-      '<label ' + row + '><span ' + lab + ' data-i18n="rc_task"></span><select id="rlcTask" ' + inp + '><option value="stand" data-i18n="rc_stand"></option><option value="walk" data-i18n="rc_walk"></option></select></label>' +
+      '<label ' + row + '><span ' + lab + ' data-i18n="rc_task"></span><select id="rlcTask" ' + inp + '><option value="stand" data-i18n="rc_stand"></option><option value="walk" data-i18n="rc_walk"></option><option value="getup_back" data-i18n="rc_getup_back"></option><option value="getup_front" data-i18n="rc_getup_front"></option></select></label>' +
       '<label ' + row + '><span ' + lab + ' data-i18n="rc_name" data-i18n-title="rc_name_t"></span><input id="rlcName" type="text" maxlength="32" spellcheck="false" placeholder="auto" ' + inp + '></label>' +
       '<label ' + row + '><span ' + lab + ' data-i18n="rc_minutes" data-i18n-title="rc_minutes_t"></span><input id="rlcMin" type="number" min="1" max="340" step="1" ' + inp + '></label>' +
       '<label style="display:flex;align-items:center;gap:4px;margin:3px 0"><input id="rlcResume" type="checkbox" style="margin:0"><span data-i18n="rc_resume"></span></label>' +
@@ -302,9 +307,9 @@
     if (r.status === 404) return null; if (!r.ok) throw new Error(tt('rc_ehttp') + ' ' + r.status);
     return r.json();
   }
-  function validEntry(e) { return e && typeof e === 'object' && typeof e.path === 'string' && PATH_RE.test(e.path) && (e.task === 'stand' || e.task === 'walk'); }
+  function validEntry(e) { return e && typeof e === 'object' && typeof e.path === 'string' && PATH_RE.test(e.path) && TASKS.indexOf(e.task) >= 0; }
   function entryById(id) { for (var i = 0; i < IDX.length; i++) if (IDX[i].path === id) return IDX[i]; return null; }
-  function evalTxt(e) { if (typeof e.score === 'number') return tt('rc_score') + ' ' + e.score.toFixed(2); return typeof e.eval_mean_len === 'number' ? Math.round(e.eval_mean_len) + '/' + (e.eval_max_len || '?') : '-'; }
+  function evalTxt(e) { if (typeof e.score === 'number') return tt('rc_score') + ' ' + e.score.toFixed(2); if (typeof e.success === 'number') return tt('rc_success') + ' ' + Math.round(100 * e.success) + '%'; return typeof e.eval_mean_len === 'number' ? Math.round(e.eval_mean_len) + '/' + (e.eval_max_len || '?') : '-'; }
   function cfgTxt(e) { var k = Object.keys(e.cfg || {}); return k.length ? k.map(function (x) { return x + '=' + e.cfg[x]; }).join(', ') : tt('rc_default'); }
   function label(e) { return e.task + ' · ' + (e.name || e.path) + ' · ' + evalTxt(e) + (e.finished_at ? ' · ' + String(e.finished_at).slice(0, 10) : ''); }
   function fillSelect(sel, withNone, keep) {
@@ -338,7 +343,7 @@
     t.appendChild(hr);
     IDX.forEach(function (e) {
       var tr = document.createElement('tr'); tr.style.cursor = 'pointer'; if (e.path === sel) tr.style.fontWeight = 'bold';
-      [e.name || e.path, e.task, e.minutes != null ? e.minutes : '-', e.timesteps != null ? (e.timesteps / 1e6).toFixed(2) + 'M' : '-', typeof e.eval_mean_len === 'number' ? Math.round(e.eval_mean_len) + '/' + (e.eval_max_len || '?') : '-', typeof e.score === 'number' ? e.score.toFixed(3) : '-', typeof e.baseline_mean_len === 'number' ? Math.round(e.baseline_mean_len) : '-', cfgTxt(e)].forEach(function (v) {
+      [e.name || e.path, e.task, e.minutes != null ? e.minutes : '-', e.timesteps != null ? (e.timesteps / 1e6).toFixed(2) + 'M' : '-', typeof e.success === 'number' ? tt('rc_success') + ' ' + Math.round(100 * e.success) + '%' : typeof e.eval_mean_len === 'number' ? Math.round(e.eval_mean_len) + '/' + (e.eval_max_len || '?') : '-', typeof e.score === 'number' ? e.score.toFixed(3) : '-', typeof e.baseline_mean_len === 'number' ? Math.round(e.baseline_mean_len) : '-', cfgTxt(e)].forEach(function (v) {
         var td = document.createElement('td'); td.textContent = String(v); td.style.cssText = 'padding:1px 3px;border-bottom:1px solid rgba(128,128,128,.3)'; tr.appendChild(td);
       });
       tr.onclick = function () { $('rlcSel').value = e.path; renderTable(); drawChart(); };
@@ -386,11 +391,12 @@
       stat(tt('rc_loading'));
       var pr = await fetch(base + 'policy.onnx' + bust); if (!pr.ok) throw new Error(tt('rc_ehttp') + ' ' + pr.status);
       var files = [new File([await pr.arrayBuffer()], 'policy.onnx')];
-      if (e.task === 'walk') { var rr = await fetch(base + 'ref.json' + bust); if (!rr.ok) throw new Error(tt('rc_ehttp') + ' ' + rr.status); files.push(new File([await rr.text()], 'ref.json')); }
+      if (e.task !== 'stand') { var rr = await fetch(base + 'ref.json' + bust);   // walk / get-up policies need the reference they were trained against
+        if (!rr.ok) throw new Error(tt('rc_ehttp') + ' ' + rr.status); files.push(new File([await rr.text()], 'ref.json')); }
       if (!window.MJSIM) throw new Error('MJSIM not available');
       if (!MJSIM.on) MJSIM.toggle();   // the policy runs in the physics mode
       await MJSIM.loadPolicy(files);
-      if (MJSIM.pol && MJSIM.pol.sess) stat(tt('rc_loaded') + ' ' + (e.name || e.path) + ' (' + e.task + ') · ' + (typeof e.score === 'number' ? evalTxt(e) : tt('rc_eval') + ' ' + evalTxt(e) + ' ' + tt('rc_steps')) + (e.finished_at ? ' · ' + e.finished_at : ''));
+      if (MJSIM.pol && MJSIM.pol.sess) stat(tt('rc_loaded') + ' ' + (e.name || e.path) + ' (' + e.task + ') · ' + (typeof e.score === 'number' || typeof e.success === 'number' ? evalTxt(e) : tt('rc_eval') + ' ' + evalTxt(e) + ' ' + tt('rc_steps')) + (e.finished_at ? ' · ' + e.finished_at : ''));
       if (e.run_url) setLink(e.run_url);
     } catch (x) { stat(String(x.message || x), true); }
   }
@@ -402,7 +408,7 @@
   function writeLoop() { $('rlcLoopId').value = LOOP.id; $('rlcLoopK').value = LOOP.k; $('rlcLoopMin').value = LOOP.min; $('rlcLoopGens').value = LOOP.gens; $('rlcLoopPat').value = LOOP.pat; }
   function loopStat(txt, bad) { var e = $('rlcLoopStat'); if (!e) return; e.textContent = txt; e.style.color = bad ? '#c0392b' : ''; }
   function loopInputs() {
-    return { loop_id: LOOP.id, task: ST.task === 'stand' ? 'stand' : 'walk', candidates: String(Math.round(clampNum(LOOP.k, 1, 6, 3))), minutes: String(Math.round(clampNum(LOOP.min, 1, 330, 330))),
+    return { loop_id: LOOP.id, task: taskOf(ST.task), candidates: String(Math.round(clampNum(LOOP.k, 1, 6, 3))), minutes: String(Math.round(clampNum(LOOP.min, 1, 330, 330))),
       max_generations: String(Math.round(clampNum(LOOP.gens, 1, 100, 10))), patience: String(Math.round(clampNum(LOOP.pat, 1, 20, 3))), seed: String(Math.max(0, Math.round(clampNum(ST.seed, 0, 1e9, 0)))) };
   }
   async function activeLoopRuns() {   // autoloop runs that are not finished (needs the API; works without a token for a public repo, within the 60 / h limit)
@@ -462,7 +468,7 @@
     if (!build()) return;
     addI18n(); var s = lsGet();
     ST.repo = s.repo || guessRepo(); ST.remember = !!s.remember; ST.token = s.token || '';
-    ST.task = s.task === 'stand' ? 'stand' : 'walk'; ST.name = s.name || ''; ST.minutes = s.minutes || 330; ST.resume = s.resume !== false; ST.seed = s.seed || 0; ST.params = s.params || {};
+    ST.task = taskOf(s.task); ST.name = s.name || ''; ST.minutes = s.minutes || 330; ST.resume = s.resume !== false; ST.seed = s.seed || 0; ST.params = s.params || {};
     ST.runId = s.runId || 0; ST.t0 = s.t0 || 0; ST.task0 = s.task0 || ST.task;
     if (typeof applyLang === 'function') applyLang();
     if (s.loop && typeof s.loop === 'object') { LOOP.id = String(s.loop.id || LOOP.id); LOOP.k = s.loop.k || LOOP.k; LOOP.min = s.loop.min || LOOP.min; LOOP.gens = s.loop.gens || LOOP.gens; LOOP.pat = s.loop.pat || LOOP.pat; }
