@@ -2,6 +2,29 @@
  "version": 1,
  "policies": [
   {
+   "task": "stand",
+   "name": "stand-20261102-0124",
+   "path": "stand/stand-20261102-0124",
+   "finished_at": "2026-11-02T01:24:26Z",
+   "minutes": 340,
+   "run_id": "41343138490",
+   "run_url": "https://github.com/arthurson/ubtech-alpha2-urdf/actions/runs/41343138490",
+   "timesteps": 31193004,
+   "eval_mean_len": 500.0,
+   "eval_max_len": 500,
+   "cfg": {
+    "push_force": 3.0,
+    "push_prob": 0.6,
+    "w_tilt": 2.0,
+    "w_pose": 0.2,
+    "w_smooth": 0.03,
+    "w_torque": 0.002,
+    "w_track": 0.2
+   },
+   "seed": 0,
+   "id": "stand/stand-20261102-0124"
+  },
+  {
    "task": "walk",
    "name": "walk-20261102-0123",
    "path": "walk/walk-20261102-0123",
@@ -48,6 +71,29 @@
    "id": "walk/legacy",
    "name": "legacy",
    "path": "walk/legacy"
+  },
+  {
+   "task": "stand",
+   "finished_at": "2026-11-02T00:18:20Z",
+   "minutes": 340,
+   "run_id": "41337558597",
+   "run_url": "https://github.com/arthurson/ubtech-alpha2-urdf/actions/runs/41337558597",
+   "timesteps": 32212524,
+   "eval_mean_len": 500.0,
+   "eval_max_len": 500,
+   "cfg": {
+    "push_force": 3.0,
+    "push_prob": 0.6,
+    "w_tilt": 2.0,
+    "w_pose": 0.2,
+    "w_smooth": 0.03,
+    "w_torque": 0.002,
+    "w_track": 0.2
+   },
+   "seed": 0,
+   "id": "stand/legacy",
+   "name": "legacy",
+   "path": "stand/legacy"
   }
  ]
 }
