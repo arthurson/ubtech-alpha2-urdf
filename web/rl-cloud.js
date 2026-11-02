@@ -11,7 +11,8 @@
   'use strict';
   var API = 'https://api.github.com', LSK = 'rlcloud.v1';
   var PARAMS = [   // keys / ranges must equal _DEF / _LIM in rl/alpha2_env.py (values are clamped there as well)
-    { k: 'push_force', def: 3, min: 0, max: 10, step: 0.5 },
+    { k: 'push_force', def: 3, min: 0, max: 80, step: 0.5 },
+    { k: 'push_steps', def: 1, min: 1, max: 25, step: 1 },
     { k: 'push_prob', def: 0.7, min: 0, max: 1, step: 0.05 },
     { k: 'w_tilt', def: 2, min: 0, max: 10, step: 0.5 },
     { k: 'w_pose', def: 0.1, min: 0, max: 2, step: 0.05 },
@@ -41,6 +42,8 @@
     rc_seed: ['seed', 'seed'],
     p_push_force: ['推力 N', 'Push force N'],
     p_push_force_t: ['隨機推機身嘅力（訓練抗推用）。0＝唔推。', 'Random push on the body during training. 0 = no pushes.'],
+    p_push_steps: ['推持續（步）', 'Push length (steps)'],
+    p_push_steps_t: ['每次推持續幾多個控制步（每步 0.02 秒）。1＝原本單步；5＝0.1 秒。', 'Control steps (0.02 s each) a push is held. 1 = the original single step; 5 = 0.1 s.'],
     p_push_prob: ['推嘅機率', 'Push probability'],
     p_push_prob_t: ['每 2 秒一次機會，有幾大機率推。', 'Chance of a push at each 2 s slot.'],
     p_w_tilt: ['傾斜懲罰', 'Tilt penalty'],
@@ -76,6 +79,21 @@
     th_name: ['名稱', 'name'], th_task: ['任務', 'task'], th_min: ['分鐘', 'min'], th_steps: ['步數', 'steps'],
     th_eval: ['評估', 'eval'], th_base: ['基準', 'base'], th_cfg: ['參數（唔同預設）', 'params (non-default)'],
     rc_default: ['預設', 'default'],
+    rc_score: ['評分', 'score'],
+    th_score: ['評分', 'score'], th_gen: ['世代', 'gen'], th_push: ['抗推', 'push'], th_tilt: ['傾斜°', 'tilt°'], th_x: ['距離m', 'x m'], th_ok: ['採用', 'kept'],
+    rc_loop: ['♻ 自動循環（訓練→評估→調整→再訓練）', '♻ Auto loop (train → evaluate → adjust → train again)'],
+    rc_loop_intro: ['每個世代並行訓練幾個候選，用嚴格評估（傾斜、距離、抗推）評分；最好嗰個如果明顯贏過現任 champion 就取代佢，然後自動調整推力／reward 權重再開下一世代，直至達標、冇進步或到上限。任務同 seed 用上面嘅設定。已存在嘅 loop 會由佢嘅狀態繼續（其餘設定唔會改）。',
+      'Each generation trains several candidates in parallel and scores them with the strict evaluation (tilt, distance, push survival). The best one replaces the champion only if it is clearly better; the push / reward settings are then adjusted and the next generation starts by itself until the target is reached, nothing improves or the limit is hit. Task and seed come from the settings above. An existing loop continues from its state (other settings are not changed).'],
+    rc_loop_id: ['Loop 名稱', 'Loop name'], rc_loop_k: ['候選數／世代', 'Candidates / gen'], rc_loop_min: ['分鐘／候選', 'Minutes / candidate'],
+    rc_loop_gens: ['最多世代', 'Max generations'], rc_loop_pat: ['耐性（世代）', 'Patience (gens)'],
+    rc_loop_start: ['▶ 開始／繼續循環', '▶ Start / continue loop'], rc_loop_stop: ['■ 停止循環', '■ Stop loop'], rc_loop_refresh: ['↻ 循環狀態', '↻ Loop status'],
+    rc_loop_stop_t: ['取消正在運行／排隊嘅 autoloop run（進行中嗰個世代會作廢）', 'Cancels the running / queued autoloop runs (the generation in progress is lost)'],
+    rc_bad_loop: ['Loop 名稱只可用英文、數字、- 同 _（最多 20 字）', 'Loop name: letters, digits, - and _ only (max 20)'],
+    rc_loop_started: ['已送出 autoloop，等 GitHub 排隊…（頭一個世代會做 baseline 評估，所以較耐）', 'autoloop dispatched, waiting for GitHub to queue it… (the first generation also evaluates the baseline, so it takes longer)'],
+    rc_loop_none: ['未有呢個 loop 嘅狀態（未開始，或者第一個世代未完）', 'No state for this loop yet (not started, or the first generation has not finished)'],
+    rc_loop_stopped_n: ['已取消 run 數目：', 'Runs cancelled: '],
+    rc_loop_running: ['進行中', 'running'], rc_loop_idle: ['未見運行中嘅 run（可能已被取消）', 'no run in progress (maybe cancelled)'],
+    rc_loop_gen: ['世代', 'generation'], rc_loop_champ: ['champion', 'champion'], rc_loop_pat_s: ['耐性', 'patience'],
     rc_run: ['查看 run ↗', 'View run ↗'],
     rc_no_repo: ['請輸入 repo（owner/名）', 'Enter the repo as owner/name'],
     rc_no_token: ['要先貼 token 先可以開始訓練（只睇狀態同載入結果就唔使）', 'A token is needed to start training (not needed to just view status or load results)'],
@@ -103,12 +121,12 @@
 
   // ---- state (persisted in localStorage when available) ----
   var ST = { repo: '', token: '', remember: false, task: 'walk', name: '', minutes: 60, resume: true, seed: 0, params: {}, runId: 0, t0: 0, task0: 'walk' };
-  var IDX = [], CURVES = {}, chartTok = 0, NAME_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$/, PATH_RE = /^(stand|walk)(\/[A-Za-z0-9_-]{1,32})?$/;
+  var LOOP = { id: 'auto1', k: 3, min: 60, gens: 10, pat: 3 }, loopTimer = 0, loopChamp = '', IDX = [], CURVES = {}, chartTok = 0, NAME_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$/, PATH_RE = /^(stand|walk)(\/[A-Za-z0-9_-]{1,32})?$/;
   var timer = 0, branchCache = {}, busy = false;
   function lsGet() { try { return JSON.parse(localStorage.getItem(LSK) || '{}'); } catch (e) { return {}; } }
   function lsSet() {
     try {
-      var o = { repo: ST.repo, remember: ST.remember, task: ST.task, name: ST.name, minutes: ST.minutes, resume: ST.resume, seed: ST.seed, params: ST.params, runId: ST.runId, t0: ST.t0, task0: ST.task0 };
+      var o = { repo: ST.repo, remember: ST.remember, task: ST.task, name: ST.name, loop: LOOP, minutes: ST.minutes, resume: ST.resume, seed: ST.seed, params: ST.params, runId: ST.runId, t0: ST.t0, task0: ST.task0 };
       if (ST.remember) o.token = ST.token;
       localStorage.setItem(LSK, JSON.stringify(o));
     } catch (e) { /* storage unavailable: keep working in memory */ }
@@ -204,7 +222,20 @@
       '<select id="rlcMetric" style="font-size:11px"><option value="len" data-i18n="rc_m_len"></option><option value="rew" data-i18n="rc_m_rew"></option></select></div>' +
       '<svg id="rlcChart" viewBox="0 0 300 130" style="width:100%;height:auto;display:block"></svg>' +
       '<div id="rlcCurveMsg" style="font-size:10px;color:#666;margin:2px 0"></div>' +
-      '<div style="overflow-x:auto"><table id="rlcTable" style="border-collapse:collapse;font-size:10px;width:100%"></table></div></details>';
+      '<div style="overflow-x:auto"><table id="rlcTable" style="border-collapse:collapse;font-size:10px;width:100%"></table></div></details>' +
+      '<details id="rlcLoop" style="margin:6px 0 2px"><summary style="cursor:pointer"><b data-i18n="rc_loop"></b></summary>' +
+      '<div style="margin:3px 0;color:#666;font-size:11px" data-i18n="rc_loop_intro"></div>' +
+      '<label ' + row + '><span ' + lab + ' data-i18n="rc_loop_id"></span><input id="rlcLoopId" type="text" maxlength="20" spellcheck="false" ' + inp + '></label>' +
+      '<label ' + row + '><span ' + lab + ' data-i18n="rc_loop_k"></span><input id="rlcLoopK" type="number" min="1" max="6" step="1" ' + inp + '></label>' +
+      '<label ' + row + '><span ' + lab + ' data-i18n="rc_loop_min"></span><input id="rlcLoopMin" type="number" min="1" max="300" step="1" ' + inp + '></label>' +
+      '<label ' + row + '><span ' + lab + ' data-i18n="rc_loop_gens"></span><input id="rlcLoopGens" type="number" min="1" max="100" step="1" ' + inp + '></label>' +
+      '<label ' + row + '><span ' + lab + ' data-i18n="rc_loop_pat"></span><input id="rlcLoopPat" type="number" min="1" max="20" step="1" ' + inp + '></label>' +
+      '<div style="display:flex;flex-wrap:wrap;gap:4px;margin:4px 0">' +
+      '<button id="rlcLoopStart" style="padding:2px 6px;font-size:11px;margin:0" data-i18n="rc_loop_start"></button>' +
+      '<button id="rlcLoopStop" style="padding:2px 6px;font-size:11px;margin:0" data-i18n="rc_loop_stop" data-i18n-title="rc_loop_stop_t"></button>' +
+      '<button id="rlcLoopRef" style="padding:2px 6px;font-size:11px;margin:0" data-i18n="rc_loop_refresh"></button></div>' +
+      '<div id="rlcLoopStat" class="mono" style="font-size:11px;white-space:normal;word-break:break-word"></div>' +
+      '<div style="overflow-x:auto"><table id="rlcLoopTable" style="border-collapse:collapse;font-size:10px;width:100%"></table></div></details>';
     mb.insertAdjacentElement('afterend', d);
     return true;
   }
@@ -212,6 +243,8 @@
     $('rlcStart').onclick = start; $('rlcStop').onclick = cancel; $('rlcRefresh').onclick = function () { refresh(true); }; $('rlcLoad').onclick = function () { loadSelected(); }; $('rlcListRef').onclick = function () { refreshList(); };
     $('rlcSel').addEventListener('change', function () { renderTable(); drawChart(); }); $('rlcSelB').addEventListener('change', drawChart); $('rlcMetric').addEventListener('change', drawChart);
     $('rlcReset').onclick = function (e) { e.preventDefault(); ST.params = {}; ST.seed = 0; writeForm(); lsSet(); };
+    $('rlcLoopStart').onclick = loopStart; $('rlcLoopStop').onclick = loopStop; $('rlcLoopRef').onclick = function () { loopRefresh(false); };
+    forIds(['rlcLoopId', 'rlcLoopK', 'rlcLoopMin', 'rlcLoopGens', 'rlcLoopPat'], function (el) { el.addEventListener('change', function () { readLoop(); lsSet(); }); });
     forIds(['rlcRepo', 'rlcToken', 'rlcRem', 'rlcTask', 'rlcName', 'rlcMin', 'rlcResume', 'rlcSeed'].concat(PARAMS.map(function (p) { return 'rlcP_' + p.k; })), function (el) {
       el.addEventListener('change', function () { readForm(); lsSet(); });
     });
@@ -271,7 +304,7 @@
   }
   function validEntry(e) { return e && typeof e === 'object' && typeof e.path === 'string' && PATH_RE.test(e.path) && (e.task === 'stand' || e.task === 'walk'); }
   function entryById(id) { for (var i = 0; i < IDX.length; i++) if (IDX[i].path === id) return IDX[i]; return null; }
-  function evalTxt(e) { return typeof e.eval_mean_len === 'number' ? Math.round(e.eval_mean_len) + '/' + (e.eval_max_len || '?') : '-'; }
+  function evalTxt(e) { if (typeof e.score === 'number') return tt('rc_score') + ' ' + e.score.toFixed(2); return typeof e.eval_mean_len === 'number' ? Math.round(e.eval_mean_len) + '/' + (e.eval_max_len || '?') : '-'; }
   function cfgTxt(e) { var k = Object.keys(e.cfg || {}); return k.length ? k.map(function (x) { return x + '=' + e.cfg[x]; }).join(', ') : tt('rc_default'); }
   function label(e) { return e.task + ' · ' + (e.name || e.path) + ' · ' + evalTxt(e) + (e.finished_at ? ' · ' + String(e.finished_at).slice(0, 10) : ''); }
   function fillSelect(sel, withNone, keep) {
@@ -299,13 +332,13 @@
   }
   function renderTable() {
     var t = $('rlcTable'); t.textContent = ''; if (!IDX.length) return;
-    var sel = $('rlcSel').value, heads = ['th_name', 'th_task', 'th_min', 'th_steps', 'th_eval', 'th_base', 'th_cfg'];
+    var sel = $('rlcSel').value, heads = ['th_name', 'th_task', 'th_min', 'th_steps', 'th_eval', 'th_score', 'th_base', 'th_cfg'];
     var hr = document.createElement('tr');
     heads.forEach(function (k) { var th = document.createElement('th'); th.textContent = tt(k); th.style.cssText = 'text-align:left;padding:1px 3px;border-bottom:1px solid #999;white-space:nowrap'; hr.appendChild(th); });
     t.appendChild(hr);
     IDX.forEach(function (e) {
       var tr = document.createElement('tr'); tr.style.cursor = 'pointer'; if (e.path === sel) tr.style.fontWeight = 'bold';
-      [e.name || e.path, e.task, e.minutes != null ? e.minutes : '-', e.timesteps != null ? (e.timesteps / 1e6).toFixed(2) + 'M' : '-', evalTxt(e), typeof e.baseline_mean_len === 'number' ? Math.round(e.baseline_mean_len) : '-', cfgTxt(e)].forEach(function (v) {
+      [e.name || e.path, e.task, e.minutes != null ? e.minutes : '-', e.timesteps != null ? (e.timesteps / 1e6).toFixed(2) + 'M' : '-', typeof e.eval_mean_len === 'number' ? Math.round(e.eval_mean_len) + '/' + (e.eval_max_len || '?') : '-', typeof e.score === 'number' ? e.score.toFixed(3) : '-', typeof e.baseline_mean_len === 'number' ? Math.round(e.baseline_mean_len) : '-', cfgTxt(e)].forEach(function (v) {
         var td = document.createElement('td'); td.textContent = String(v); td.style.cssText = 'padding:1px 3px;border-bottom:1px solid rgba(128,128,128,.3)'; tr.appendChild(td);
       });
       tr.onclick = function () { $('rlcSel').value = e.path; renderTable(); drawChart(); };
@@ -357,11 +390,73 @@
       if (!window.MJSIM) throw new Error('MJSIM not available');
       if (!MJSIM.on) MJSIM.toggle();   // the policy runs in the physics mode
       await MJSIM.loadPolicy(files);
-      if (MJSIM.pol && MJSIM.pol.sess) stat(tt('rc_loaded') + ' ' + (e.name || e.path) + ' (' + e.task + ') · ' + tt('rc_eval') + ' ' + evalTxt(e) + ' ' + tt('rc_steps') + (e.finished_at ? ' · ' + e.finished_at : ''));
+      if (MJSIM.pol && MJSIM.pol.sess) stat(tt('rc_loaded') + ' ' + (e.name || e.path) + ' (' + e.task + ') · ' + (typeof e.score === 'number' ? evalTxt(e) : tt('rc_eval') + ' ' + evalTxt(e) + ' ' + tt('rc_steps')) + (e.finished_at ? ' · ' + e.finished_at : ''));
       if (e.run_url) setLink(e.run_url);
     } catch (x) { stat(String(x.message || x), true); }
   }
   async function loadSelected() { if (!needRepo()) return; var e = entryById($('rlcSel').value); if (!e && !IDX.length) await refreshList(); e = e || entryById($('rlcSel').value); await loadEntry(e); }
+
+  // ---- auto loop (autoloop.yml): start / stop / follow policies/loop/<id>/state.json ----
+  var LOOP_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{0,19}$/;
+  function readLoop() { LOOP.id = ($('rlcLoopId').value || '').trim(); LOOP.k = $('rlcLoopK').value; LOOP.min = $('rlcLoopMin').value; LOOP.gens = $('rlcLoopGens').value; LOOP.pat = $('rlcLoopPat').value; }
+  function writeLoop() { $('rlcLoopId').value = LOOP.id; $('rlcLoopK').value = LOOP.k; $('rlcLoopMin').value = LOOP.min; $('rlcLoopGens').value = LOOP.gens; $('rlcLoopPat').value = LOOP.pat; }
+  function loopStat(txt, bad) { var e = $('rlcLoopStat'); if (!e) return; e.textContent = txt; e.style.color = bad ? '#c0392b' : ''; }
+  function loopInputs() {
+    return { loop_id: LOOP.id, task: ST.task === 'stand' ? 'stand' : 'walk', candidates: String(Math.round(clampNum(LOOP.k, 1, 6, 3))), minutes: String(Math.round(clampNum(LOOP.min, 1, 300, 60))),
+      max_generations: String(Math.round(clampNum(LOOP.gens, 1, 100, 10))), patience: String(Math.round(clampNum(LOOP.pat, 1, 20, 3))), seed: String(Math.max(0, Math.round(clampNum(ST.seed, 0, 1e9, 0)))) };
+  }
+  async function activeLoopRuns() {   // autoloop runs that are not finished (needs the API; works without a token for a public repo, within the 60 / h limit)
+    var l = await (await gh('/repos/' + ST.repo + '/actions/workflows/autoloop.yml/runs?per_page=20')).json();
+    return (l.workflow_runs || []).filter(function (r) { return r.status !== 'completed'; });
+  }
+  async function loopStart() {
+    if (busy || !needRepo()) return; readLoop();
+    if (!ST.token) { stat(tt('rc_no_token'), true); loopStat(tt('rc_no_token'), true); return; }
+    if (!LOOP_RE.test(LOOP.id)) { loopStat(tt('rc_bad_loop'), true); return; }
+    busy = true; lsSet();
+    try {
+      var ref = await defaultBranch(ST.repo);
+      await gh('/repos/' + ST.repo + '/actions/workflows/autoloop.yml/dispatches', { method: 'POST', body: { ref: ref, inputs: loopInputs() } });
+      loopStat(tt('rc_loop_started')); clearTimeout(loopTimer); loopTimer = setTimeout(function () { loopRefresh(true); }, 20000);
+    } catch (e) { loopStat(String(e.message || e), true); } finally { busy = false; }
+  }
+  async function loopStop() {
+    if (!needRepo()) return; if (!ST.token) { loopStat(tt('rc_no_token'), true); return; }
+    try {
+      var runs = await activeLoopRuns(), n = 0;
+      for (var i = 0; i < runs.length; i++) { try { await gh('/repos/' + ST.repo + '/actions/runs/' + runs[i].id + '/cancel', { method: 'POST' }); n++; } catch (e) { /* already finished */ } }
+      clearTimeout(loopTimer); loopStat(tt('rc_loop_stopped_n') + n);
+    } catch (e) { loopStat(String(e.message || e), true); }
+  }
+  function loopRender(st) {
+    var c = st.champion, hist = (Array.isArray(st.history) ? st.history : []).slice(-12).reverse();
+    var head = tt('rc_loop_gen') + ' ' + st.gen + '/' + st.max_gens + ' · ' + tt('rc_loop_champ') + ' ' + (c ? c.id + ' ' + tt('rc_score') + ' ' + Number(c.score).toFixed(3) : '-') + ' · ' + tt('rc_loop_pat_s') + ' ' + st.patience + '/' + st.patience_max;
+    var t = $('rlcLoopTable'); t.textContent = ''; var hr = document.createElement('tr');
+    ['th_gen', 'th_name', 'th_score', 'th_push', 'th_tilt', 'th_x', 'th_ok', 'th_cfg'].forEach(function (k) { var th = document.createElement('th'); th.textContent = tt(k); th.style.cssText = 'text-align:left;padding:1px 3px;border-bottom:1px solid #999;white-space:nowrap'; hr.appendChild(th); });
+    t.appendChild(hr);
+    hist.forEach(function (h) {
+      var tr = document.createElement('tr'); if (h.accepted) tr.style.fontWeight = 'bold';
+      var f = function (v, d) { return typeof v === 'number' ? v.toFixed(d) : '-'; };
+      [h.gen, h.id, h.failed ? 'x' : f(h.score, 3), f(h.push_mean, 2), f(h.tilt_mean, 1), f(h.x_mean, 3), h.accepted ? '✔' : '', Object.keys(h.cfg || {}).map(function (k) { return k + '=' + h.cfg[k]; }).join(' ')].forEach(function (v) {
+        var td = document.createElement('td'); td.textContent = String(v); td.style.cssText = 'padding:1px 3px;border-bottom:1px solid rgba(128,128,128,.3)'; tr.appendChild(td);
+      });
+      t.appendChild(tr);
+    });
+    return head;
+  }
+  async function loopRefresh(auto) {
+    if (!needRepo()) return; readLoop(); if (!LOOP_RE.test(LOOP.id)) { loopStat(tt('rc_bad_loop'), true); return; }
+    try {
+      var st = await fetchJson(RAW + ST.repo + '/policies/loop/' + LOOP.id + '/state.json');
+      if (!st || typeof st !== 'object') { loopStat(tt('rc_loop_none')); if (auto) { clearTimeout(loopTimer); loopTimer = setTimeout(function () { loopRefresh(true); }, 90000); } return; }
+      var head = loopRender(st), tail = '';
+      if (st.stopped) tail = ' · ⏹ ' + String(st.reason || '');
+      else if (ST.token) { var act = await activeLoopRuns(); tail = act.length ? ' · ▶ ' + tt('rc_loop_running') : ' · ⏸ ' + tt('rc_loop_idle'); }
+      loopStat(head + tail);
+      var cn = st.champion ? st.champion.name : ''; if (cn && cn !== loopChamp) { loopChamp = cn; refreshList(null, null, true); }   // a new champion is also in the policy list above
+      clearTimeout(loopTimer); if (!st.stopped) loopTimer = setTimeout(function () { loopRefresh(true); }, 90000);
+    } catch (e) { loopStat(String(e.message || e), true); }
+  }
 
   function init() {
     if (!build()) return;
@@ -370,9 +465,10 @@
     ST.task = s.task === 'stand' ? 'stand' : 'walk'; ST.name = s.name || ''; ST.minutes = s.minutes || 60; ST.resume = s.resume !== false; ST.seed = s.seed || 0; ST.params = s.params || {};
     ST.runId = s.runId || 0; ST.t0 = s.t0 || 0; ST.task0 = s.task0 || ST.task;
     if (typeof applyLang === 'function') applyLang();
-    writeForm(); wire(); refreshList(null, null, true);   // the list of already trained policies (public repo: no token needed)
+    if (s.loop && typeof s.loop === 'object') { LOOP.id = String(s.loop.id || LOOP.id); LOOP.k = s.loop.k || LOOP.k; LOOP.min = s.loop.min || LOOP.min; LOOP.gens = s.loop.gens || LOOP.gens; LOOP.pat = s.loop.pat || LOOP.pat; }
+    writeForm(); writeLoop(); wire(); refreshList(null, null, true);   // the list of already trained policies (public repo: no token needed)
     if (ST.t0 && ST.runId) { $('rlcBox').open = true; refresh(false); }   // a run was in progress when the page was closed
   }
-  window.RLCLOUD = { buildInputs: buildInputs, PARAMS: PARAMS, state: ST, start: start, refresh: refresh, refreshList: refreshList, loadEntry: loadEntry, loadSelected: loadSelected, drawChart: drawChart, cancel: cancel, init: init };
+  window.RLCLOUD = { buildInputs: buildInputs, PARAMS: PARAMS, state: ST, start: start, refresh: refresh, refreshList: refreshList, loadEntry: loadEntry, loadSelected: loadSelected, drawChart: drawChart, cancel: cancel, init: init, loopStart: loopStart, loopStop: loopStop, loopRefresh: loopRefresh, loopInputs: loopInputs };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();

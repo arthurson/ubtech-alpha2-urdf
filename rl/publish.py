@@ -9,7 +9,8 @@ A result in the old layout (<dest>/<task>/policy.onnx) is moved to <dest>/<task>
 import argparse, json, os, re, shutil, sys, time
 
 NAME_RE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$')
-KEEP = ('task', 'name', 'path', 'finished_at', 'minutes', 'run_id', 'run_url', 'timesteps', 'eval_mean_len', 'eval_max_len', 'baseline_mean_len', 'cfg', 'seed')
+KEEP = ('task', 'name', 'path', 'finished_at', 'minutes', 'run_id', 'run_url', 'timesteps', 'eval_mean_len', 'eval_max_len', 'baseline_mean_len', 'cfg', 'seed',
+        'score', 'push_mean', 'push_f50', 'tilt_mean', 'x_mean', 'loop', 'gen')   # the last group comes from rl/autoloop.py
 
 
 def entry_from(meta, task, name):
@@ -51,7 +52,7 @@ def publish(dest, out, task, name, run_id='', run_url='', minutes=0, now=None):
     meta.update(task=task, name=name, run_id=str(run_id), run_url=run_url, minutes=minutes, path='%s/%s' % (task, name),
                 finished_at=time.strftime('%Y-%m-%dT%H:%M:%SZ', now))
     shutil.copy(os.path.join(out, 'policy.onnx'), os.path.join(ndir, 'policy.onnx'))
-    for f in ('ref.json', 'curve.json'):    # optional files: drop a stale copy of the same name
+    for f in ('ref.json', 'curve.json', 'eval.json'):    # optional files: drop a stale copy of the same name
         src, dst = os.path.join(out, f), os.path.join(ndir, f)
         if os.path.exists(src): shutil.copy(src, dst)
         elif os.path.exists(dst): os.remove(dst)

@@ -13,9 +13,9 @@ FALL_Z, FALL_TILT = 0.15, np.radians(40)           # same fallen criterion as th
 # Tunable push / reward weights. Defaults = the original hard-coded values. Override with env var ALPHA2_CFG (JSON), e.g.
 # ALPHA2_CFG='{"push_force": 5, "w_smooth": 0.05}' (the web player's cloud-training panel / train.yml `cfg` input sets it).
 # Values are clamped to the ranges below; unknown keys are ignored. obs / action layout and ACT_SCALE / DECIM are NOT tunable
-# (they must match web/mj-sim.js).
-_DEF = dict(push_force=3.0, push_prob=0.7, w_tilt=2.0, w_pose=0.1, w_smooth=0.02, w_torque=0.002, w_track=1.0)
-_LIM = dict(push_force=(0, 10), push_prob=(0, 1), w_tilt=(0, 10), w_pose=(0, 2), w_smooth=(0, 1), w_torque=(0, 0.05), w_track=(0, 5))
+# (they must match web/mj-sim.js). push_steps = how many control steps (0.02 s each) one push is held; 1 = the original single-step push.
+_DEF = dict(push_force=3.0, push_steps=1.0, push_prob=0.7, w_tilt=2.0, w_pose=0.1, w_smooth=0.02, w_torque=0.002, w_track=1.0)
+_LIM = dict(push_force=(0, 80), push_steps=(1, 25), push_prob=(0, 1), w_tilt=(0, 10), w_pose=(0, 2), w_smooth=(0, 1), w_torque=(0, 0.05), w_track=(0, 5))
 def _load_cfg():
     c = dict(_DEF)
     try: u = json.loads(os.environ.get('ALPHA2_CFG') or '{}')
@@ -46,6 +46,7 @@ class Alpha2Env(gym.Env):
         self.nom = dict(fric=self.m.geom_friction.copy(), mass=self.m.body_mass.copy(), inert=self.m.body_inertia.copy(),
                         gain=self.m.actuator_gainprm.copy(), bias=self.m.actuator_biasprm.copy(), frc=self.m.actuator_forcerange.copy())
         self.randomize, self.push = randomize, push
+        self.pleft, self.pvec = 0, np.zeros(2)
         self.observation_space = spaces.Box(-np.inf, np.inf, (43,), np.float32); self.action_space = spaces.Box(-1, 1, (20,), np.float32)
         self.rng = np.random.default_rng(seed); self.prev = np.zeros(20)
 
@@ -67,14 +68,18 @@ class Alpha2Env(gym.Env):
         self._dr(); d = self.d; mujoco.mj_resetData(self.m, d)
         d.qpos[:7] = [0, 0, 0.2206 + 0.0015, 1, 0, 0, 0]; d.qpos[self.qadr] = self.q0; d.ctrl[self.act] = self.q0
         if self.randomize: d.qpos[self.qadr] += self.rng.normal(0, 0.03, 20)
-        mujoco.mj_forward(self.m, d); self.t = 0; self.prev[:] = 0; self.lag = [np.zeros(20)] * (int(self.rng.integers(0, 3)) if self.randomize else 0)
+        mujoco.mj_forward(self.m, d); self.t = 0; self.pleft = 0; self.prev[:] = 0; self.lag = [np.zeros(20)] * (int(self.rng.integers(0, 3)) if self.randomize else 0)
         return self._obs(), {}
+
+    def _push(self):   # random horizontal push on the body: every 2 s with probability push_prob, push_force N held for push_steps control steps
+        if self.push and self.t % 100 == 50 and self.rng.random() < CFG['push_prob']:
+            self.pvec = self.rng.uniform(-1, 1, 2) * CFG['push_force']; self.pleft = int(round(CFG['push_steps']))
+        if self.pleft > 0: self.d.xfrc_applied[1, :2] = self.pvec; self.pleft -= 1     # cleared again after the physics steps
 
     def step(self, a):
         a = np.clip(a, -1, 1).astype(np.float64); self.lag.append(a); a_eff = self.lag.pop(0) if self.lag else a   # 0-2 step action delay
         d = self.d; ctrl = np.clip(self.q0 + ACT_SCALE * a_eff, self.lo, self.hi)
-        if self.push and self.t % 100 == 50 and self.rng.random() < CFG['push_prob']:
-            d.xfrc_applied[1, :2] = self.rng.uniform(-1, 1, 2) * CFG['push_force']     # N, held for one control step
+        self._push()
         for k in range(DECIM):
             d.ctrl[self.act] = ctrl
             mujoco.mj_step(self.m, d)
@@ -112,7 +117,7 @@ class WalkEnv(Alpha2Env):
     def step(self, a):
         a = np.clip(a, -1, 1).astype(np.float64); self.lag.append(a); a_eff = self.lag.pop(0) if self.lag else a
         d = self.d; qr = self.ref_q(self.t); ctrl = np.clip(qr + self.WALK_SCALE * a_eff, self.lo, self.hi)
-        if self.push and self.t % 100 == 50 and self.rng.random() < CFG['push_prob']: d.xfrc_applied[1, :2] = self.rng.uniform(-1, 1, 2) * CFG['push_force']
+        self._push()
         for _ in range(DECIM): d.ctrl[self.act] = ctrl; mujoco.mj_step(self.m, d)
         d.xfrc_applied[:] = 0; self.t += 1
         zz = d.xmat[1].reshape(3, 3)[2, 2]; tilt = np.arccos(np.clip(zz, -1, 1)); z = d.qpos[2]; fallen = z < FALL_Z or tilt > FALL_TILT

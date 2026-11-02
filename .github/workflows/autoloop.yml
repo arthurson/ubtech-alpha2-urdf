@@ -1,0 +1,171 @@
+name: autoloop
+# Automatic loop: train K candidates in parallel -> evaluate them (rl/evaluate.py) -> the controller (rl/autoloop.py) reviews the results,
+# keeps the best as champion, adjusts the next candidates' push / reward settings -> starts the next generation by itself.
+# It stops when the target score is reached, after `patience` generations without improvement, after `max_generations`, or when you
+# cancel the running workflow (or add a file named STOP in loop/<loop_id>/ on the `policies` branch, or disable the workflow).
+# State: policies/loop/<loop_id>/state.json (+ champion/model.zip). Every accepted champion is also published like a normal run
+# (policies/<task>/<loop_id>-g<N>/..., listed in policies/index.json), so the web player can load and compare it.
+on:
+  workflow_dispatch:
+    inputs:
+      loop_id:         {description: 'Loop name (letters, digits, - _ ; max 20). A new name starts a new loop, an existing one continues from its state', default: 'auto1'}
+      task:            {description: 'stand or walk (only used when the loop is created)', default: 'walk'}
+      candidates:      {description: 'Candidates trained in parallel per generation, 1-6 (only used when the loop is created)', default: '3'}
+      minutes:         {description: 'Training minutes per candidate per generation, 1-300 (only used when the loop is created)', default: '60'}
+      max_generations: {description: 'Stop after this many generations, 1-100 (only used when the loop is created)', default: '10'}
+      patience:        {description: 'Stop after this many generations in a row without improvement (only used when the loop is created)', default: '3'}
+      seed:            {description: 'Random seed (only used when the loop is created)', default: '0'}
+permissions:
+  contents: write   # push results and state to the `policies` branch
+  actions: write    # start the next generation (workflow_dispatch with GITHUB_TOKEN does create a run)
+concurrency:
+  group: autoloop-${{ inputs.loop_id }}
+  cancel-in-progress: false
+env:
+  LOOP_ID: ${{ inputs.loop_id }}
+  IN_TASK: ${{ inputs.task }}
+  IN_K: ${{ inputs.candidates }}
+  IN_MINUTES: ${{ inputs.minutes }}
+  IN_MAXGENS: ${{ inputs.max_generations }}
+  IN_PATIENCE: ${{ inputs.patience }}
+  IN_SEED: ${{ inputs.seed }}
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      stop: ${{ steps.plan.outputs.stop }}
+      matrix: ${{ steps.plan.outputs.matrix }}
+      gen: ${{ steps.plan.outputs.gen }}
+      task: ${{ steps.plan.outputs.task }}
+      minutes: ${{ steps.plan.outputs.minutes }}
+      reason: ${{ steps.plan.outputs.reason }}
+    steps:
+      - name: Validate inputs
+        run: |
+          [[ "$LOOP_ID" =~ ^[A-Za-z0-9][A-Za-z0-9_-]{0,19}$ ]] || { echo "loop_id: letters/digits/-/_, max 20"; exit 1; }
+          case "$IN_TASK" in stand|walk) ;; *) echo "task must be stand or walk"; exit 1;; esac
+          for v in IN_K IN_MINUTES IN_MAXGENS IN_PATIENCE IN_SEED; do [[ "${!v}" =~ ^[0-9]+$ ]] || { echo "$v must be a non-negative integer"; exit 1; }; done
+      - uses: actions/checkout@v4
+      - name: Plan the next generation
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          mkdir -p /tmp/pol
+          if git ls-remote --exit-code --heads "$URL" policies >/dev/null 2>&1; then rm -rf /tmp/pol; git clone -q --depth 1 --branch policies "$URL" /tmp/pol; fi
+          python3 rl/autoloop.py plan --state-dir "/tmp/pol/loop/$LOOP_ID" --loop-id "$LOOP_ID" --task "$IN_TASK" --k "$IN_K" --minutes "$IN_MINUTES" \
+            --max-gens "$IN_MAXGENS" --patience "$IN_PATIENCE" --seed "$IN_SEED"
+
+  train:
+    needs: plan
+    if: needs.plan.outputs.stop == 'false'
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    env:
+      TASK: ${{ needs.plan.outputs.task }}
+      MINUTES: ${{ needs.plan.outputs.minutes }}
+      SEED: ${{ matrix.seed }}
+      ALPHA2_CFG: ${{ matrix.cfg }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12', cache: pip, cache-dependency-path: rl/requirements.txt}
+      - run: pip install torch --index-url https://download.pytorch.org/whl/cpu && pip install -r rl/requirements.txt
+      - name: Fetch the champion checkpoint (if any)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          mkdir -p rl/out
+          if git ls-remote --exit-code --heads "$URL" policies >/dev/null 2>&1; then
+            git clone -q --depth 1 --branch policies "$URL" /tmp/pol
+            if [ -f "/tmp/pol/loop/$LOOP_ID/champion/model.zip" ]; then
+              cp "/tmp/pol/loop/$LOOP_ID/champion/model.zip" rl/out/model.zip
+              cp "/tmp/pol/loop/$LOOP_ID/champion/curve.json" rl/out/curve.json 2>/dev/null || true
+              echo "resuming from the champion"
+            fi
+          fi
+      - name: Train
+        run: python rl/train.py --task "$TASK" --minutes "$MINUTES" --seed "$SEED" --out rl/out --resume rl/out/model.zip
+      - name: Evaluate
+        run: |
+          python rl/evaluate.py --model rl/out/model.zip --task "$TASK" --out rl/out/eval.json
+          if [ "${{ matrix.baseline }}" = "true" ]; then python rl/evaluate.py --baseline --task "$TASK" --out rl/out/eval_baseline.json; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cand-${{ matrix.id }}
+          path: |
+            rl/out/model.zip
+            rl/out/policy.onnx
+            rl/out/ref.json
+            rl/out/curve.json
+            rl/out/meta.json
+            rl/out/eval.json
+            rl/out/eval_baseline.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+  select:
+    needs: [plan, train]
+    if: ${{ !cancelled() && needs.plan.outputs.stop == 'false' }}   # runs even when some candidates failed, but not after you cancelled the run
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: {pattern: 'cand-*', path: /tmp/cands}
+        continue-on-error: true   # every candidate failed -> the controller stops the loop
+      - name: Review, publish the champion, decide
+        id: sel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/cands
+          URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          TASK_OUT="${{ needs.plan.outputs.task }}"
+          # each attempt starts from a fresh clone of `policies`, so concurrent loops / runs never produce merge conflicts
+          for i in 1 2 3 4; do
+            rm -rf /tmp/pol /tmp/win; mkdir -p /tmp/win; : > /tmp/sel.out
+            if git ls-remote --exit-code --heads "$URL" policies >/dev/null 2>&1; then git clone -q --depth 1 --branch policies "$URL" /tmp/pol
+            else git init -q -b policies /tmp/pol && git -C /tmp/pol remote add origin "$URL"; fi
+            D="/tmp/pol/loop/$LOOP_ID"
+            # creates the state of a brand-new loop (no-op when it exists); its step outputs are discarded
+            GITHUB_OUTPUT=/dev/null python3 rl/autoloop.py plan --state-dir "$D" --loop-id "$LOOP_ID" --task "$IN_TASK" --k "$IN_K" --minutes "$IN_MINUTES" --max-gens "$IN_MAXGENS" --patience "$IN_PATIENCE" --seed "$IN_SEED" >/dev/null
+            GITHUB_OUTPUT=/tmp/sel.out python3 rl/autoloop.py select --state-dir "$D" --cands-dir /tmp/cands --winner-dir /tmp/win
+            NAME=$(sed -n 's/^name=//p' /tmp/sel.out)
+            if [ -n "$NAME" ]; then
+              python3 rl/publish.py --dest /tmp/pol --out /tmp/win --task "$TASK_OUT" --name "$NAME" --run-id "$GITHUB_RUN_ID" \
+                --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --minutes "${{ needs.plan.outputs.minutes }}"
+              mkdir -p "$D/champion"; cp /tmp/win/model.zip "$D/champion/model.zip"; cp /tmp/win/curve.json "$D/champion/curve.json" 2>/dev/null || true
+            fi
+            git -C /tmp/pol config user.name "github-actions[bot]"; git -C /tmp/pol config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git -C /tmp/pol add -A
+            git -C /tmp/pol diff --cached --quiet || git -C /tmp/pol commit -q -m "autoloop $LOOP_ID gen ${{ needs.plan.outputs.gen }}"
+            if git -C /tmp/pol push -q origin policies; then cat /tmp/sel.out >> "$GITHUB_OUTPUT"; exit 0; fi
+            sleep 5
+          done
+          echo "push to policies failed"; exit 1
+      - name: Summary
+        if: always()
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY" || true
+          import json, os
+          s = json.load(open('/tmp/pol/loop/%s/state.json' % os.environ['LOOP_ID']))
+          print('### autoloop `%s` generation %s -> champion %s' % (s['loop_id'], int(s['gen']) - 1, (s['champion'] or {}).get('id', '-')))
+          print('stopped: %s %s | patience %s/%s | champion score %.3f\n' % (s['stopped'], s['reason'], s['patience'], s['patience_max'], (s['champion'] or {}).get('score', 0)))
+          print('| id | score | push | tilt | x | accepted | cfg |\n|---|---|---|---|---|---|---|')
+          for h in s['history'][-int(s['k']):]:
+              print('| %s | %s | %s | %s | %s | %s | %s |' % (h['id'], h['score'] if h['score'] is None else round(h['score'], 3), h['push_mean'], h['tilt_mean'], h['x_mean'], h['accepted'], json.dumps(h['cfg'])))
+          PY
+      - name: Start the next generation
+        if: steps.sel.outputs.stop == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run autoloop.yml --ref "$GITHUB_REF_NAME" -f loop_id="$LOOP_ID"

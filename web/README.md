@@ -78,3 +78,23 @@
 Token 只會傳去 `api.github.com`；除非剔「記住」，否則唔會存入瀏覽器。唔好將 token 寫入 html／commit。
 
 **手動觸發**：Actions → train-rl → Run workflow，`cfg` 填 JSON，例如 `{"push_force": 5, "w_smooth": 0.05}`，`name` 填名稱。
+
+## 自動循環（訓練 → 評估 → 調整 → 再訓練）
+
+面板「♻ 自動循環」會觸發 `.github/workflows/autoloop.yml`。每個**世代**：
+
+1. **訓練**：並行訓練 K 個候選（GitHub matrix），全部由現任 champion 續訓，各自用唔同嘅推力／reward 設定。
+2. **評估**：`rl/evaluate.py` 量度平地行走（存活、距離、偏移、傾斜）同**持續多步嘅推力**存活率，合成 0–1 評分（`rl/scoring.py`）。
+   純存活率會飽和（連冇訓練嘅 baseline 都滿分），所以評分以傾斜、距離、抗推為主，並相對於零動作 baseline。
+3. **Review**：最好嘅候選要贏過現任 champion 超過 0.01 先取代（避免評估噪音）；取代嘅會發佈成 `<loop>-g<N>`，出現喺面板嘅 policy 清單。
+4. **調整**：候選 0 係「對照」（同設定繼續練），候選 1 係課程式（champion 頂得住就加推力，否則加重傾斜懲罰），其餘係隨機變異；
+   連續冇進步變異幅度會縮細。只會調 `rl/autoloop.py` 嘅 `TUNE` 入面嘅參數，**唔會改代碼**。
+5. **重複**：用 `GITHUB_TOKEN` 自動 dispatch 下一個世代。
+
+**停止條件**：評分達 0.95、連續 `耐性` 個世代冇進步、到最多世代、全部候選失敗、你撳「■ 停止循環」（取消 run）、
+喺 `policies` branch 建立 `loop/<名稱>/STOP` 檔案，或者喺 Actions 頁停用 workflow。預設最多 10 個世代、每個 60 分鐘、3 個候選。
+
+**狀態**：`policies/loop/<名稱>/state.json`（世代、champion、baseline、每個候選嘅參數同成績）；champion 嘅 checkpoint 喺 `loop/<名稱>/champion/`。
+同一個名稱再撳「開始」會由狀態繼續（候選數、分鐘等設定唔會改）；新名稱係新 loop（由頭練起）。
+
+**用量**：每世代 ＝ 候選數 × 分鐘數嘅 runner 時間（Public repo 標準 runner 免費，Free 計劃同時最多 20 個 job）。
