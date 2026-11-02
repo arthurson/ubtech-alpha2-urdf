@@ -1,0 +1,177 @@
+{
+ "version": 1,
+ "loop_id": "auto1",
+ "task": "walk",
+ "k": 3,
+ "minutes": 330,
+ "max_gens": 1,
+ "patience_max": 3,
+ "patience": 3,
+ "seed": 0,
+ "gen": 1,
+ "sigma": 0.35,
+ "stopped": true,
+ "reason": "max generations reached",
+ "champion": {
+  "cfg": {
+   "push_force": 4.0,
+   "push_steps": 5.0,
+   "push_prob": 0.7,
+   "w_tilt": 2.0,
+   "w_pose": 0.1,
+   "w_smooth": 0.02138,
+   "w_torque": 0.002,
+   "w_track": 1.453
+  },
+  "score": 0.5859391846619262,
+  "eval": {
+   "task": "walk",
+   "clean": {
+    "n": 8,
+    "survive": 1.0,
+    "x_mean": 0.3363756475977636,
+    "x_std": 0.005921275134630478,
+    "y_abs": 0.03522729890370381,
+    "tilt_mean": 4.920530065826888,
+    "tilt_max": 9.867473747515648,
+    "torque": 0.12565873344966616
+   },
+   "push": {
+    "forces": [
+     8.0,
+     12.0,
+     16.0,
+     20.0,
+     26.0
+    ],
+    "steps": 5,
+    "survive": [
+     1.0,
+     0.5,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "mean": 0.3,
+    "f50": 12.0
+   },
+   "score": 0.5991671463687138,
+   "seconds": 12.4
+  },
+  "gen": 0,
+  "cand": 2,
+  "id": "g0c2",
+  "timesteps": 37871656,
+  "name": "auto1-g0"
+ },
+ "baseline": {
+  "task": "walk",
+  "clean": {
+   "n": 8,
+   "survive": 1.0,
+   "x_mean": 0.27288297268063993,
+   "x_std": 0.0033814432049698363,
+   "y_abs": 0.02949248942091426,
+   "tilt_mean": 9.191780709327219,
+   "tilt_max": 14.025215163281235,
+   "torque": 0.10870626808698572
+  },
+  "push": {
+   "forces": [
+    8.0,
+    12.0,
+    16.0,
+    20.0,
+    26.0
+   ],
+   "steps": 5,
+   "survive": [
+    1.0,
+    0.5,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "mean": 0.3,
+   "f50": 12.0
+  },
+  "score": 0.4,
+  "seconds": 15.2
+ },
+ "history": [
+  {
+   "gen": 0,
+   "id": "g0c0",
+   "cand": 0,
+   "cfg": {
+    "push_force": 6.0,
+    "push_steps": 5.0,
+    "push_prob": 0.7,
+    "w_tilt": 2.0,
+    "w_pose": 0.1,
+    "w_smooth": 0.02,
+    "w_torque": 0.002,
+    "w_track": 1.0
+   },
+   "score": 0.5674355703062075,
+   "push_mean": 0.3,
+   "f50": 12.0,
+   "tilt_mean": 4.476525770966833,
+   "x_mean": 0.296672323958341,
+   "survive": 1.0,
+   "timesteps": 25726980,
+   "accepted": false,
+   "failed": false
+  },
+  {
+   "gen": 0,
+   "id": "g0c1",
+   "cand": 1,
+   "cfg": {
+    "push_force": 7.692,
+    "push_steps": 5.0,
+    "push_prob": 0.6058,
+    "w_tilt": 2.0,
+    "w_pose": 0.1,
+    "w_smooth": 0.0181,
+    "w_torque": 0.00173,
+    "w_track": 1.0
+   },
+   "score": 0.517479039957753,
+   "push_mean": 0.31666666666666665,
+   "f50": 12.0,
+   "tilt_mean": 5.313681899629164,
+   "x_mean": 0.2491051545674235,
+   "survive": 1.0,
+   "timesteps": 24914212,
+   "accepted": false,
+   "failed": false
+  },
+  {
+   "gen": 0,
+   "id": "g0c2",
+   "cand": 2,
+   "cfg": {
+    "push_force": 4.0,
+    "push_steps": 5.0,
+    "push_prob": 0.7,
+    "w_tilt": 2.0,
+    "w_pose": 0.1,
+    "w_smooth": 0.02138,
+    "w_torque": 0.002,
+    "w_track": 1.453
+   },
+   "score": 0.5859391846619262,
+   "push_mean": 0.3,
+   "f50": 12.0,
+   "tilt_mean": 4.920530065826888,
+   "x_mean": 0.3363756475977636,
+   "survive": 1.0,
+   "timesteps": 37871656,
+   "accepted": true,
+   "failed": false
+  }
+ ],
+ "created": "2026-11-02T13:23:48Z",
+ "updated": "2026-11-02T13:23:48Z"
+}

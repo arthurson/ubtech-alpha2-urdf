@@ -3,6 +3,38 @@
  "policies": [
   {
    "task": "walk",
+   "name": "auto1-g0",
+   "path": "walk/auto1-g0",
+   "finished_at": "2026-11-02T13:23:48Z",
+   "minutes": 330,
+   "run_id": "41409009627",
+   "run_url": "https://github.com/arthurson/ubtech-alpha2-urdf/actions/runs/41409009627",
+   "timesteps": 37871656,
+   "eval_mean_len": 1000.0,
+   "eval_max_len": 1000,
+   "baseline_mean_len": 1000.0,
+   "cfg": {
+    "push_force": 4.0,
+    "push_steps": 5.0,
+    "push_prob": 0.7,
+    "w_tilt": 2.0,
+    "w_pose": 0.1,
+    "w_smooth": 0.02138,
+    "w_torque": 0.002,
+    "w_track": 1.453
+   },
+   "seed": 2,
+   "score": 0.5859,
+   "push_mean": 0.3,
+   "push_f50": 12.0,
+   "tilt_mean": 4.92,
+   "x_mean": 0.336,
+   "loop": "auto1",
+   "gen": 0,
+   "id": "walk/auto1-g0"
+  },
+  {
+   "task": "walk",
    "name": "walk-20261102-0748",
    "path": "walk/walk-20261102-0748",
    "finished_at": "2026-11-02T07:48:00Z",
