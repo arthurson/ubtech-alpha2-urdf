@@ -1,0 +1,48 @@
+{
+ "task": "walk",
+ "seed": 0,
+ "cfg": {
+  "push_force": 3.0,
+  "push_steps": 1.0,
+  "push_prob": 0.6,
+  "w_tilt": 2.0,
+  "w_pose": 0.2,
+  "w_smooth": 0.03,
+  "w_torque": 0.002,
+  "w_track": 0.2
+ },
+ "timesteps": 125730716,
+ "eval_max_len": 1000,
+ "eval_lens": [
+  1000,
+  1000,
+  1000,
+  1000,
+  1000,
+  1000,
+  1000,
+  1000,
+  1000,
+  1000
+ ],
+ "eval_mean_len": 1000.0,
+ "eval_final_x": [
+  0.293,
+  0.3,
+  0.316,
+  0.308,
+  0.317,
+  0.303,
+  0.31,
+  0.313,
+  0.307,
+  0.304
+ ],
+ "baseline_mean_len": 1000.0,
+ "name": "walk-20261102-1334",
+ "run_id": "41409224443",
+ "run_url": "https://github.com/arthurson/ubtech-alpha2-urdf/actions/runs/41409224443",
+ "minutes": 340,
+ "path": "walk/walk-20261102-1334",
+ "finished_at": "2026-11-02T13:34:37Z"
+}
