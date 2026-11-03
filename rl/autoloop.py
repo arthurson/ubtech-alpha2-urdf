@@ -10,7 +10,7 @@ every candidate evaluated with rl/evaluate.py, then:
   stop    : target score reached / `patience` generations in a row without improvement / max generations / all candidates failed /
             state['stopped'] or the STOP file.
 It only changes the settings listed in TUNE (inside the ranges below, which the env clamps again). It never edits code.
-State lives in <state-dir>/state.json (the `policies` branch: loop/<id>/state.json).
+State lives in <state-dir>/state.json (the `policies` branch: loop/<task>/<id>/state.json).
   autoloop.py plan   --state-dir D --loop-id X --task walk --k 3 --minutes 60 --max-gens 10 --patience 3 --seed 0
   autoloop.py select --state-dir D --cands-dir C --winner-dir W"""
 import argparse, copy, json, math, os, random, shutil, sys, time
@@ -152,7 +152,7 @@ def rj(path):
 
 def main():
     ap = argparse.ArgumentParser(); sub = ap.add_subparsers(dest='cmd', required=True)
-    p = sub.add_parser('plan'); p.add_argument('--state-dir', required=True); p.add_argument('--loop-id', required=True); p.add_argument('--task', default='walk', choices=['stand', 'walk', 'walk_ref', 'getup_back', 'getup_front'])
+    p = sub.add_parser('plan'); p.add_argument('--state-dir', required=True); p.add_argument('--loop-id', required=True); p.add_argument('--task', default=None, choices=['stand', 'walk', 'walk_ref', 'getup_back', 'getup_front'])
     p.add_argument('--k', type=int, default=3); p.add_argument('--minutes', type=int, default=60); p.add_argument('--max-gens', type=int, default=10)
     p.add_argument('--patience', type=int, default=3); p.add_argument('--seed', type=int, default=0)
     p.add_argument('--restart', action='store_true', help='resume a stopped loop: --max-gens = how many MORE generations, --patience = new patience')
@@ -162,7 +162,10 @@ def main():
         import re
         if not re.match(r'^[A-Za-z0-9][A-Za-z0-9_-]{0,%d}$' % (ID_RE_MAX - 1), a.loop_id): sys.exit('loop id: letters/digits/-/_, max %d chars' % ID_RE_MAX)
         st = load_state(a.state_dir)
-        if st is None: st = new_state(a.loop_id, a.task, max(1, min(6, a.k)), max(1, min(330, a.minutes)), max(1, min(100, a.max_gens)), max(1, a.patience), a.seed)
+        if st is None: st = new_state(a.loop_id, a.task or 'walk', max(1, min(6, a.k)), max(1, min(330, a.minutes)), max(1, min(100, a.max_gens)), max(1, a.patience), a.seed)
+        elif a.task and st['task'] != a.task:   # the task is fixed when a loop is created; silently continuing another task is what made every run train the old one
+            sys.exit("loop '%s' already exists and trains task '%s' (you asked for '%s'): the task of an existing loop cannot be changed. "
+                     "Use another loop_id (or leave it empty = <task>-1), or delete the loop folder on the `policies` branch." % (a.loop_id, st['task'], a.task))
         elif a.restart:
             restart(st, a.max_gens, a.patience)
             if os.path.exists(os.path.join(a.state_dir, 'STOP')): os.remove(os.path.join(a.state_dir, 'STOP'))

@@ -95,6 +95,8 @@
     th_eval: ['評估', 'eval'], th_base: ['基準', 'base'], th_cfg: ['參數（唔同預設）', 'params (non-default)'],
     rc_default: ['預設', 'default'],
     rc_success: ['起身成功率', 'get-up success'],
+    rc_t_stand: ['站穩', 'Stand'], rc_t_walk: ['步行·速度指令', 'Walk·velocity'], rc_t_walk_ref: ['步行·模仿', 'Walk·reference'], rc_t_getup_back: ['起身·仰躺', 'Get-up·back'], rc_t_getup_front: ['起身·趴著', 'Get-up·front'],
+    rc_loop_w: ['loop', 'loop'], rc_gen_w: ['第', 'gen'], rc_fmt_new: ['新格式 100ms', 'new 100ms'], rc_fmt_old: ['舊格式 20ms', 'old 20ms'],
     rc_score: ['評分', 'score'],
     th_score: ['評分', 'score'], th_gen: ['世代', 'gen'], th_push: ['抗推', 'push'], th_tilt: ['傾斜°', 'tilt°'], th_x: ['距離m', 'x m'], th_ok: ['採用', 'kept'],
     rc_loop: ['♻ 自動循環（訓練→評估→調整→再訓練）', '♻ Auto loop (train → evaluate → adjust → train again)'],
@@ -327,7 +329,15 @@
   function entryById(id) { for (var i = 0; i < IDX.length; i++) if (IDX[i].path === id) return IDX[i]; return null; }
   function evalTxt(e) { if (typeof e.score === 'number') return tt('rc_score') + ' ' + e.score.toFixed(2); if (typeof e.success === 'number') return tt('rc_success') + ' ' + Math.round(100 * e.success) + '%'; return typeof e.eval_mean_len === 'number' ? Math.round(e.eval_mean_len) + '/' + (e.eval_max_len || '?') : '-'; }
   function cfgTxt(e) { var k = Object.keys(e.cfg || {}); return k.length ? k.map(function (x) { return x + '=' + e.cfg[x]; }).join(', ') : tt('rc_default'); }
-  function label(e) { return e.task + ' · ' + (e.name || e.path) + ' · ' + evalTxt(e) + (e.finished_at ? ' · ' + String(e.finished_at).slice(0, 10) : ''); }
+  function whenTxt(e) {   // local date + time, e.g. 11-03 18:30
+    var d = e.finished_at ? new Date(e.finished_at) : null; if (!d || isNaN(d)) return e.finished_at ? String(e.finished_at).slice(0, 10) : '';
+    var p = function (n) { return (n < 10 ? '0' : '') + n; }; return p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+  // one line per policy:  【task】 name (loop / generation) · result · date time · format (new = obs 68, 100 ms; old = obs 43/65, 20 ms)
+  function label(e) {
+    var lp = e.loop ? ' (' + tt('rc_loop_w') + ' ' + e.loop + (e.gen !== undefined ? ' · ' + tt('rc_gen_w') + ' ' + e.gen : '') + ')' : '';
+    return '【' + tt('rc_t_' + e.task) + '】 ' + (e.name || e.path) + lp + ' · ' + evalTxt(e) + ' · ' + whenTxt(e) + ' · ' + (e.obs_dim === 68 ? tt('rc_fmt_new') : tt('rc_fmt_old'));
+  }
   function fillSelect(sel, withNone, keep) {
     sel.textContent = '';
     if (withNone) { var o0 = document.createElement('option'); o0.value = ''; o0.textContent = tt('rc_none'); sel.appendChild(o0); }
@@ -420,7 +430,7 @@
   }
   async function loadSelected() { if (!needRepo()) return; var e = entryById($('rlcSel').value); if (!e && !IDX.length) await refreshList(); e = e || entryById($('rlcSel').value); await loadEntry(e); }
 
-  // ---- auto loop (autoloop.yml): start / stop / follow policies/loop/<id>/state.json ----
+  // ---- auto loop (autoloop.yml): start / stop / follow policies/loop/<task>/<id>/state.json ----
   var LOOP_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{0,19}$/;
   function loopId() { return LOOP.id || taskOf(ST.task) + '-1'; }   // empty = <task>-1, so different tasks never share a loop (same-name runs are serialized by GitHub)
   function loopHint() { var e = $('rlcLoopId'); if (e) e.placeholder = taskOf($('rlcTask') ? $('rlcTask').value : ST.task) + '-1'; }
@@ -443,7 +453,7 @@
     try {
       var ref = await defaultBranch(ST.repo);
       var inputs = loopInputs(), st0 = null;
-      try { st0 = await fetchJson(RAW + ST.repo + '/policies/loop/' + loopId() + '/state.json'); } catch (e) { st0 = null; }
+      try { st0 = await fetchJson(RAW + ST.repo + '/policies/loop/' + taskOf(ST.task) + '/' + loopId() + '/state.json'); } catch (e) { st0 = null; }
       if (st0 && st0.stopped) inputs.restart = 'true';   // a stopped loop would otherwise make the whole run fail: resume it instead
       await gh('/repos/' + ST.repo + '/actions/workflows/autoloop.yml/dispatches', { method: 'POST', body: { ref: ref, inputs: inputs } });
       loopStat((inputs.restart ? tt('rc_loop_restarting') + String(st0.reason || '') + ' · ' : '') + tt('rc_loop_started')); clearTimeout(loopTimer); loopTimer = setTimeout(function () { loopRefresh(true); }, 20000);
@@ -476,7 +486,7 @@
   async function loopRefresh(auto) {
     if (!needRepo()) return; readLoop(); if (!LOOP_RE.test(loopId())) { loopStat(tt('rc_bad_loop'), true); return; }
     try {
-      var st = await fetchJson(RAW + ST.repo + '/policies/loop/' + loopId() + '/state.json');
+      var st = await fetchJson(RAW + ST.repo + '/policies/loop/' + taskOf(ST.task) + '/' + loopId() + '/state.json');
       if (!st || typeof st !== 'object') { loopStat(tt('rc_loop_none')); if (auto) { clearTimeout(loopTimer); loopTimer = setTimeout(function () { loopRefresh(true); }, 90000); } return; }
       var head = loopRender(st), tail = '';
       if (st.stopped) tail = ' · ⏹ ' + String(st.reason || '') + tt('rc_loop_restart_hint');

@@ -2,8 +2,8 @@ name: autoloop
 # Automatic loop: train K candidates in parallel -> evaluate them (rl/evaluate.py) -> the controller (rl/autoloop.py) reviews the results,
 # keeps the best as champion, adjusts the next candidates' push / reward settings -> starts the next generation by itself.
 # It stops when the target score is reached, after `patience` generations without improvement, after `max_generations`, or when you
-# cancel the running workflow (or add a file named STOP in loop/<loop_id>/ on the `policies` branch, or disable the workflow).
-# State: policies/loop/<loop_id>/state.json (+ champion/model.zip). Every accepted champion is also published like a normal run
+# cancel the running workflow (or add a file named STOP in loop/<task>/<loop_id>/ on the `policies` branch, or disable the workflow).
+# State: policies/loop/<task>/<loop_id>/state.json (+ champion/model.zip); the task is part of the path, so the same loop name can be used for different tasks without clashing. Every accepted champion is also published like a normal run
 # (policies/<task>/<loop_id>-g<N>/..., listed in policies/index.json), so the web player can load and compare it.
 on:
   workflow_dispatch:
@@ -20,7 +20,7 @@ permissions:
   contents: write   # push results and state to the `policies` branch
   actions: write    # start the next generation (workflow_dispatch with GITHUB_TOKEN does create a run)
 concurrency:
-  group: autoloop-${{ inputs.loop_id || format('{0}-1', inputs.task) }}
+  group: autoloop-${{ inputs.task }}-${{ inputs.loop_id || format('{0}-1', inputs.task) }}
   cancel-in-progress: false
 env:
   LOOP_ID: ${{ inputs.loop_id || format('{0}-1', inputs.task) }}
@@ -60,7 +60,7 @@ jobs:
           mkdir -p /tmp/pol
           if git ls-remote --exit-code --heads "$URL" policies >/dev/null 2>&1; then rm -rf /tmp/pol; git clone -q --depth 1 --branch policies "$URL" /tmp/pol; fi
           RESTART=""; [ "$IN_RESTART" = "true" ] && RESTART="--restart"
-          python3 rl/autoloop.py plan --state-dir "/tmp/pol/loop/$LOOP_ID" --loop-id "$LOOP_ID" --task "$IN_TASK" --k "$IN_K" --minutes "$IN_MINUTES" \
+          python3 rl/autoloop.py plan --state-dir "/tmp/pol/loop/$IN_TASK/$LOOP_ID" --loop-id "$LOOP_ID" --task "$IN_TASK" --k "$IN_K" --minutes "$IN_MINUTES" \
             --max-gens "$IN_MAXGENS" --patience "$IN_PATIENCE" --seed "$IN_SEED" $RESTART
       - name: Loop is stopped (say so instead of silently skipping everything)
         if: steps.plan.outputs.stop == 'true'
@@ -97,9 +97,9 @@ jobs:
           mkdir -p rl/out
           if git ls-remote --exit-code --heads "$URL" policies >/dev/null 2>&1; then
             git clone -q --depth 1 --branch policies "$URL" /tmp/pol
-            if [ -f "/tmp/pol/loop/$LOOP_ID/champion/model.zip" ]; then
-              cp "/tmp/pol/loop/$LOOP_ID/champion/model.zip" rl/out/model.zip
-              cp "/tmp/pol/loop/$LOOP_ID/champion/curve.json" rl/out/curve.json 2>/dev/null || true
+            if [ -f "/tmp/pol/loop/$IN_TASK/$LOOP_ID/champion/model.zip" ]; then
+              cp "/tmp/pol/loop/$IN_TASK/$LOOP_ID/champion/model.zip" rl/out/model.zip
+              cp "/tmp/pol/loop/$IN_TASK/$LOOP_ID/champion/curve.json" rl/out/curve.json 2>/dev/null || true
               echo "resuming from the champion"
             fi
           fi
@@ -147,7 +147,7 @@ jobs:
             rm -rf /tmp/pol /tmp/win; mkdir -p /tmp/win; : > /tmp/sel.out
             if git ls-remote --exit-code --heads "$URL" policies >/dev/null 2>&1; then git clone -q --depth 1 --branch policies "$URL" /tmp/pol
             else git init -q -b policies /tmp/pol && git -C /tmp/pol remote add origin "$URL"; fi
-            D="/tmp/pol/loop/$LOOP_ID"
+            D="/tmp/pol/loop/$IN_TASK/$LOOP_ID"
             # creates the state of a brand-new loop (no-op when it exists); its step outputs are discarded
             RESTART=""; [ "$IN_RESTART" = "true" ] && RESTART="--restart"
             GITHUB_OUTPUT=/dev/null python3 rl/autoloop.py plan --state-dir "$D" --loop-id "$LOOP_ID" --task "$IN_TASK" --k "$IN_K" --minutes "$IN_MINUTES" --max-gens "$IN_MAXGENS" --patience "$IN_PATIENCE" --seed "$IN_SEED" $RESTART >/dev/null
@@ -170,7 +170,7 @@ jobs:
         run: |
           python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY" || true
           import json, os
-          s = json.load(open('/tmp/pol/loop/%s/state.json' % os.environ['LOOP_ID']))
+          s = json.load(open('/tmp/pol/loop/%s/%s/state.json' % (os.environ['IN_TASK'], os.environ['LOOP_ID'])))
           print('### autoloop `%s` generation %s -> champion %s' % (s['loop_id'], int(s['gen']) - 1, (s['champion'] or {}).get('id', '-')))
           print('stopped: %s %s | patience %s/%s | champion score %.3f\n' % (s['stopped'], s['reason'], s['patience'], s['patience_max'], (s['champion'] or {}).get('score', 0)))
           print('| id | score | push | tilt | x | accepted | cfg |\n|---|---|---|---|---|---|---|')
@@ -183,7 +183,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           for i in 1 2 3; do
-            gh workflow run autoloop.yml --ref "$GITHUB_REF_NAME" -f loop_id="$LOOP_ID" && { echo "Next generation of '$LOOP_ID' started." >> "$GITHUB_STEP_SUMMARY"; exit 0; }
+            gh workflow run autoloop.yml --ref "$GITHUB_REF_NAME" -f loop_id="$LOOP_ID" -f task="$TASK_OUT" && { echo "Next generation of '$LOOP_ID' started." >> "$GITHUB_STEP_SUMMARY"; exit 0; }
             sleep 10
           done
           echo "::error title=Could not start the next generation::gh workflow run failed 3 times. Check Settings > Actions > General > Workflow permissions, then resume with restart=true."
