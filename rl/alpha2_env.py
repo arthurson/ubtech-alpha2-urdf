@@ -2,7 +2,7 @@
 pip install mujoco gymnasium numpy
 
 ONE observation layout for every task (OBS_DIM = 68, float32) - the web player builds the same vector whatever policy is loaded:
-    [ 0:20] joint position - q_default (servo order 1..20, rad)
+    [ 0:20] joint position - q_default (servo order 1..20, rad); q_default = the ZERO pose (all 0: standing, arms down), so this is the raw joint angle
     [20:40] previous action (normalised, -1..1)
     [40:43] gravity direction in the base frame (the robot's only inertial sensor is the head accelerometer, so there is
             no base angular / linear velocity in the observation)
@@ -10,7 +10,7 @@ ONE observation layout for every task (OBS_DIM = 68, float32) - the web player b
     [46:48] phase features: stand / walk = sin, cos of a free-running clock (period GAIT_PERIOD s); walk_ref = sin, cos of the loop of the
             reference (0, 0 during its start-up); get-up = (progress t/T <= 1, 1 once the reference is over)
     [48:68] base target - q_default  (zeros for stand / walk; reference - q_default for walk_ref / get-up)
-action (20, -1..1): ctrl = base target + SCALE * a   (base target = q_default or the reference; clamped to the joint limits = actuator ctrl range)
+action (20, -1..1): ctrl = base target + SCALE * a   (base target = zero pose or the reference; clamped to the joint limits = actuator ctrl range)
     -> the exported ONNX has two outputs: 'action' (clamped a, goes back into obs[20:40]) and 'delta' (= SCALE * a in rad), so the
        player applies the same rule for every task:  ctrl = q_default + obs[48:68] + delta.
 
@@ -52,10 +52,12 @@ def _load_cfg():
 CFG = _load_cfg()
 
 def _q_default():
+    """joint names (servo order) -> default angle.  The default pose is the ZERO pose (q = 0: standing, arms down, legs straight = the PC software's
+    model pose), NOT the q_init stance of config/servo_map.yaml (arms out, hips / knees flexed): stand / walk are trained, tested and pushed around it."""
     q = {}
     for l in open(os.path.join(PKG, 'config', 'servo_map.yaml')):
-        m = re.search(r'joint: (\w+).*?q_init_deg: (-?[\d.]+)', l)
-        if m: q[m.group(1)] = np.radians(float(m.group(2)))
+        m = re.search(r'joint: (\w+)', l)
+        if m: q[m.group(1)] = 0.0
     return q
 
 def load_ref(path):
@@ -72,6 +74,7 @@ def ref_at(q, dt, loop, t):
 class Alpha2Env(gym.Env):
     """Task 'stand': keep balance under random pushes, with domain randomisation. Base class of all tasks."""
     SCALE = SCALE_STAND; EP = EP_STAND
+    Z0 = 0.2241                       # base height standing in the zero pose (feet 2 mm above base_footprint 0.2206, + 1.5 mm drop)
     def __init__(self, randomize=True, push=True, seed=None):
         self.m = mujoco.MjModel.from_xml_path(os.path.join(PKG, 'mujoco', 'alpha2.xml')); self.d = mujoco.MjData(self.m)
         assert abs(self.m.opt.timestep - PHYS_DT) < 1e-9, 'mujoco/alpha2.xml timestep must be %g' % PHYS_DT
@@ -111,7 +114,7 @@ class Alpha2Env(gym.Env):
     def reset(self, seed=None, options=None):
         if seed is not None: self.rng = np.random.default_rng(seed)
         self._dr(); d = self.d; mujoco.mj_resetData(self.m, d)
-        d.qpos[:7] = [0, 0, 0.2206 + 0.0015, 1, 0, 0, 0]; d.qpos[self.qadr] = self.q0; d.ctrl[self.act] = self.q0
+        d.qpos[:7] = [0, 0, self.Z0, 1, 0, 0, 0]; d.qpos[self.qadr] = self.q0; d.ctrl[self.act] = self.q0
         if self.randomize: d.qpos[self.qadr] += self.rng.normal(0, 0.03, 20)
         mujoco.mj_forward(self.m, d); self.t = 0; self.pleft = 0.0; self.prev[:] = 0; self.prev_ctrl = self.q0.copy()
         self.lat = 5 * int(self.rng.integers(0, 3)) if self.randomize else 0      # command latency 0 / 10 / 20 ms inside the 100 ms step
@@ -199,7 +202,7 @@ class WalkEnv(Alpha2Env):
 class WalkRefEnv(Alpha2Env):
     """Imitation walking (the previous 'walk'): track the official forward .ubx walk (rl/ref/*.json from rl/make_ref.mjs); the policy outputs a residual
     around the reference joint targets so it can balance. The reference = start-up, then the exact gait loop repeated.  Forward only."""
-    SCALE = SCALE_REF; EP = EP_WALK
+    SCALE = SCALE_REF; EP = EP_WALK; Z0 = 0.2221   # the reference starts from the q_init stance
     def __init__(self, ref=os.path.join(PKG, 'rl', 'ref', 'forward.json'), **kw):
         super().__init__(**kw); self.ref, self.rdt, self.loop = load_ref(ref); assert self.loop
     def target(self, t): return ref_at(self.ref, self.rdt, self.loop, t)

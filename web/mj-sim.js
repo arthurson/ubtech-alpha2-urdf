@@ -21,7 +21,7 @@
     cmd: [0, 0, 0], cmdMax: [0.05, 0.03, 0.4] };   // RL policy (ONNX); cmd = velocity command (vx m/s, vy m/s, wz rad/s) of the unified policies
   var WALK_SCALE = 0.2, ACT_SCALE = 0.3, DECIM = 10, CDT = 0.02;   // legacy policies (obs 43 / 65, 20 ms step); must equal the old rl/alpha2_env.py
   // unified policies (obs 68, two outputs action + delta, 100 ms step); must equal rl/alpha2_env.py (OBS_DIM, CTRL_DT, DECIM, GAIT_PERIOD, push 20 ms)
-  var UNI = { nobs: 68, cdt: 0.1, decim: 50, gait: 1.0, pushPh: 10 };
+  var UNI = { nobs: 68, cdt: 0.1, decim: 50, gait: 1.0, pushPh: 10, z0: 0.2241, q0: new Array(20).fill(0) };   // q0 = default pose = the ZERO pose (not the q_init stance)
   var modP = null, statT = 0, jOrig = null, cOrig = null;
 
   // ---- i18n (keys merged into the player's table; data-i18n attributes are re-translated by applyLang) ----
@@ -299,7 +299,7 @@
   function polReset() {   // same reset as rl/alpha2_env.py without randomisation
     var mj = S.mj, m = S.m, d = S.d; mj.mj_resetData(m, d);
     var qp = d.qpos; qp[0] = 0; qp[1] = 0; qp[2] = 0.2206 + 0.0015; qp[3] = 1; qp[4] = 0; qp[5] = 0; qp[6] = 0;
-    var q00 = POL.ref ? POL.ref.q[0] : S.q0; POL.k = 0;
+    var q00 = POL.ref ? POL.ref.q[0] : (POL.uni ? UNI.q0 : S.q0); POL.k = 0; if (POL.uni && !POL.ref) qp[2] = UNI.z0;
     for (var k = 0; k < 20; k++) { qp[S.qadr[k]] = q00[k]; d.ctrl[S.act[k]] = q00[k]; POL.prev[k] = 0; }
     if (POL.ref && POL.ref.getup) {   // get-up: lie on the back ('back', face up) or the front ('front', face down), settle 1 s holding the first reference pose
       var h = Math.SQRT1_2, gq = POL.ref.getup === 'front' ? [h, 0, h, 0] : [h, 0, -h, 0];
@@ -318,8 +318,8 @@
     return r;
   }
   async function polControlU() {   // one 0.1 s control step of a unified policy: obs(68) -> ONNX -> ctrl = target + delta -> 50 physics steps
-    var mj = S.mj, m = S.m, d = S.d, b = S.bid.base_link, qp = d.qpos, xm = d.xmat, o = new Float32Array(UNI.nobs), Rf = POL.ref, kk = POL.k, tgt = S.q0, k;
-    for (k = 0; k < 20; k++) { o[k] = qp[S.qadr[k]] - S.q0[k]; o[20 + k] = POL.prev[k]; }
+    var mj = S.mj, m = S.m, d = S.d, b = S.bid.base_link, qp = d.qpos, xm = d.xmat, o = new Float32Array(UNI.nobs), Rf = POL.ref, kk = POL.k, tgt = UNI.q0, k, Q0 = UNI.q0;
+    for (k = 0; k < 20; k++) { o[k] = qp[S.qadr[k]] - Q0[k]; o[20 + k] = POL.prev[k]; }
     o[40] = -xm[9 * b + 6]; o[41] = -xm[9 * b + 7]; o[42] = -xm[9 * b + 8];   // gravity direction in the base frame (R^T * [0,0,-1])
     o[43] = POL.cmd[0]; o[44] = POL.cmd[1]; o[45] = POL.cmd[2];
     if (Rf) {
@@ -327,7 +327,7 @@
       if (Rf.getup) { var Tn = Math.ceil((Rf.q.length - 1) * (Rf.dt || 0.02) / UNI.cdt) + 1; o[46] = Math.min(kk / Tn, 1); o[47] = kk >= Tn ? 1 : 0; }
       else { var lp = Rf.loop, x = kk * UNI.cdt / (Rf.dt || 0.02); if (x >= lp[0]) { var ph = 2 * Math.PI * (x - lp[0]) / (lp[1] - lp[0]); o[46] = Math.sin(ph); o[47] = Math.cos(ph); } }
     } else { var p0 = 2 * Math.PI * (kk * UNI.cdt) / UNI.gait; o[46] = Math.sin(p0); o[47] = Math.cos(p0); }   // free-running clock (stand / velocity walk)
-    for (k = 0; k < 20; k++) o[48 + k] = tgt[k] - S.q0[k];
+    for (k = 0; k < 20; k++) o[48 + k] = tgt[k] - Q0[k];
     var out = await POL.sess.run({ obs: new window.ort.Tensor('float32', o, [1, UNI.nobs]) }), a = out.action.data, dl = out.delta.data;
     POL.obs = o; POL.act = Array.prototype.slice.call(a);
     var cr = m.actuator_ctrlrange, ct = d.ctrl;
