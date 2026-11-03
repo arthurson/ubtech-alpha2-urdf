@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       minutes: {description: 'Training wall-clock budget in minutes, 1-340 (a GitHub job is limited to 360 min including setup; 330 is the safe maximum)', default: '330'}
-      task:    {description: 'stand (balance), walk (imitate the official forward walk), getup_back (get up from lying on the back / face up = official BackStand) or getup_front (from lying on the front / face down = FrontStand)', default: 'walk'}
+      task:    {description: 'stand (balance), walk (imitate the official forward walk), getup_back (get up from lying on the back / face up = official BackStand) or getup_front (from lying on the front / face down = FrontStand)', type: choice, options: [walk, stand, getup_back, getup_front], default: 'walk'}
       resume:  {description: 'Resume from the latest cached checkpoint (true/false)', default: 'true'}
       seed:    {description: 'Random seed', default: '0'}
       cfg:     {description: 'JSON overrides for push / reward weights, see CFG in rl/alpha2_env.py', default: '{}'}

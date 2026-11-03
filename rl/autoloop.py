@@ -70,6 +70,17 @@ def curriculum(cfg, champ_eval, task='walk'):
     return c
 
 
+def restart(state, more_gens=None, patience=None):
+    """resume a stopped loop (patience used up, generation limit, all candidates failed, STOP file): clear the stop flag, reset patience and
+    explore widely again; `more_gens` = how many MORE generations to run from now on. The champion and the history are kept."""
+    state['stopped'], state['reason'] = False, ''
+    if patience: state['patience_max'] = max(1, int(patience))
+    state['patience'] = state['patience_max']; state['sigma'] = SIGMA0
+    if more_gens: state['max_gens'] = state['gen'] + max(1, min(100, int(more_gens)))
+    state['updated'] = now()
+    return state
+
+
 def plan(state, stop_file=False):
     """-> dict(stop, reason, gen, candidates=[{id, cand, seed, cfg(json string), baseline(bool)}])"""
     if stop_file: state['stopped'], state['reason'] = True, 'STOP file'
@@ -143,6 +154,7 @@ def main():
     p = sub.add_parser('plan'); p.add_argument('--state-dir', required=True); p.add_argument('--loop-id', required=True); p.add_argument('--task', default='walk', choices=['stand', 'walk', 'getup_back', 'getup_front'])
     p.add_argument('--k', type=int, default=3); p.add_argument('--minutes', type=int, default=60); p.add_argument('--max-gens', type=int, default=10)
     p.add_argument('--patience', type=int, default=3); p.add_argument('--seed', type=int, default=0)
+    p.add_argument('--restart', action='store_true', help='resume a stopped loop: --max-gens = how many MORE generations, --patience = new patience')
     s = sub.add_parser('select'); s.add_argument('--state-dir', required=True); s.add_argument('--cands-dir', required=True); s.add_argument('--winner-dir', required=True)
     a = ap.parse_args()
     if a.cmd == 'plan':
@@ -150,6 +162,9 @@ def main():
         if not re.match(r'^[A-Za-z0-9][A-Za-z0-9_-]{0,%d}$' % (ID_RE_MAX - 1), a.loop_id): sys.exit('loop id: letters/digits/-/_, max %d chars' % ID_RE_MAX)
         st = load_state(a.state_dir)
         if st is None: st = new_state(a.loop_id, a.task, max(1, min(6, a.k)), max(1, min(330, a.minutes)), max(1, min(100, a.max_gens)), max(1, a.patience), a.seed)
+        elif a.restart:
+            restart(st, a.max_gens, a.patience)
+            if os.path.exists(os.path.join(a.state_dir, 'STOP')): os.remove(os.path.join(a.state_dir, 'STOP'))
         out = plan(st, stop_file=os.path.exists(os.path.join(a.state_dir, 'STOP'))); save_state(a.state_dir, st)
         print(json.dumps(out, indent=1))
         emit('stop', 'true' if out['stop'] else 'false'); emit('gen', out['gen']); emit('reason', out['reason'])

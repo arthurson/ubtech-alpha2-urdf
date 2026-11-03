@@ -93,6 +93,8 @@
     rc_loop_stop_t: ['取消正在運行／排隊嘅 autoloop run（進行中嗰個世代會作廢）', 'Cancels the running / queued autoloop runs (the generation in progress is lost)'],
     rc_bad_loop: ['Loop 名稱只可用英文、數字、- 同 _（最多 20 字）', 'Loop name: letters, digits, - and _ only (max 20)'],
     rc_loop_started: ['已送出 autoloop，等 GitHub 排隊…（頭一個世代會做 baseline 評估，所以較耐）', 'autoloop dispatched, waiting for GitHub to queue it… (the first generation also evaluates the baseline, so it takes longer)'],
+    rc_loop_restarting: ['Loop 已停止，用重啟模式繼續（再跑「最多世代」個世代）：', 'The loop was stopped; resuming it in restart mode ("Max generations" more generations): '],
+    rc_loop_restart_hint: [' · 撳「開始／繼續循環」會重啟', ' · press Start / continue to restart it'],
     rc_loop_none: ['未有呢個 loop 嘅狀態（未開始，或者第一個世代未完）', 'No state for this loop yet (not started, or the first generation has not finished)'],
     rc_loop_stopped_n: ['已取消 run 數目：', 'Runs cancelled: '],
     rc_loop_running: ['進行中', 'running'], rc_loop_idle: ['未見運行中嘅 run（可能已被取消）', 'no run in progress (maybe cancelled)'],
@@ -126,7 +128,7 @@
   var ST = { repo: '', token: '', remember: false, task: 'walk', name: '', minutes: 330, resume: true, seed: 0, params: {}, runId: 0, t0: 0, task0: 'walk' };
   var TASKS = ['stand', 'walk', 'getup_back', 'getup_front'];
   function taskOf(t) { return TASKS.indexOf(t) >= 0 ? t : 'walk'; }
-  var LOOP = { id: 'auto1', k: 3, min: 330, gens: 10, pat: 3 }, loopTimer = 0, loopChamp = '', IDX = [], CURVES = {}, chartTok = 0, NAME_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$/, PATH_RE = /^(stand|walk|getup_back|getup_front)(\/[A-Za-z0-9_-]{1,32})?$/;
+  var LOOP = { id: '', k: 3, min: 330, gens: 10, pat: 3 }, loopTimer = 0, loopChamp = '', IDX = [], CURVES = {}, chartTok = 0, NAME_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$/, PATH_RE = /^(stand|walk|getup_back|getup_front)(\/[A-Za-z0-9_-]{1,32})?$/;
   var timer = 0, branchCache = {}, busy = false;
   function lsGet() { try { return JSON.parse(localStorage.getItem(LSK) || '{}'); } catch (e) { return {}; } }
   function lsSet() {
@@ -248,6 +250,7 @@
     $('rlcStart').onclick = start; $('rlcStop').onclick = cancel; $('rlcRefresh').onclick = function () { refresh(true); }; $('rlcLoad').onclick = function () { loadSelected(); }; $('rlcListRef').onclick = function () { refreshList(); };
     $('rlcSel').addEventListener('change', function () { renderTable(); drawChart(); }); $('rlcSelB').addEventListener('change', drawChart); $('rlcMetric').addEventListener('change', drawChart);
     $('rlcReset').onclick = function (e) { e.preventDefault(); ST.params = {}; ST.seed = 0; writeForm(); lsSet(); };
+    $('rlcTask').addEventListener('change', function () { readForm(); loopHint(); });
     $('rlcLoopStart').onclick = loopStart; $('rlcLoopStop').onclick = loopStop; $('rlcLoopRef').onclick = function () { loopRefresh(false); };
     forIds(['rlcLoopId', 'rlcLoopK', 'rlcLoopMin', 'rlcLoopGens', 'rlcLoopPat'], function (el) { el.addEventListener('change', function () { readLoop(); lsSet(); }); });
     forIds(['rlcRepo', 'rlcToken', 'rlcRem', 'rlcTask', 'rlcName', 'rlcMin', 'rlcResume', 'rlcSeed'].concat(PARAMS.map(function (p) { return 'rlcP_' + p.k; })), function (el) {
@@ -404,11 +407,13 @@
 
   // ---- auto loop (autoloop.yml): start / stop / follow policies/loop/<id>/state.json ----
   var LOOP_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{0,19}$/;
+  function loopId() { return LOOP.id || taskOf(ST.task) + '-1'; }   // empty = <task>-1, so different tasks never share a loop (same-name runs are serialized by GitHub)
+  function loopHint() { var e = $('rlcLoopId'); if (e) e.placeholder = taskOf($('rlcTask') ? $('rlcTask').value : ST.task) + '-1'; }
   function readLoop() { LOOP.id = ($('rlcLoopId').value || '').trim(); LOOP.k = $('rlcLoopK').value; LOOP.min = $('rlcLoopMin').value; LOOP.gens = $('rlcLoopGens').value; LOOP.pat = $('rlcLoopPat').value; }
   function writeLoop() { $('rlcLoopId').value = LOOP.id; $('rlcLoopK').value = LOOP.k; $('rlcLoopMin').value = LOOP.min; $('rlcLoopGens').value = LOOP.gens; $('rlcLoopPat').value = LOOP.pat; }
   function loopStat(txt, bad) { var e = $('rlcLoopStat'); if (!e) return; e.textContent = txt; e.style.color = bad ? '#c0392b' : ''; }
   function loopInputs() {
-    return { loop_id: LOOP.id, task: taskOf(ST.task), candidates: String(Math.round(clampNum(LOOP.k, 1, 6, 3))), minutes: String(Math.round(clampNum(LOOP.min, 1, 330, 330))),
+    return { loop_id: loopId(), task: taskOf(ST.task), candidates: String(Math.round(clampNum(LOOP.k, 1, 6, 3))), minutes: String(Math.round(clampNum(LOOP.min, 1, 330, 330))),
       max_generations: String(Math.round(clampNum(LOOP.gens, 1, 100, 10))), patience: String(Math.round(clampNum(LOOP.pat, 1, 20, 3))), seed: String(Math.max(0, Math.round(clampNum(ST.seed, 0, 1e9, 0)))) };
   }
   async function activeLoopRuns() {   // autoloop runs that are not finished (needs the API; works without a token for a public repo, within the 60 / h limit)
@@ -418,12 +423,15 @@
   async function loopStart() {
     if (busy || !needRepo()) return; readLoop();
     if (!ST.token) { stat(tt('rc_no_token'), true); loopStat(tt('rc_no_token'), true); return; }
-    if (!LOOP_RE.test(LOOP.id)) { loopStat(tt('rc_bad_loop'), true); return; }
+    if (!LOOP_RE.test(loopId())) { loopStat(tt('rc_bad_loop'), true); return; }
     busy = true; lsSet();
     try {
       var ref = await defaultBranch(ST.repo);
-      await gh('/repos/' + ST.repo + '/actions/workflows/autoloop.yml/dispatches', { method: 'POST', body: { ref: ref, inputs: loopInputs() } });
-      loopStat(tt('rc_loop_started')); clearTimeout(loopTimer); loopTimer = setTimeout(function () { loopRefresh(true); }, 20000);
+      var inputs = loopInputs(), st0 = null;
+      try { st0 = await fetchJson(RAW + ST.repo + '/policies/loop/' + loopId() + '/state.json'); } catch (e) { st0 = null; }
+      if (st0 && st0.stopped) inputs.restart = 'true';   // a stopped loop would otherwise make the whole run fail: resume it instead
+      await gh('/repos/' + ST.repo + '/actions/workflows/autoloop.yml/dispatches', { method: 'POST', body: { ref: ref, inputs: inputs } });
+      loopStat((inputs.restart ? tt('rc_loop_restarting') + String(st0.reason || '') + ' · ' : '') + tt('rc_loop_started')); clearTimeout(loopTimer); loopTimer = setTimeout(function () { loopRefresh(true); }, 20000);
     } catch (e) { loopStat(String(e.message || e), true); } finally { busy = false; }
   }
   async function loopStop() {
@@ -451,12 +459,12 @@
     return head;
   }
   async function loopRefresh(auto) {
-    if (!needRepo()) return; readLoop(); if (!LOOP_RE.test(LOOP.id)) { loopStat(tt('rc_bad_loop'), true); return; }
+    if (!needRepo()) return; readLoop(); if (!LOOP_RE.test(loopId())) { loopStat(tt('rc_bad_loop'), true); return; }
     try {
-      var st = await fetchJson(RAW + ST.repo + '/policies/loop/' + LOOP.id + '/state.json');
+      var st = await fetchJson(RAW + ST.repo + '/policies/loop/' + loopId() + '/state.json');
       if (!st || typeof st !== 'object') { loopStat(tt('rc_loop_none')); if (auto) { clearTimeout(loopTimer); loopTimer = setTimeout(function () { loopRefresh(true); }, 90000); } return; }
       var head = loopRender(st), tail = '';
-      if (st.stopped) tail = ' · ⏹ ' + String(st.reason || '');
+      if (st.stopped) tail = ' · ⏹ ' + String(st.reason || '') + tt('rc_loop_restart_hint');
       else if (ST.token) { var act = await activeLoopRuns(); tail = act.length ? ' · ▶ ' + tt('rc_loop_running') : ' · ⏸ ' + tt('rc_loop_idle'); }
       loopStat(head + tail);
       var cn = st.champion ? st.champion.name : ''; if (cn && cn !== loopChamp) { loopChamp = cn; refreshList(null, null, true); }   // a new champion is also in the policy list above
@@ -471,8 +479,9 @@
     ST.task = taskOf(s.task); ST.name = s.name || ''; ST.minutes = s.minutes || 330; ST.resume = s.resume !== false; ST.seed = s.seed || 0; ST.params = s.params || {};
     ST.runId = s.runId || 0; ST.t0 = s.t0 || 0; ST.task0 = s.task0 || ST.task;
     if (typeof applyLang === 'function') applyLang();
-    if (s.loop && typeof s.loop === 'object') { LOOP.id = String(s.loop.id || LOOP.id); LOOP.k = s.loop.k || LOOP.k; LOOP.min = s.loop.min || LOOP.min; LOOP.gens = s.loop.gens || LOOP.gens; LOOP.pat = s.loop.pat || LOOP.pat; }
-    writeForm(); writeLoop(); wire(); refreshList(null, null, true);   // the list of already trained policies (public repo: no token needed)
+    // (a saved loop name 'auto1' is the old shared default and is treated as empty = <task>-1)
+    if (s.loop && typeof s.loop === 'object') { LOOP.id = s.loop.id === 'auto1' ? '' : String(s.loop.id || ''); LOOP.k = s.loop.k || LOOP.k; LOOP.min = s.loop.min || LOOP.min; LOOP.gens = s.loop.gens || LOOP.gens; LOOP.pat = s.loop.pat || LOOP.pat; }
+    writeForm(); writeLoop(); loopHint(); wire(); refreshList(null, null, true);   // the list of already trained policies (public repo: no token needed)
     if (ST.t0 && ST.runId) { $('rlcBox').open = true; refresh(false); }   // a run was in progress when the page was closed
   }
   window.RLCLOUD = { buildInputs: buildInputs, PARAMS: PARAMS, state: ST, start: start, refresh: refresh, refreshList: refreshList, loadEntry: loadEntry, loadSelected: loadSelected, drawChart: drawChart, cancel: cancel, init: init, loopStart: loopStart, loopStop: loopStop, loopRefresh: loopRefresh, loopInputs: loopInputs };

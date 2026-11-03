@@ -8,27 +8,29 @@ name: autoloop
 on:
   workflow_dispatch:
     inputs:
-      loop_id:         {description: 'Loop name (letters, digits, - _ ; max 20). A new name starts a new loop, an existing one continues from its state', default: 'auto1'}
-      task:            {description: 'stand, walk, getup_back or getup_front (only used when the loop is created)', default: 'walk'}
+      loop_id:         {description: 'Loop name (letters, digits, - _ ; max 20). Empty = <task>-1 (walk-1, getup_back-1, ...). A new name starts a new loop, an existing one continues from its state. Runs with the SAME name are serialized (one at a time); use different names to train several policies at the same time', default: ''}
+      task:            {description: 'What to train (only used when the loop is created)', type: choice, options: [walk, stand, getup_back, getup_front], default: 'walk'}
       candidates:      {description: 'Candidates trained in parallel per generation, 1-6 (only used when the loop is created)', default: '3'}
       minutes:         {description: 'Training minutes per candidate per generation, 1-330 (a GitHub job is limited to 360 min including setup and evaluation; only used when the loop is created)', default: '330'}
       max_generations: {description: 'Stop after this many generations, 1-100 (only used when the loop is created)', default: '10'}
       patience:        {description: 'Stop after this many generations in a row without improvement (only used when the loop is created)', default: '3'}
       seed:            {description: 'Random seed (only used when the loop is created)', default: '0'}
+      restart:         {description: 'true = resume a STOPPED loop (patience used up / generation limit / all failed / STOP file): clears the stop, resets patience and runs max_generations MORE generations. The web panel sets this automatically', default: 'false'}
 permissions:
   contents: write   # push results and state to the `policies` branch
   actions: write    # start the next generation (workflow_dispatch with GITHUB_TOKEN does create a run)
 concurrency:
-  group: autoloop-${{ inputs.loop_id }}
+  group: autoloop-${{ inputs.loop_id || format('{0}-1', inputs.task) }}
   cancel-in-progress: false
 env:
-  LOOP_ID: ${{ inputs.loop_id }}
+  LOOP_ID: ${{ inputs.loop_id || format('{0}-1', inputs.task) }}
   IN_TASK: ${{ inputs.task }}
   IN_K: ${{ inputs.candidates }}
   IN_MINUTES: ${{ inputs.minutes }}
   IN_MAXGENS: ${{ inputs.max_generations }}
   IN_PATIENCE: ${{ inputs.patience }}
   IN_SEED: ${{ inputs.seed }}
+  IN_RESTART: ${{ inputs.restart }}
 jobs:
   plan:
     runs-on: ubuntu-latest
@@ -45,6 +47,7 @@ jobs:
         run: |
           [[ "$LOOP_ID" =~ ^[A-Za-z0-9][A-Za-z0-9_-]{0,19}$ ]] || { echo "loop_id: letters/digits/-/_, max 20"; exit 1; }
           case "$IN_TASK" in stand|walk|getup_back|getup_front) ;; *) echo "task must be stand, walk, getup_back or getup_front"; exit 1;; esac
+          case "$IN_RESTART" in true|false|'') ;; *) echo "restart must be true or false"; exit 1;; esac
           for v in IN_K IN_MINUTES IN_MAXGENS IN_PATIENCE IN_SEED; do [[ "${!v}" =~ ^[0-9]+$ ]] || { echo "$v must be a non-negative integer"; exit 1; }; done
       - uses: actions/checkout@v4
       - name: Plan the next generation
@@ -56,8 +59,17 @@ jobs:
           URL="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           mkdir -p /tmp/pol
           if git ls-remote --exit-code --heads "$URL" policies >/dev/null 2>&1; then rm -rf /tmp/pol; git clone -q --depth 1 --branch policies "$URL" /tmp/pol; fi
+          RESTART=""; [ "$IN_RESTART" = "true" ] && RESTART="--restart"
           python3 rl/autoloop.py plan --state-dir "/tmp/pol/loop/$LOOP_ID" --loop-id "$LOOP_ID" --task "$IN_TASK" --k "$IN_K" --minutes "$IN_MINUTES" \
-            --max-gens "$IN_MAXGENS" --patience "$IN_PATIENCE" --seed "$IN_SEED"
+            --max-gens "$IN_MAXGENS" --patience "$IN_PATIENCE" --seed "$IN_SEED" $RESTART
+      - name: Loop is stopped (say so instead of silently skipping everything)
+        if: steps.plan.outputs.stop == 'true'
+        env:
+          REASON: ${{ steps.plan.outputs.reason }}
+        run: |
+          echo "::error title=autoloop '$LOOP_ID' is stopped::$REASON. Run it again with restart=true (the web panel does that automatically), or use a new loop name."
+          { echo "### autoloop \`$LOOP_ID\` is stopped"; echo "Reason: **$REASON**"; echo; echo "Resume it with *Run workflow* → loop_id=\`$LOOP_ID\`, restart=\`true\`, max_generations=<how many MORE generations> (the web panel does this for you), or start a new loop with another name."; } >> "$GITHUB_STEP_SUMMARY"
+          exit 1
 
   train:
     needs: plan
@@ -137,7 +149,8 @@ jobs:
             else git init -q -b policies /tmp/pol && git -C /tmp/pol remote add origin "$URL"; fi
             D="/tmp/pol/loop/$LOOP_ID"
             # creates the state of a brand-new loop (no-op when it exists); its step outputs are discarded
-            GITHUB_OUTPUT=/dev/null python3 rl/autoloop.py plan --state-dir "$D" --loop-id "$LOOP_ID" --task "$IN_TASK" --k "$IN_K" --minutes "$IN_MINUTES" --max-gens "$IN_MAXGENS" --patience "$IN_PATIENCE" --seed "$IN_SEED" >/dev/null
+            RESTART=""; [ "$IN_RESTART" = "true" ] && RESTART="--restart"
+            GITHUB_OUTPUT=/dev/null python3 rl/autoloop.py plan --state-dir "$D" --loop-id "$LOOP_ID" --task "$IN_TASK" --k "$IN_K" --minutes "$IN_MINUTES" --max-gens "$IN_MAXGENS" --patience "$IN_PATIENCE" --seed "$IN_SEED" $RESTART >/dev/null
             GITHUB_OUTPUT=/tmp/sel.out python3 rl/autoloop.py select --state-dir "$D" --cands-dir /tmp/cands --winner-dir /tmp/win
             NAME=$(sed -n 's/^name=//p' /tmp/sel.out)
             if [ -n "$NAME" ]; then
@@ -168,4 +181,18 @@ jobs:
         if: steps.sel.outputs.stop == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh workflow run autoloop.yml --ref "$GITHUB_REF_NAME" -f loop_id="$LOOP_ID"
+        run: |
+          for i in 1 2 3; do
+            gh workflow run autoloop.yml --ref "$GITHUB_REF_NAME" -f loop_id="$LOOP_ID" && { echo "Next generation of '$LOOP_ID' started." >> "$GITHUB_STEP_SUMMARY"; exit 0; }
+            sleep 10
+          done
+          echo "::error title=Could not start the next generation::gh workflow run failed 3 times. Check Settings > Actions > General > Workflow permissions, then resume with restart=true."
+          exit 1
+      - name: Why the loop did not continue
+        if: ${{ always() && steps.sel.outputs.stop != 'false' }}
+        env:
+          REASON: ${{ steps.sel.outputs.reason }}
+        run: |
+          if [ -n "$REASON" ]; then MSG="The loop stopped: $REASON. Resume it with restart=true (the web panel does that automatically) or start a new loop."
+          else MSG="The review step did not finish (see its log above), so no next generation was started. Fix the cause, then resume with restart=true."; fi
+          echo "::warning title=autoloop '$LOOP_ID' did not continue::$MSG"; echo "### $MSG" >> "$GITHUB_STEP_SUMMARY"

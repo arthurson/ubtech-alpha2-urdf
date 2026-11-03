@@ -71,6 +71,22 @@ cg = {k: A.START[k] for k in A.TASK_KEYS['getup_front']}
 c = A.curriculum(cg, gev(success=0.5), 'getup_front'); assert c['w_stand'] > cg['w_stand'] and c['push_force'] == cg['push_force']      # not reliable yet: reward standing more
 c = A.curriculum(cg, gev(success=1.0, push=0.9), 'getup_front'); assert c['push_force'] > cg['push_force']
 c = A.curriculum(cg, gev(success=1.0, push=0.3), 'getup_front'); assert c['w_stand'] > cg['w_stand'] and set(c) == set(cg)      # reliable but weak against pushes (used to raise KeyError: w_tilt)                               # reliable: ask for push robustness
+me = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'autoloop.py')
+
+# --- restart of a stopped loop
+st = A.new_state('r1', 'walk', 3, 60, 4, 2, 0); A.review(st, res(st, [ev(push=.5), ev(push=.4), ev(push=.3)]), BASE)
+for _ in range(2): A.review(st, res(st, [ev(push=.5)] * 3))
+assert st['stopped'] and 'no improvement' in st['reason'] and A.plan(st)['stop']
+champ = copy.deepcopy(st['champion']); gen = st['gen']; hist = len(st['history'])
+A.restart(st, 5, 4); assert not st['stopped'] and st['reason'] == '' and st['patience'] == 4 and st['patience_max'] == 4 and st['max_gens'] == gen + 5 and st['sigma'] == A.SIGMA0
+assert st['champion'] == champ and len(st['history']) == hist, 'champion and history are kept'
+pl = A.plan(st); assert not pl['stop'] and pl['gen'] == gen and len(pl['candidates']) == 3
+st2 = A.new_state('r2', 'walk', 1, 60, 3, 2, 0); st2.update(stopped=True, reason='all candidates failed', gen=1); A.restart(st2); assert not st2['stopped'] and st2['max_gens'] == 3 and not A.plan(st2)['stop']
+# CLI: stopped loop -> plan stops; plan --restart resumes it and removes the STOP file
+T2 = tempfile.mkdtemp(); S2 = T2 + '/s'; os.makedirs(S2); stopped = A.new_state('cli2', 'stand', 2, 5, 3, 2, 0); stopped.update(stopped=True, reason='max generations reached', gen=3); A.save_state(S2, stopped); open(S2 + '/STOP', 'w').write('')
+r = subprocess.run([sys.executable, me, 'plan', '--state-dir', S2, '--loop-id', 'cli2'], capture_output=True, text=True); assert json.loads(r.stdout)['stop'] is True
+r = subprocess.run([sys.executable, me, 'plan', '--state-dir', S2, '--loop-id', 'cli2', '--restart', '--max-gens', '2', '--patience', '5'], capture_output=True, text=True); o = json.loads(r.stdout)
+assert o['stop'] is False and len(o['candidates']) == 2 and not os.path.exists(S2 + '/STOP'); s3 = A.load_state(S2); assert s3['max_gens'] == 5 and s3['patience'] == 5 and not s3['stopped']
 # --- CLI end to end (plan -> fake candidate artifacts -> select)
 T = tempfile.mkdtemp(); S = T + '/state'; C = T + '/cands'; W = T + '/winner'; me = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'autoloop.py')
 out = subprocess.run([sys.executable, me, 'plan', '--state-dir', S, '--loop-id', 'cli', '--task', 'stand', '--k', '3', '--minutes', '5', '--max-gens', '3', '--patience', '2', '--seed', '1'],

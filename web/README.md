@@ -113,3 +113,22 @@ Token 只會傳去 `api.github.com`；除非剔「記住」，否則唔會存入
 **喺播放器睇**：開「物理」，「RL policy」揀 `policy.onnx` 同 `ref.json`（要一齊揀），撳「由 policy 控制」——機器人會自動由躺低開始（仰躺或趴著按 `ref.json`），「重置」會再躺返低；「推」可以喺佢企起後推佢。
 
 **留意**：官方起身動作喺模擬入面處於邊緣（仰躺可成功；趴著靠隨機摩擦／質量先有大約七成成功），所以訓練目標係令佢喺各種條件下都穩陣。呢啲只係模擬結果，未喺真機驗證；真機起身扭力同接觸同模擬有差異，請小心測試。
+
+### 同時訓練幾個 policy
+
+**Loop 名稱就係併發鎖**：同名嘅 autoloop run 一次只會跑一個（GitHub 顯示 *waiting for another serialized run to finish*），而且同一時間最多只保留一個排隊，之後嘅同名 run 會取代佢。
+想同時訓練多個 policy，就用**唔同嘅 loop 名稱**。Loop 名稱留空時會自動用「任務名-1」（`walk-1`、`stand-1`、`getup_back-1`、`getup_front-1`），所以四個任務各自開，預設已經唔會互相排隊；
+要同一任務開多個實驗，就自己改名（例如 `walk-pushy`）。
+每個 loop 每世代會同時用「候選數」個 job（預設 3）；GitHub Free 同時最多 20 個 job，超出嘅 job 會顯示 *Queued*（唔係 serialized）。
+所以 4 個 loop × 3 個候選 ＝ 12 個 job 可以同時跑，但 4 × 6 ＝ 24 就會有 4 個要等。
+
+### Loop 停咗／唔繼續點算
+
+Loop 會喺以下情況自己停低（記喺 `policies/loop/<名稱>/state.json` 嘅 `stopped` 同 `reason`）：評分達 0.95、連續 N 個世代冇進步（耐性）、到最多世代、全部候選失敗、你取消 run 或加 `STOP` 檔案。
+停低之後**唔會自己再跑**。要繼續：
+- **面板**：同一個 loop 名稱再撳「▶ 開始／繼續循環」——面板會偵測到佢已停止，自動用重啟模式，「最多世代」嗰個數字就係「再跑幾多個世代」。
+- **Actions 頁**：Run workflow → `loop_id` 填返個名，`restart` 填 `true`，`max_generations` 填再跑幾多個世代。重啟會清走停止標記、重設耐性，冠軍同歷史保留。
+
+如果用冇 `restart` 嘅方式對住一個已停止嘅 loop 開新 run，run 會**標紅並寫明原因**（以前係靜靜地全部 skip）。
+下一世代起唔到（例如 `gh workflow run` 失敗）會重試 3 次，再報錯並提示檢查 Settings → Actions → General → Workflow permissions。
+每個 run 嘅 Summary 都有「點解 loop 冇繼續」嘅一句說明。
