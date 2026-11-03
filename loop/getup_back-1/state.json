@@ -1,0 +1,241 @@
+{
+ "version": 1,
+ "loop_id": "getup_back-1",
+ "task": "getup_back",
+ "k": 5,
+ "minutes": 60,
+ "max_gens": 5,
+ "patience_max": 3,
+ "patience": 3,
+ "seed": 0,
+ "gen": 1,
+ "sigma": 0.35,
+ "stopped": false,
+ "reason": "",
+ "champion": {
+  "cfg": {
+   "push_force": 6.0,
+   "push_steps": 5.0,
+   "push_prob": 0.7153,
+   "w_tilt": 2.0,
+   "w_pose": 0.1,
+   "w_smooth": 0.01154,
+   "w_torque": 0.001633,
+   "w_track": 1.0,
+   "w_up": 0.6251,
+   "w_stand": 0.3864
+  },
+  "score": 0.800169790916604,
+  "eval": {
+   "task": "getup_back",
+   "clean": {
+    "n": 8,
+    "survive": 1.0,
+    "x_mean": 0.0,
+    "x_std": 0.0,
+    "y_abs": 0.0,
+    "tilt_mean": 13.347188175056417,
+    "tilt_max": 13.539398223190343,
+    "torque": 0.22402027560646473,
+    "z_final": 0.21792051180847904,
+    "stand_time": 7.2825
+   },
+   "push": {
+    "forces": [
+     8.0,
+     12.0,
+     16.0,
+     20.0,
+     26.0
+    ],
+    "steps": 5,
+    "survive": [
+     0.75,
+     0.5,
+     0.3333333333333333,
+     0.16666666666666666,
+     0.16666666666666666
+    ],
+    "mean": 0.38333333333333336,
+    "f50": 12.0
+   },
+   "score": 0.800169790916604,
+   "seconds": 31.4
+  },
+  "gen": 0,
+  "cand": 3,
+  "id": "g0c3",
+  "timesteps": 3534168,
+  "name": "getup_back-1-g0"
+ },
+ "baseline": {
+  "task": "getup_back",
+  "clean": {
+   "n": 8,
+   "survive": 1.0,
+   "x_mean": 0.0,
+   "x_std": 0.0,
+   "y_abs": 0.0,
+   "tilt_mean": 7.307459508689368,
+   "tilt_max": 7.447467535960436,
+   "torque": 0.15026309794025358,
+   "z_final": 0.21510500240550934,
+   "stand_time": 7.3325
+  },
+  "push": {
+   "forces": [
+    8.0,
+    12.0,
+    16.0,
+    20.0,
+    26.0
+   ],
+   "steps": 5,
+   "survive": [
+    0.8333333333333334,
+    0.5,
+    0.3333333333333333,
+    0.16666666666666666,
+    0.16666666666666666
+   ],
+   "mean": 0.4,
+   "f50": 12.0
+  },
+  "score": 0.8118806005459007,
+  "seconds": 15.4
+ },
+ "history": [
+  {
+   "gen": 0,
+   "id": "g0c0",
+   "cand": 0,
+   "cfg": {
+    "push_force": 6.0,
+    "push_steps": 5.0,
+    "push_prob": 0.7,
+    "w_tilt": 2.0,
+    "w_pose": 0.1,
+    "w_smooth": 0.02,
+    "w_torque": 0.002,
+    "w_track": 1.0,
+    "w_up": 0.5,
+    "w_stand": 1.0
+   },
+   "score": 0.6500044120248392,
+   "push_mean": 0.1,
+   "f50": 8.0,
+   "tilt_mean": 15.746029177644731,
+   "x_mean": 0.0,
+   "survive": 0.875,
+   "timesteps": 4493848,
+   "accepted": false,
+   "failed": false
+  },
+  {
+   "gen": 0,
+   "id": "g0c1",
+   "cand": 1,
+   "cfg": {
+    "push_force": 4.726,
+    "push_steps": 5.0,
+    "push_prob": 0.9253,
+    "w_tilt": 2.0,
+    "w_pose": 0.1,
+    "w_smooth": 0.02,
+    "w_torque": 0.002,
+    "w_track": 1.134,
+    "w_up": 0.5,
+    "w_stand": 1.145
+   },
+   "score": 0.7452262935668436,
+   "push_mean": 0.18333333333333335,
+   "f50": 9.333333333333334,
+   "tilt_mean": 8.796335789840791,
+   "x_mean": 0.0,
+   "survive": 1.0,
+   "timesteps": 4654944,
+   "accepted": false,
+   "failed": false
+  },
+  {
+   "gen": 0,
+   "id": "g0c2",
+   "cand": 2,
+   "cfg": {
+    "push_force": 6.0,
+    "push_steps": 5.0,
+    "push_prob": 0.7,
+    "w_tilt": 2.0,
+    "w_pose": 0.1,
+    "w_smooth": 0.02,
+    "w_torque": 0.002,
+    "w_track": 0.9519,
+    "w_up": 0.7265,
+    "w_stand": 1.0
+   },
+   "score": 0.6084241194206808,
+   "push_mean": 0.25,
+   "f50": 10.0,
+   "tilt_mean": 27.116780553269,
+   "x_mean": 0.0,
+   "survive": 0.75,
+   "timesteps": 4115356,
+   "accepted": false,
+   "failed": false
+  },
+  {
+   "gen": 0,
+   "id": "g0c3",
+   "cand": 3,
+   "cfg": {
+    "push_force": 6.0,
+    "push_steps": 5.0,
+    "push_prob": 0.7153,
+    "w_tilt": 2.0,
+    "w_pose": 0.1,
+    "w_smooth": 0.01154,
+    "w_torque": 0.001633,
+    "w_track": 1.0,
+    "w_up": 0.6251,
+    "w_stand": 0.3864
+   },
+   "score": 0.800169790916604,
+   "push_mean": 0.38333333333333336,
+   "f50": 12.0,
+   "tilt_mean": 13.347188175056417,
+   "x_mean": 0.0,
+   "survive": 1.0,
+   "timesteps": 3534168,
+   "accepted": true,
+   "failed": false
+  },
+  {
+   "gen": 0,
+   "id": "g0c4",
+   "cand": 4,
+   "cfg": {
+    "push_force": 4.616,
+    "push_steps": 6.0,
+    "push_prob": 0.527,
+    "w_tilt": 2.0,
+    "w_pose": 0.1,
+    "w_smooth": 0.02,
+    "w_torque": 0.001598,
+    "w_track": 1.438,
+    "w_up": 0.5,
+    "w_stand": 1.212
+   },
+   "score": 0.3481569785145387,
+   "push_mean": 0.2333333333333333,
+   "f50": 8.0,
+   "tilt_mean": 63.42249545603899,
+   "x_mean": 0.0,
+   "survive": 0.375,
+   "timesteps": 4554328,
+   "accepted": false,
+   "failed": false
+  }
+ ],
+ "created": "2026-11-03T01:46:27Z",
+ "updated": "2026-11-03T01:46:27Z"
+}
