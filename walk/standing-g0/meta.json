@@ -1,0 +1,169 @@
+{
+ "task": "walk",
+ "seed": 2,
+ "cfg": {
+  "push_force": 6.0,
+  "push_steps": 5.0,
+  "push_prob": 0.7,
+  "w_tilt": 2.906,
+  "w_pose": 0.1,
+  "w_smooth": 0.02,
+  "w_torque": 0.001904,
+  "w_track": 1.0,
+  "w_up": 0.5,
+  "w_stand": 1.0,
+  "w_air": 0.5,
+  "cmd_vx": 0.05,
+  "cmd_vy": 0.03,
+  "cmd_wz": 0.4
+ },
+ "timesteps": 1532420,
+ "eval_max_len": 200,
+ "eval_lens": [
+  200,
+  200,
+  200,
+  200,
+  200,
+  200,
+  200
+ ],
+ "eval_mean_len": 200.0,
+ "eval_final_x": [
+  0.026,
+  0.03,
+  0.025,
+  0.028,
+  0.028,
+  0.021,
+  0.025
+ ],
+ "ctrl_dt": 0.1,
+ "obs_dim": 68,
+ "obs_layout": {
+  "q": [
+   0,
+   20
+  ],
+  "prev_action": [
+   20,
+   40
+  ],
+  "gravity": [
+   40,
+   43
+  ],
+  "command": [
+   43,
+   46
+  ],
+  "phase": [
+   46,
+   48
+  ],
+  "target": [
+   48,
+   68
+  ]
+ },
+ "act_scale": 0.5,
+ "velocity_eval": [
+  {
+   "cmd": [
+    0.05,
+    0,
+    0
+   ],
+   "len": 200,
+   "lin_err": 0.0542,
+   "ang_err": 0.008,
+   "x": 0.026,
+   "y": -0.002
+  },
+  {
+   "cmd": [
+    -0.05,
+    0,
+    0
+   ],
+   "len": 200,
+   "lin_err": 0.0569,
+   "ang_err": 0.008,
+   "x": 0.03,
+   "y": -0.008
+  },
+  {
+   "cmd": [
+    0,
+    0.03,
+    0
+   ],
+   "len": 200,
+   "lin_err": 0.0412,
+   "ang_err": 0.023,
+   "x": 0.025,
+   "y": -0.004
+  },
+  {
+   "cmd": [
+    0,
+    -0.03,
+    0
+   ],
+   "len": 200,
+   "lin_err": 0.0366,
+   "ang_err": 0.015,
+   "x": 0.028,
+   "y": -0.006
+  },
+  {
+   "cmd": [
+    0,
+    0,
+    0.4
+   ],
+   "len": 200,
+   "lin_err": 0.0238,
+   "ang_err": 0.395,
+   "x": 0.028,
+   "y": -0.011
+  },
+  {
+   "cmd": [
+    0,
+    0,
+    -0.4
+   ],
+   "len": 200,
+   "lin_err": 0.0349,
+   "ang_err": 0.401,
+   "x": 0.021,
+   "y": -0.017
+  },
+  {
+   "cmd": [
+    0,
+    0,
+    0
+   ],
+   "len": 200,
+   "lin_err": 0.0276,
+   "ang_err": 0.009,
+   "x": 0.025,
+   "y": -0.003
+  }
+ ],
+ "score": 0.4656,
+ "push_mean": 0.317,
+ "push_f50": 12.6,
+ "tilt_mean": 2.11,
+ "x_mean": 0.027,
+ "loop": "standing",
+ "gen": 0,
+ "name": "standing-g0",
+ "run_id": "41625716184",
+ "run_url": "https://github.com/arthurson/ubtech-alpha2-urdf/actions/runs/41625716184",
+ "minutes": 60,
+ "path": "walk/standing-g0",
+ "finished_at": "2026-11-03T12:14:52Z"
+}
