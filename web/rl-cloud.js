@@ -11,8 +11,8 @@
   'use strict';
   var API = 'https://api.github.com', LSK = 'rlcloud.v1';
   var PARAMS = [   // keys / ranges must equal _DEF / _LIM in rl/alpha2_env.py (values are clamped there as well)
-    { k: 'push_force', def: 3, min: 0, max: 80, step: 0.5 },
-    { k: 'push_steps', def: 1, min: 1, max: 25, step: 1 },
+    { k: 'push_force', def: 6, min: 0, max: 80, step: 0.5 },
+    { k: 'push_steps', def: 5, min: 1, max: 25, step: 1 },
     { k: 'push_prob', def: 0.7, min: 0, max: 1, step: 0.05 },
     { k: 'w_tilt', def: 2, min: 0, max: 10, step: 0.5 },
     { k: 'w_pose', def: 0.1, min: 0, max: 2, step: 0.05 },
@@ -20,9 +20,10 @@
     { k: 'w_smooth', def: 0.02, min: 0, max: 1, step: 0.01 },
     { k: 'w_torque', def: 0.002, min: 0, max: 0.05, step: 0.001 },
     { k: 'w_air', def: 0.5, min: 0, max: 3, step: 0.1 },
-    { k: 'cmd_vx', def: 0.05, min: 0, max: 0.3, step: 0.01 },
-    { k: 'cmd_vy', def: 0.03, min: 0, max: 0.2, step: 0.01 },
-    { k: 'cmd_wz', def: 0.4, min: 0, max: 2, step: 0.05 }
+    { k: 'w_step', def: 0.5, min: 0, max: 3, step: 0.1 },
+    { k: 'cmd_vx', def: 0.03, min: 0, max: 0.3, step: 0.01 },
+    { k: 'cmd_vy', def: 0.02, min: 0, max: 0.2, step: 0.01 },
+    { k: 'cmd_wz', def: 0.3, min: 0, max: 2, step: 0.05 }
   ];
   var TXT = {
     rc_title: ['☁ GitHub 雲端訓練', '☁ GitHub cloud training'],
@@ -61,6 +62,8 @@
     p_w_track_t: ['步行任務：越大越貼近速度指令（模仿官方前行：越貼近官方動作）。', 'Walk tasks: bigger = follows the velocity command (reference walk: the official motion) more closely.'],
     p_w_air: ['單腳支撐獎勵', 'Single-support reward'],
     p_w_air_t: ['只係「步行」（速度指令）：有指令時獎勵一隻腳離地，鼓勵真正踏步。', '"Walk" (velocity) only: rewards one foot in the air while a command is active, encouraging real steps.'],
+    p_w_step: ['被推踏步獎勵', 'Push-recovery step reward'],
+    p_w_step_t: ['站穩（同指令 0 嘅步行）：被推後 1.5 秒內獎勵踏步（一隻腳離地）去穩住；其餘時間罰原地踏步。0＝唔鼓勵踏步。', 'Stand (and walk with a zero command): rewards stepping (one foot in the air) in the 1.5 s after a push to catch the fall; stepping on the spot otherwise is penalised. 0 = no stepping incentive.'],
     p_cmd_vx: ['最大前後速度 m/s', 'Max forward/back speed m/s'],
     p_cmd_vx_t: ['只係「步行」（速度指令）：訓練時 vx 指令範圍 ±，player 嘅 slider 都用呢個範圍。', '"Walk" (velocity) only: training range ± of the vx command; the player sliders use it too.'],
     p_cmd_vy: ['最大左右速度 m/s', 'Max sideways speed m/s'],

@@ -61,16 +61,18 @@ def _episode(job):
     t_push, T = (60, 140) if walk else (20, 80)
     if force <= 0: T = 200 if walk else 100
     vec = np.array(DIRS[direc], float) * force
-    tilts, tq, fell = [], [], False
+    tilts, tq, fell = [], [], False; p0 = None; stepped = 0
     for t in range(T):
+        if t == t_push: p0 = env.d.qpos[:2].copy()
         if force > 0 and t_push <= t < t_push + nsteps: env.d.xfrc_applied[1, :2] = vec
         a = _G['model'].predict(o, deterministic=True)[0] if 'model' in _G else np.zeros(20)
         o, _, te, tr, _ = env.step(a)
+        if p0 is not None and t < t_push + E.RECOVER_STEPS: stepped += env.single > 0      # control steps with a foot in the air during the recovery window
         zz = env.d.xmat[1].reshape(3, 3)[2, 2]; tilts.append(np.degrees(np.arccos(np.clip(zz, -1, 1))))
         tq.append(float(np.mean(np.abs(env.d.actuator_force[env.act]))))
         if te: fell = True; break
         if tr: break
-    return dict(fell=fell, x=float(env.d.qpos[0]), y=float(env.d.qpos[1]), tilt_mean=float(np.mean(tilts)), tilt_max=float(np.max(tilts)), torque=float(np.mean(tq)))
+    return dict(fell=fell, disp=(float(np.hypot(*(env.d.qpos[:2] - p0))) if p0 is not None else 0.0), steps=int(stepped), x=float(env.d.qpos[0]), y=float(env.d.qpos[1]), tilt_mean=float(np.mean(tilts)), tilt_max=float(np.max(tilts)), torque=float(np.mean(tq)))
 
 
 def evaluate(model, task, ref, seeds=8, push_seeds=3, forces=FORCES, push_steps=5, workers=None):
@@ -82,6 +84,9 @@ def evaluate(model, task, ref, seeds=8, push_seeds=3, forces=FORCES, push_steps=
     per = len(R) // len(forces)
     surv = [float(np.mean([not r['fell'] for r in R[i * per:(i + 1) * per]])) for i in range(len(forces))]
     push = dict(forces=list(forces), steps=push_steps, survive=surv, mean=float(np.mean(surv)), f50=f50(forces, surv))
+    if not task.startswith('getup'):   # what the robot does after the push: how far the body ends up from where it was pushed (m, final minus at push) and how many control steps (0.1 s) of the 1.5 s after it had a foot in the air
+        push['disp'] = [float(np.mean([r['disp'] for r in R[i * per:(i + 1) * per]])) for i in range(len(forces))]
+        push['stepped'] = [float(np.mean([r['steps'] for r in R[i * per:(i + 1) * per]])) for i in range(len(forces))]
     if task.startswith('getup'):
         ts = [c['t_stand'] * E.CTRL_DT for c in C if c['ok']]
         clean = dict(n=len(C), survive=float(np.mean([c['ok'] for c in C])), x_mean=0.0, x_std=0.0, y_abs=0.0, tilt_mean=float(np.mean([c['tilt'] for c in C])),
@@ -112,4 +117,4 @@ if __name__ == '__main__':
     c, p = m['clean'], m['push']
     if 'z_final' in c: print(f"[eval] score {m['score']:.3f} | get-up success {c['survive']:.2f} stand time {c['stand_time']} s final tilt {c['tilt_mean']:.1f} deg z {c['z_final']:.3f} | after-standing push {p['steps']}x0.02s survive {['%.0f%%' % (100 * v) for v in p['survive']]} @ {p['forces']} N | {m['seconds']}s", flush=True); sys.exit(0)
     print(f"[eval] score {m['score']:.3f} | clean survive {c['survive']:.2f} x {c['x_mean']:.3f} m |y| {c['y_abs']:.3f} tilt {c['tilt_mean']:.1f}/{c['tilt_max']:.0f} deg torque {c['torque']:.3f}"
-          f" | push {p['steps']}x0.02s survive {['%.0f%%' % (100 * v) for v in p['survive']]} @ {p['forces']} N, f50 {p['f50']:.1f} N | {m['seconds']}s", flush=True)
+          f" | push {p['steps']}x0.02s survive {['%.0f%%' % (100 * v) for v in p['survive']]} @ {p['forces']} N, f50 {p['f50']:.1f} N | moved {['%.2f' % v for v in p.get('disp', [])]} m, stepping steps {['%.1f' % v for v in p.get('stepped', [])]} | {m['seconds']}s", flush=True)

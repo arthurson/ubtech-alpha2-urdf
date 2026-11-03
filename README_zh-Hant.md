@@ -40,8 +40,9 @@ UBTECH Alpha 2 嘅標準 URDF（20 粒轉向關節、21 條 link），由
 
 - **所有 task 用同一個觀測值格式**（68 個 float）：關節位置 - 預設（20）、上一個 action（20）、機身座標重力（3）、速度指令 vx/vy/wz（3）、phase（2）、目標 - 預設（20；冇 ref 嘅 task 全 0）。匯出嘅 `policy.onnx` 有兩個輸出：`action`（回饋入 obs）同 `delta`（＝scale × action，rad）；player 對所有 task 都用 `ctrl = q_default + obs[48:68] + delta`。細節睇 `rl/alpha2_env.py` 開頭。舊 policy（obs 43／65，20 ms）仍然載入到。
 - **預設姿勢＝零位**（所有關節 0：企直、手垂低、腳伸直），唔係 q_init 姿勢：`stand`／`walk` 嘅重置、訓練、抗撞推同評估都圍住零位（obs[0:20] 就係原始關節角；`rl/evaluate.py` 抗撞測試由零位開始）。Zero-action baseline 頂到 8 N 推（傾斜 0.1°），16 N 會跌。
+- **被推時踏步**（`stand`，同指令 0 嘅 `walk`）：被推後 1.5 秒內放寬 pose／速度懲罰並獎勵單腳支撐（`w_step`）；其餘時間原地踏步會輕微扣分。預設推力 6 N × 0.1 秒。`rl/evaluate.py` 而家每個推力都會報：機身最終同被推位置相差幾遠（`push.disp`，m）同幾多個控制步（0.1 秒）有腳離地（`push.stepped`）。
 - **控制週期 100 ms**（`CTRL_DT`，50 個 2 ms 物理步；0–20 ms 動作延遲喺步內隨機）。50 Hz 嘅 ref 按 100 ms 內插。`push_steps` 單位仍然係 0.02 秒。
-- **Task**：`stand`、`walk`（速度指令：前／後／左／右／轉身，每 4 秒換指令，15% 企定、15% 原地轉；參考 Rhoban/mjlab_microban；冇 ref，phase 用 1 秒自由運行時鐘；預設範圍 `cmd_vx/vy/wz` ＝ 0.05 m/s、0.03 m/s、0.4 rad/s）、`walk_ref`（原本模仿官方前行）、`getup_back`、`getup_front`。
+- **Task**：`stand`、`walk`（速度指令：前／後／左／右／轉身，每 4 秒換指令，15% 企定、15% 原地轉；參考 Rhoban/mjlab_microban；冇 ref，phase 用 1 秒自由運行時鐘；預設範圍 `cmd_vx/vy/wz` ＝ 0.03 m/s、0.02 m/s、0.3 rad/s）、`walk_ref`（原本模仿官方前行）、`getup_back`、`getup_front`。
 - Player：載入速度 policy 後出現「速度」一行（vx／vy／wz slider；鍵盤 W/S、A/D、Q/E，空白＝停）。
 - 測試：`python rl/test_env.py`、`rl/test_getup.py`、`rl/test_autoloop.py`；JS 對 Python：`python rl/dump_parity.py /tmp/parity.json && node web/tools/test-policy.mjs /tmp/parity.json`。
 - 注意：100 ms 步長令每 CPU 小時嘅樣本數大約得返舊 20 ms 嘅 1/5。

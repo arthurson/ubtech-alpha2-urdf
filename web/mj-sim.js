@@ -18,10 +18,10 @@
     mu: 0.5, wide: false, dirty: true, lastT: null, acc: 0, simT: 0, idle: false, target: null, tkey: '', still: 0, lastWall: 0, raf: 0 };
   var LOCAL = { js: null, wasm: null, xml: null, ortjs: null, ortmjs: null, ortwasm: null, ref: null };
   var POL = { sess: null, nobs: 43, uni: false, ref: null, k: 0, on: false, busy: false, acc: 0, cdt: 0.02, prev: new Float64Array(20), pending: null, obs: null, act: null,
-    cmd: [0, 0, 0], cmdMax: [0.05, 0.03, 0.4] };   // RL policy (ONNX); cmd = velocity command (vx m/s, vy m/s, wz rad/s) of the unified policies
+    cmd: [0, 0, 0], cmdMax: [0.03, 0.02, 0.3] };   // RL policy (ONNX); cmd = velocity command (vx m/s, vy m/s, wz rad/s) of the unified policies
   var WALK_SCALE = 0.2, ACT_SCALE = 0.3, DECIM = 10, CDT = 0.02;   // legacy policies (obs 43 / 65, 20 ms step); must equal the old rl/alpha2_env.py
   // unified policies (obs 68, two outputs action + delta, 100 ms step); must equal rl/alpha2_env.py (OBS_DIM, CTRL_DT, DECIM, GAIT_PERIOD, push 20 ms)
-  var UNI = { nobs: 68, cdt: 0.1, decim: 50, gait: 1.0, pushPh: 10, z0: 0.2241, q0: new Array(20).fill(0) };   // q0 = default pose = the ZERO pose (not the q_init stance)
+  var UNI = { nobs: 68, cdt: 0.1, decim: 50, gait: 1.0, pushPh: 50, z0: 0.2241, q0: new Array(20).fill(0) };   // q0 = default pose = the ZERO pose (not the q_init stance)
   var modP = null, statT = 0, jOrig = null, cOrig = null;
 
   // ---- i18n (keys merged into the player's table; data-i18n attributes are re-translated by applyLang) ----
@@ -51,7 +51,7 @@
     mj_pol_play_t: ['載入 policy 後，由 policy 控制機器人（重置到起始姿勢）', 'Let the loaded policy control the robot (resets to its start pose)'],
     mj_pol_stop_t: ['停止 policy，返回跟播放器 pose', 'Stop the policy and go back to the player pose'],
     mj_push: ['推', 'Push'],
-    mj_push_t: ['隨機方向推機身一下（3 N，20 ms）', 'Random 3 N push on the base for 20 ms'],
+    mj_push_t: ['隨機方向推機身一下（新 policy：6 N、0.1 秒；舊 policy：3 N、20 ms）', 'Random push on the base (new policies: 6 N for 0.1 s; legacy: 3 N for 20 ms)'],
     mj_pol_ok: ['policy 已載入', 'policy loaded'],
     mj_ref_need: ['呢個 policy（模仿步行／起身）要成個 ref.json（同 policy.onnx 一齊揀）', 'This policy (reference walk / get-up) needs its ref.json (select it together with policy.onnx)'],
     mj_bad_pol: ['唔支援嘅 policy：', 'Unsupported policy: '],
@@ -271,7 +271,7 @@
       if (wantRef && (!ref || (!ref.loop && !ref.getup))) throw new Error(T('mj_ref_need'));
       if (nobs === 43) ref = null;
       POL.sess = sess; POL.nobs = nobs; POL.uni = uni; POL.ref = ref; POL.cdt = uni ? UNI.cdt : CDT; POL.cmd = [0, 0, 0];
-      var cf = meta && meta.cfg || {}; POL.cmdMax = [cf.cmd_vx > 0 ? cf.cmd_vx : 0.05, cf.cmd_vy > 0 ? cf.cmd_vy : 0.03, cf.cmd_wz > 0 ? cf.cmd_wz : 0.4]; updateCmdUI();
+      var cf = meta && meta.cfg || {}; POL.cmdMax = [cf.cmd_vx > 0 ? cf.cmd_vx : 0.03, cf.cmd_vy > 0 ? cf.cmd_vy : 0.02, cf.cmd_wz > 0 ? cf.cmd_wz : 0.3]; updateCmdUI();
       var c = $('mjPolOn'); if (c) c.disabled = false; polBtn(); if (st) st.textContent = T('mj_pol_ok') + ': ' + file.name + ' (obs ' + nobs + (uni ? ', ' + Math.round(UNI.cdt * 1000) + ' ms' : '') + ')';
     } catch (e) { POL.sess = null; updateCmdUI(); log(T('mj_fail') + (e && e.message || e)); if (st) st.textContent = T('mj_fail') + (e && e.message || e); }
   };
@@ -334,7 +334,7 @@
     for (k = 0; k < 20; k++) { var i = S.act[k]; POL.prev[k] = Math.max(-1, Math.min(1, a[k])); ct[i] = Math.min(cr[2 * i + 1], Math.max(cr[2 * i], tgt[k] + dl[k])); }
     var f = d.xfrc_applied; if (POL.pending) { f[6 * b] = POL.pending[0]; f[6 * b + 1] = POL.pending[1]; }
     for (var n = 0; n < UNI.decim; n++) {
-      if (POL.pending && n === UNI.pushPh) { f[6 * b] = 0; f[6 * b + 1] = 0; POL.pending = null; }   // the push lasts 20 ms (same as push_steps = 1 in training)
+      if (POL.pending && n === UNI.pushPh) { f[6 * b] = 0; f[6 * b + 1] = 0; POL.pending = null; }   // pushPh = 50 = the whole 100 ms step (training default push_steps = 5)
       mj.mj_step(m, d);
     }
     if (POL.pending) { f[6 * b] = 0; f[6 * b + 1] = 0; POL.pending = null; }
@@ -381,7 +381,7 @@
     polBtn();
   };
   S.polSteps = async function (n) { for (var i = 0; i < n; i++) await ctl(); applyScene(); };   // deterministic stepping (tests / scripting)
-  S.push = function () { var a = Math.random() * 2 * Math.PI; POL.pending = [3 * Math.cos(a), 3 * Math.sin(a)]; };
+  S.push = function () { var a = Math.random() * 2 * Math.PI, F = POL.uni ? 6 : 3; POL.pending = [F * Math.cos(a), F * Math.sin(a)]; };   // unified policies: 6 N for one 100 ms step (the training default); legacy: 3 N for 20 ms
   S.pol = POL; S.polReset = polReset; S.polControl = ctl; S.UNI = UNI;   // (also used by the node parity test)
   function box(show) { var b = $('mjbox'); if (b) b.style.display = show ? 'flex' : 'none'; var t = $('mjBtn'); if (t) t.classList.toggle('on', !!show); }
   function redraw() { if (window.TRAJ && !manualAngles) drawAt(pauseMs); else poseMesh(manualAngles || lastAngles); }

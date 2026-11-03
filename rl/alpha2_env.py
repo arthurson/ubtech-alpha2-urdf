@@ -27,19 +27,22 @@ GAIT_PERIOD = 1.0                                  # s, free-running clock given
 EP_STAND, EP_WALK = 100, 200                        # 10 s / 20 s episodes
 CMD_EVERY = 40                                     # new velocity command every 4 s
 PUSH_EVERY = 20                                    # a push is possible every 2 s
+RECOVER_STEPS = 15                                 # 1.5 s after a push the robot may step to catch itself
 FALL_Z, FALL_TILT = 0.15, np.radians(40)           # same fallen criterion as the README / web player
 OBS_DIM = 68
 OBS_LAYOUT = dict(q=(0, 20), prev_action=(20, 40), gravity=(40, 43), command=(43, 46), phase=(46, 48), target=(48, 68))
 
 # Tunable push / reward weights. Override with env var ALPHA2_CFG (JSON), e.g. ALPHA2_CFG='{"push_force": 5, "w_smooth": 0.05}'
 # (the web player's cloud-training panel / train.yml `cfg` input sets it). Values are clamped to the ranges below; unknown keys are ignored.
-# push_steps = how long one push is held in units of 0.02 s (1 = the original 20 ms impulse, 5 = 0.1 s = one whole control step).
+# push_steps = how long one push is held in units of 0.02 s (1 = 20 ms, 5 = 0.1 s = one whole control step; default 6 N x 0.1 s).
+# w_step = push recovery by STEPPING (stand, and walk with a zero command): for RECOVER_STEPS control steps after a push the pose / speed penalties are
+# relaxed and single-support (one foot in the air = a step) is rewarded; outside that window stepping on the spot is penalised.
 # cmd_vx / cmd_vy / cmd_wz = maximum velocity command of the walk task (m/s, m/s, rad/s). obs layout, CTRL_DT, SCALE_* are NOT tunable
 # (they must match web/mj-sim.js).
-_DEF = dict(push_force=3.0, push_steps=1.0, push_prob=0.7, w_tilt=2.0, w_pose=0.1, w_smooth=0.02, w_torque=0.002, w_track=1.0, w_up=0.5, w_stand=1.0,
-            w_air=0.5, cmd_vx=0.05, cmd_vy=0.03, cmd_wz=0.4)
+_DEF = dict(push_force=6.0, push_steps=5.0, push_prob=0.7, w_tilt=2.0, w_pose=0.1, w_smooth=0.02, w_torque=0.002, w_track=1.0, w_up=0.5, w_stand=1.0,
+            w_air=0.5, w_step=0.5, cmd_vx=0.03, cmd_vy=0.02, cmd_wz=0.3)
 _LIM = dict(push_force=(0, 80), push_steps=(1, 25), push_prob=(0, 1), w_tilt=(0, 10), w_pose=(0, 2), w_smooth=(0, 1), w_torque=(0, 0.05), w_track=(0, 5), w_up=(0, 5), w_stand=(0, 10),
-            w_air=(0, 3), cmd_vx=(0, 0.3), cmd_vy=(0, 0.2), cmd_wz=(0, 2))
+            w_air=(0, 3), w_step=(0, 3), cmd_vx=(0, 0.3), cmd_vy=(0, 0.2), cmd_wz=(0, 2))
 def _load_cfg():
     c = dict(_DEF)
     try: u = json.loads(os.environ.get('ALPHA2_CFG') or '{}')
@@ -90,7 +93,7 @@ class Alpha2Env(gym.Env):
         self.randomize, self.push = randomize, push
         self.pleft, self.pvec = 0.0, np.zeros(2)
         self.observation_space = spaces.Box(-np.inf, np.inf, (OBS_DIM,), np.float32); self.action_space = spaces.Box(-1, 1, (20,), np.float32)
-        self.rng = np.random.default_rng(seed); self.prev = np.zeros(20); self.cmd = np.zeros(3); self.cmd_fixed = None; self.t = 0; self.lat = 0; self.prev_ctrl = self.q0.copy()
+        self.rng = np.random.default_rng(seed); self.prev = np.zeros(20); self.cmd = np.zeros(3); self.cmd_fixed = None; self.t = 0; self.lat = 0; self.since_push = 10 ** 6; self.single = 0.0; self.prev_ctrl = self.q0.copy()
 
     # ---- hooks of the tasks ----
     def target(self, t): return self.q0                 # base target the action is a residual around
@@ -116,13 +119,13 @@ class Alpha2Env(gym.Env):
         self._dr(); d = self.d; mujoco.mj_resetData(self.m, d)
         d.qpos[:7] = [0, 0, self.Z0, 1, 0, 0, 0]; d.qpos[self.qadr] = self.q0; d.ctrl[self.act] = self.q0
         if self.randomize: d.qpos[self.qadr] += self.rng.normal(0, 0.03, 20)
-        mujoco.mj_forward(self.m, d); self.t = 0; self.pleft = 0.0; self.prev[:] = 0; self.prev_ctrl = self.q0.copy()
+        mujoco.mj_forward(self.m, d); self.t = 0; self.pleft = 0.0; self.prev[:] = 0; self.prev_ctrl = self.q0.copy(); self.since_push = 10 ** 6; self.single = 0.0
         self.lat = 5 * int(self.rng.integers(0, 3)) if self.randomize else 0      # command latency 0 / 10 / 20 ms inside the 100 ms step
         return self._obs(), {}
 
     def _maybe_push(self):   # random horizontal push on the body: every 2 s with probability push_prob, push_force N held push_steps * 0.02 s
         if self.push and self.t % PUSH_EVERY == PUSH_EVERY // 2 and self.rng.random() < CFG['push_prob']:
-            self.pvec = self.rng.uniform(-1, 1, 2) * CFG['push_force']; self.pleft = CFG['push_steps'] * 0.02
+            self.pvec = self.rng.uniform(-1, 1, 2) * CFG['push_force']; self.pleft = CFG['push_steps'] * 0.02; self.since_push = 0
 
     def _sim(self, ctrl):
         """DECIM physics steps with the commanded targets (new targets arrive `lat` physics steps late), the push, and foot-contact bookkeeping.
@@ -136,8 +139,8 @@ class Alpha2Env(gym.Env):
             mujoco.mj_step(self.m, d)
             if k % 5 == 4: n += 1; single += self._feet() == 1
         self.pleft = max(0.0, self.pleft - nph * PHYS_DT); self.prev_ctrl = ctrl
-        d.xfrc_applied[:] = 0
-        return single / max(n, 1)
+        d.xfrc_applied[:] = 0; self.since_push += 1; self.single = single / max(n, 1)
+        return self.single
 
     def _feet(self):   # number of feet touching the ground
         f = set()
@@ -150,14 +153,17 @@ class Alpha2Env(gym.Env):
         a = np.clip(a, -1, 1).astype(np.float64)
         return a, np.clip(self.target(self.t) + self.SCALE * a, self.lo, self.hi)
 
+    def _recovering(self): return self.since_push <= RECOVER_STEPS   # (since_push was already advanced by _sim: 1 = the step of the push)
+
     def _tilt(self):
         zz = self.d.xmat[1].reshape(3, 3)[2, 2]; return float(np.arccos(np.clip(zz, -1, 1)))
 
     def step(self, a):
-        a, ctrl = self._apply(a); self._sim(ctrl); d = self.d; self.t += 1
+        a, ctrl = self._apply(a); single = self._sim(ctrl); d = self.d; self.t += 1
         tilt = self._tilt(); z = d.qpos[2]; fallen = z < FALL_Z or tilt > FALL_TILT
-        dq = d.qpos[self.qadr] - self.q0
-        r = 1.0 - CFG['w_tilt'] * tilt ** 2 - CFG['w_pose'] * np.sum(dq ** 2) - CFG['w_smooth'] * np.sum((a - self.prev) ** 2) - CFG['w_torque'] * np.sum(d.actuator_force[self.act] ** 2) - 0.5 * np.sum(d.qvel[:2] ** 2)
+        dq = d.qpos[self.qadr] - self.q0; rec = self._recovering(); k = 0.2 if rec else 1.0     # recovering from a push: pose / speed penalties relaxed
+        r = (1.0 - CFG['w_tilt'] * tilt ** 2 - k * CFG['w_pose'] * np.sum(dq ** 2) - CFG['w_smooth'] * np.sum((a - self.prev) ** 2) - CFG['w_torque'] * np.sum(d.actuator_force[self.act] ** 2)
+             - k * 0.5 * np.sum(d.qvel[:2] ** 2) + (CFG['w_step'] * single if rec else -0.4 * CFG['w_step'] * single))
         self.prev = a.copy()
         return self._obs(), float(-5.0 if fallen else r), bool(fallen), self.t >= self.EP, {}
 
@@ -178,7 +184,7 @@ class WalkEnv(Alpha2Env):
     A free-running gait clock (period GAIT_PERIOD) is given as phase features.
     Set env.cmd_fixed = (vx, vy, wz) to hold one command (evaluation / play)."""
     SCALE = SCALE_WALK; EP = EP_WALK
-    SIG_LIN, SIG_ANG = 0.03, 0.3
+    SIG_LIN, SIG_ANG = 0.015, 0.15     # the official forward walk only does ~1.4 cm/s (0.27 m in 20 s), so the kernels must be narrow: standing still must not earn the tracking reward
     def command(self): return self.cmd
     def _new_cmd(self):
         self.cmd = np.array(self.cmd_fixed, float) if self.cmd_fixed is not None else _sample_command(self.rng, (CFG['cmd_vx'], CFG['cmd_vy'], CFG['cmd_wz']))
@@ -189,10 +195,10 @@ class WalkEnv(Alpha2Env):
         R = d.xmat[1].reshape(3, 3); yaw = np.arctan2(R[1, 0], R[0, 0]); c, s = np.cos(yaw), np.sin(yaw)
         vb = np.array([c * d.qvel[0] + s * d.qvel[1], -s * d.qvel[0] + c * d.qvel[1]]); wz = float((R @ d.qvel[3:6])[2])
         tilt = self._tilt(); z = d.qpos[2]; fallen = z < FALL_Z or tilt > FALL_TILT
-        walking = bool(np.any(np.abs(self.cmd) > 1e-6)); dq = d.qpos[self.qadr] - self.q0
+        walking = bool(np.any(np.abs(self.cmd) > 1e-6)); dq = d.qpos[self.qadr] - self.q0; rec = self._recovering() and not walking   # zero command + just pushed: step to catch yourself
         r_lin = np.exp(-np.sum((self.cmd[:2] - vb) ** 2) / self.SIG_LIN ** 2); r_ang = np.exp(-(self.cmd[2] - wz) ** 2 / self.SIG_ANG ** 2)
-        r = (0.2 + CFG['w_track'] * (r_lin + r_ang) + (CFG['w_air'] * single if walking else 0.0)
-             - CFG['w_tilt'] * tilt ** 2 - CFG['w_pose'] * (0.3 if walking else 1.0) * np.sum(dq ** 2)
+        r = (0.2 + CFG['w_track'] * (r_lin + r_ang) + (CFG['w_air'] * single if walking else CFG['w_step'] * single if rec else -0.4 * CFG['w_step'] * single)
+             - CFG['w_tilt'] * tilt ** 2 - CFG['w_pose'] * (0.3 if walking else 0.2 if rec else 1.0) * np.sum(dq ** 2)
              - CFG['w_smooth'] * np.sum((a - self.prev) ** 2) - CFG['w_torque'] * np.sum(d.actuator_force[self.act] ** 2) - 0.05 * np.sum(d.qvel[3:5] ** 2))
         self.prev = a.copy(); self.vb, self.wz = vb, wz
         if self.t % CMD_EVERY == 0: self._new_cmd()
