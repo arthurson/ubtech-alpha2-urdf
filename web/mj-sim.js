@@ -17,8 +17,11 @@
   var S = window.MJSIM = { on: false, ready: false, loading: false, mj: null, m: null, d: null,
     mu: 0.5, wide: false, dirty: true, lastT: null, acc: 0, simT: 0, idle: false, target: null, tkey: '', still: 0, lastWall: 0, raf: 0 };
   var LOCAL = { js: null, wasm: null, xml: null, ortjs: null, ortmjs: null, ortwasm: null, ref: null };
-  var POL = { sess: null, nobs: 43, ref: null, k: 0, on: false, busy: false, acc: 0, prev: new Float64Array(20), pending: null, obs: null, act: null };   // RL policy (ONNX)
-  var WALK_SCALE = 0.2, ACT_SCALE = 0.3, DECIM = 10, CDT = 0.02;   // must equal rl/alpha2_env.py
+  var POL = { sess: null, nobs: 43, uni: false, ref: null, k: 0, on: false, busy: false, acc: 0, cdt: 0.02, prev: new Float64Array(20), pending: null, obs: null, act: null,
+    cmd: [0, 0, 0], cmdMax: [0.05, 0.03, 0.4] };   // RL policy (ONNX); cmd = velocity command (vx m/s, vy m/s, wz rad/s) of the unified policies
+  var WALK_SCALE = 0.2, ACT_SCALE = 0.3, DECIM = 10, CDT = 0.02;   // legacy policies (obs 43 / 65, 20 ms step); must equal the old rl/alpha2_env.py
+  // unified policies (obs 68, two outputs action + delta, 100 ms step); must equal rl/alpha2_env.py (OBS_DIM, CTRL_DT, DECIM, GAIT_PERIOD, push 20 ms)
+  var UNI = { nobs: 68, cdt: 0.1, decim: 50, gait: 1.0, pushPh: 10 };
   var modP = null, statT = 0, jOrig = null, cOrig = null;
 
   // ---- i18n (keys merged into the player's table; data-i18n attributes are re-translated by applyLang) ----
@@ -40,15 +43,18 @@
     mj_fallen: ['跌', 'fell'],
     mj_sat: ['飽和', 'sat'],
     mj_pol: ['RL policy', 'RL policy'],
-    mj_pol_t: ['載入 rl/train.py 匯出嘅 policy.onnx（obs 43 → action 20）', 'Load the policy.onnx exported by rl/train.py (obs 43 -> action 20)'],
+    mj_pol_t: ['載入 rl/train.py 匯出嘅 policy.onnx（obs 68 → action／delta 20；舊版 obs 43／65 都得）', 'Load the policy.onnx exported by rl/train.py (obs 68 -> action / delta 20; legacy obs 43 / 65 also work)'],
+    mj_cmd: ['速度', 'Velocity'],
+    mj_cmd_t: ['速度指令（機身座標）：vx 前後 m/s、vy 左右 m/s、wz 轉身 rad/s。鍵盤：W/S 前後、A/D 左右、Q/E 轉身、空白或 X 停。範圍＝訓練嗰陣嘅上限。', 'Velocity command (body frame): vx forward/back m/s, vy left/right m/s, wz turn rad/s. Keys: W/S forward/back, A/D left/right, Q/E turn, Space or X stop. Range = the limit used in training.'],
     mj_pol_play: ['▶ 開始', '▶ Play'],
     mj_pol_stop: ['■ 停止', '■ Stop'],
     mj_pol_play_t: ['載入 policy 後，由 policy 控制機器人（重置到起始姿勢）', 'Let the loaded policy control the robot (resets to its start pose)'],
     mj_pol_stop_t: ['停止 policy，返回跟播放器 pose', 'Stop the policy and go back to the player pose'],
     mj_push: ['推', 'Push'],
-    mj_push_t: ['隨機方向推機身一下（3 N，一個控制步）', 'Random 3 N push on the base for one control step'],
+    mj_push_t: ['隨機方向推機身一下（3 N，20 ms）', 'Random 3 N push on the base for 20 ms'],
     mj_pol_ok: ['policy 已載入', 'policy loaded'],
-    mj_ref_need: ['呢個 policy（步行／起身）要成個 ref.json（同 policy.onnx 一齊揀）', 'This policy (walk / get-up) needs its ref.json (select it together with policy.onnx)'],
+    mj_ref_need: ['呢個 policy（模仿步行／起身）要成個 ref.json（同 policy.onnx 一齊揀）', 'This policy (reference walk / get-up) needs its ref.json (select it together with policy.onnx)'],
+    mj_bad_pol: ['唔支援嘅 policy：', 'Unsupported policy: '],
     mj_pol_need: ['請先載入 .onnx', 'Load a .onnx first'],
     mj_note: ['開物理後：IK 手／腳點拖到嘅係舵機目標；骨盆綠點同「錨定」冇作用；FrontStand／BackStand 由企姿開始（唔係瞓低）',
       'In physics mode: IK dots drag servo targets; the pelvis dot and Anchor have no effect; FrontStand/BackStand start upright (not lying)']
@@ -245,34 +251,94 @@
   }
   S.loadPolicy = async function (files) {
     var list = files && files.length !== undefined && !files.name ? Array.prototype.slice.call(files) : (files ? [files] : []);
-    var file = list.filter(function (f) { return /\.onnx$/i.test(f.name); })[0], rj = list.filter(function (f) { return /\.json$/i.test(f.name); })[0];
+    var file = list.filter(function (f) { return /\.onnx$/i.test(f.name); })[0], jsons = list.filter(function (f) { return /\.json$/i.test(f.name); });
     if (!file) return; var st = $('mjstat');
     try {
       if (st) st.textContent = T('mj_loading'); await loadOrt();
       var sess = await window.ort.InferenceSession.create(new Uint8Array(await rd(file, 'buf')), { executionProviders: ['wasm'] });
-      var md = sess.inputMetadata, nobs = md && md[0] && md[0].shape && md[0].shape[1] > 0 ? md[0].shape[1] : 43, ref = null;
-      if (nobs === 65) {   // walking / get-up policy: needs the reference trajectory it was trained against
-        if (rj) ref = JSON.parse(await rd(rj));
-        else if (location.protocol === 'file:' && LOCAL.ref) ref = JSON.parse(await rd(LOCAL.ref));
-        else if (location.protocol !== 'file:') { var r = await fetch(new URL('../rl/ref/forward.json', BASE).href); if (r.ok) ref = await r.json(); }
-        if (!ref || (!ref.loop && !ref.getup)) throw new Error(T('mj_ref_need'));
+      var md = sess.inputMetadata, nobs = md && md[0] && md[0].shape && md[0].shape[1] > 0 ? md[0].shape[1] : 43, ref = null, meta = null, uni = nobs === UNI.nobs;
+      if (!uni && nobs !== 43 && nobs !== 65) throw new Error(T('mj_bad_pol') + 'obs ' + nobs);
+      if (uni && (!sess.outputNames || sess.outputNames.indexOf('delta') < 0 || sess.outputNames.indexOf('action') < 0)) throw new Error(T('mj_bad_pol') + 'outputs ' + (sess.outputNames || []).join(','));
+      for (var ji = 0; ji < jsons.length; ji++) {   // ref.json (has q) and / or meta.json (has task, cfg)
+        var jo = null; try { jo = JSON.parse(await rd(jsons[ji])); } catch (e) { jo = null; }
+        if (jo && jo.q) ref = ref || jo; else if (jo && jo.task) meta = meta || jo;
       }
-      POL.sess = sess; POL.nobs = nobs; POL.ref = ref;
-      var c = $('mjPolOn'); if (c) c.disabled = false; polBtn(); if (st) st.textContent = T('mj_pol_ok') + ': ' + file.name + ' (obs ' + nobs + ')';
-    } catch (e) { POL.sess = null; log(T('mj_fail') + (e && e.message || e)); if (st) st.textContent = T('mj_fail') + (e && e.message || e); }
+      var wantRef = nobs === 65 || (uni && meta && /^(walk_ref|getup)/.test(meta.task || ''));
+      if (wantRef && !ref && (nobs === 65 || meta.task === 'walk_ref')) {   // walking policy without its reference: the official forward walk
+        if (location.protocol === 'file:' && LOCAL.ref) ref = JSON.parse(await rd(LOCAL.ref));
+        else if (location.protocol !== 'file:') { var r = await fetch(new URL('../rl/ref/forward.json', BASE).href); if (r.ok) ref = await r.json(); }
+      }
+      if (wantRef && (!ref || (!ref.loop && !ref.getup))) throw new Error(T('mj_ref_need'));
+      if (nobs === 43) ref = null;
+      POL.sess = sess; POL.nobs = nobs; POL.uni = uni; POL.ref = ref; POL.cdt = uni ? UNI.cdt : CDT; POL.cmd = [0, 0, 0];
+      var cf = meta && meta.cfg || {}; POL.cmdMax = [cf.cmd_vx > 0 ? cf.cmd_vx : 0.05, cf.cmd_vy > 0 ? cf.cmd_vy : 0.03, cf.cmd_wz > 0 ? cf.cmd_wz : 0.4]; updateCmdUI();
+      var c = $('mjPolOn'); if (c) c.disabled = false; polBtn(); if (st) st.textContent = T('mj_pol_ok') + ': ' + file.name + ' (obs ' + nobs + (uni ? ', ' + Math.round(UNI.cdt * 1000) + ' ms' : '') + ')';
+    } catch (e) { POL.sess = null; updateCmdUI(); log(T('mj_fail') + (e && e.message || e)); if (st) st.textContent = T('mj_fail') + (e && e.message || e); }
   };
+  // ---- velocity command of the unified policies (sliders in the physics box + keyboard) ----
+  function updateCmdUI() {
+    var row = $('mjCmdRow'); if (!row) return; row.style.display = POL.sess && POL.uni && !POL.ref ? 'flex' : 'none';
+    [['mjCvx', 0], ['mjCvy', 1], ['mjCwz', 2]].forEach(function (p) {
+      var e = $(p[0]), v = $(p[0] + 'V'), mx = POL.cmdMax[p[1]]; if (!e) return;
+      e.min = -mx; e.max = mx; e.step = mx / 20; e.value = POL.cmd[p[1]]; if (v) v.textContent = POL.cmd[p[1]].toFixed(2);
+    });
+  }
+  S.setCmd = function (vx, vy, wz) {
+    var c = [vx, vy, wz]; for (var i = 0; i < 3; i++) { var x = +c[i]; c[i] = isFinite(x) ? Math.max(-POL.cmdMax[i], Math.min(POL.cmdMax[i], x)) : 0; }
+    POL.cmd = c; updateCmdUI();
+  };
+  S.cmdUI = function () { S.setCmd($('mjCvx').value, $('mjCvy').value, $('mjCwz').value); };
+  document.addEventListener('keydown', function (e) {
+    if (!POL.on || !POL.uni || POL.ref || e.ctrlKey || e.metaKey || e.altKey) return;
+    var t = e.target, tn = t && t.tagName; if (tn === 'TEXTAREA' || tn === 'SELECT' || (tn === 'INPUT' && !/^(range|checkbox|button|file)$/.test(t.type))) return;
+    var k = String(e.key).toLowerCase(), c = POL.cmd.slice(), M = POL.cmdMax, hit = true;   // +x forward, +y left, +wz counter-clockwise (REP-103)
+    if (k === 'w') c[0] = M[0]; else if (k === 's') c[0] = -M[0]; else if (k === 'a') c[1] = M[1]; else if (k === 'd') c[1] = -M[1];
+    else if (k === 'q') c[2] = M[2]; else if (k === 'e') c[2] = -M[2]; else if (k === ' ' || k === 'x') c = [0, 0, 0]; else hit = false;
+    if (hit) { e.preventDefault(); S.setCmd(c[0], c[1], c[2]); }
+  });
   function polReset() {   // same reset as rl/alpha2_env.py without randomisation
     var mj = S.mj, m = S.m, d = S.d; mj.mj_resetData(m, d);
     var qp = d.qpos; qp[0] = 0; qp[1] = 0; qp[2] = 0.2206 + 0.0015; qp[3] = 1; qp[4] = 0; qp[5] = 0; qp[6] = 0;
-    var q00 = POL.nobs === 65 ? POL.ref.q[0] : S.q0; POL.k = 0;
+    var q00 = POL.ref ? POL.ref.q[0] : S.q0; POL.k = 0;
     for (var k = 0; k < 20; k++) { qp[S.qadr[k]] = q00[k]; d.ctrl[S.act[k]] = q00[k]; POL.prev[k] = 0; }
-    if (POL.nobs === 65 && POL.ref.getup) {   // get-up: lie on the back ('back', face up) or the front ('front', face down), settle 1 s holding the first reference pose
+    if (POL.ref && POL.ref.getup) {   // get-up: lie on the back ('back', face up) or the front ('front', face down), settle 1 s holding the first reference pose
       var h = Math.SQRT1_2, gq = POL.ref.getup === 'front' ? [h, 0, h, 0] : [h, 0, -h, 0];
       qp[0] = 0; qp[1] = 0; qp[2] = 0.10; for (k = 0; k < 4; k++) qp[3 + k] = gq[k];
       mj.mj_forward(m, d);
-      for (var sn = 0; sn < 50 * DECIM; sn++) { for (k = 0; k < 20; k++) d.ctrl[S.act[k]] = q00[k]; mj.mj_step(m, d); }
+      for (var sn = 0; sn < 500; sn++) { for (k = 0; k < 20; k++) d.ctrl[S.act[k]] = q00[k]; mj.mj_step(m, d); }   // 500 x 2 ms = 1 s
     } else mj.mj_forward(m, d);
     POL.acc = 0; POL.pending = null; S.simT = 0; S.idle = false; S.still = 0;
+  }
+  // reference joint target at control step kk of a unified policy: time kk*0.1 s, linearly interpolated from the 50 Hz reference, loop window [a,b) repeats (get-up: last pose held)
+  function refAt(Rf, kk) {
+    var dt = Rf.dt || 0.02, n = Rf.q.length, x = kk * UNI.cdt / dt, lp = Rf.getup ? null : Rf.loop;
+    if (lp && x >= lp[1]) x = lp[0] + (x - lp[0]) % (lp[1] - lp[0]);
+    x = Math.min(Math.max(x, 0), n - 1); var i = Math.floor(x), j = Math.min(i + 1, n - 1), f = x - i, A = Rf.q[i], B = Rf.q[j], r = new Array(20);
+    for (var k = 0; k < 20; k++) r[k] = A[k] * (1 - f) + B[k] * f;
+    return r;
+  }
+  async function polControlU() {   // one 0.1 s control step of a unified policy: obs(68) -> ONNX -> ctrl = target + delta -> 50 physics steps
+    var mj = S.mj, m = S.m, d = S.d, b = S.bid.base_link, qp = d.qpos, xm = d.xmat, o = new Float32Array(UNI.nobs), Rf = POL.ref, kk = POL.k, tgt = S.q0, k;
+    for (k = 0; k < 20; k++) { o[k] = qp[S.qadr[k]] - S.q0[k]; o[20 + k] = POL.prev[k]; }
+    o[40] = -xm[9 * b + 6]; o[41] = -xm[9 * b + 7]; o[42] = -xm[9 * b + 8];   // gravity direction in the base frame (R^T * [0,0,-1])
+    o[43] = POL.cmd[0]; o[44] = POL.cmd[1]; o[45] = POL.cmd[2];
+    if (Rf) {
+      tgt = refAt(Rf, kk);
+      if (Rf.getup) { var Tn = Math.ceil((Rf.q.length - 1) * (Rf.dt || 0.02) / UNI.cdt) + 1; o[46] = Math.min(kk / Tn, 1); o[47] = kk >= Tn ? 1 : 0; }
+      else { var lp = Rf.loop, x = kk * UNI.cdt / (Rf.dt || 0.02); if (x >= lp[0]) { var ph = 2 * Math.PI * (x - lp[0]) / (lp[1] - lp[0]); o[46] = Math.sin(ph); o[47] = Math.cos(ph); } }
+    } else { var p0 = 2 * Math.PI * (kk * UNI.cdt) / UNI.gait; o[46] = Math.sin(p0); o[47] = Math.cos(p0); }   // free-running clock (stand / velocity walk)
+    for (k = 0; k < 20; k++) o[48 + k] = tgt[k] - S.q0[k];
+    var out = await POL.sess.run({ obs: new window.ort.Tensor('float32', o, [1, UNI.nobs]) }), a = out.action.data, dl = out.delta.data;
+    POL.obs = o; POL.act = Array.prototype.slice.call(a);
+    var cr = m.actuator_ctrlrange, ct = d.ctrl;
+    for (k = 0; k < 20; k++) { var i = S.act[k]; POL.prev[k] = Math.max(-1, Math.min(1, a[k])); ct[i] = Math.min(cr[2 * i + 1], Math.max(cr[2 * i], tgt[k] + dl[k])); }
+    var f = d.xfrc_applied; if (POL.pending) { f[6 * b] = POL.pending[0]; f[6 * b + 1] = POL.pending[1]; }
+    for (var n = 0; n < UNI.decim; n++) {
+      if (POL.pending && n === UNI.pushPh) { f[6 * b] = 0; f[6 * b + 1] = 0; POL.pending = null; }   // the push lasts 20 ms (same as push_steps = 1 in training)
+      mj.mj_step(m, d);
+    }
+    if (POL.pending) { f[6 * b] = 0; f[6 * b + 1] = 0; POL.pending = null; }
+    S.simT += UNI.cdt; POL.k++;
   }
   async function polControl() {   // one 0.02 s control step: obs(43) -> ONNX -> ctrl -> 10 physics steps
     var mj = S.mj, m = S.m, d = S.d, b = S.bid.base_link, qp = d.qpos, xm = d.xmat, o = new Float32Array(POL.nobs), walk = POL.nobs === 65, qr = null;
@@ -294,11 +360,12 @@
     if (POL.pending) { f = d.xfrc_applied; f[6 * b] = 0; f[6 * b + 1] = 0; POL.pending = null; }
     S.simT += CDT; POL.k++;
   }
+  function ctl() { return POL.uni ? polControlU() : polControl(); }
   function polTick(dt) {
     if (!POL.sess || POL.busy) return;
-    POL.acc = Math.min(POL.acc + dt, 0.1); POL.busy = true;
+    POL.acc = Math.min(POL.acc + dt, 3 * POL.cdt); POL.busy = true;
     (async function () {
-      try { var n = 0; while (POL.acc >= CDT && n < 3) { POL.acc -= CDT; n++; await polControl(); } if (n) applyScene(); }
+      try { var n = 0; while (POL.acc >= POL.cdt && n < 3) { POL.acc -= POL.cdt; n++; await ctl(); } if (n) applyScene(); }
       catch (e) { POL.on = false; polBtn(); log(T('mj_fail') + (e && e.message || e)); }
       finally { POL.busy = false; }
     })();
@@ -313,9 +380,9 @@
     if (POL.on) polReset(); else { S.dirty = true; redraw(); }
     polBtn();
   };
-  S.polSteps = async function (n) { for (var i = 0; i < n; i++) await polControl(); applyScene(); };   // deterministic stepping (tests / scripting)
+  S.polSteps = async function (n) { for (var i = 0; i < n; i++) await ctl(); applyScene(); };   // deterministic stepping (tests / scripting)
   S.push = function () { var a = Math.random() * 2 * Math.PI; POL.pending = [3 * Math.cos(a), 3 * Math.sin(a)]; };
-  S.pol = POL; S.polReset = polReset; S.polControl = polControl;   // (also used by the node parity test)
+  S.pol = POL; S.polReset = polReset; S.polControl = ctl; S.UNI = UNI;   // (also used by the node parity test)
   function box(show) { var b = $('mjbox'); if (b) b.style.display = show ? 'flex' : 'none'; var t = $('mjBtn'); if (t) t.classList.toggle('on', !!show); }
   function redraw() { if (window.TRAJ && !manualAngles) drawAt(pauseMs); else poseMesh(manualAngles || lastAngles); }
   S.toggle = function () {

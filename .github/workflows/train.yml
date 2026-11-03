@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       minutes: {description: 'Training wall-clock budget in minutes, 1-340 (a GitHub job is limited to 360 min including setup; 330 is the safe maximum)', default: '330'}
-      task:    {description: 'stand (balance), walk (imitate the official forward walk), getup_back (get up from lying on the back / face up = official BackStand) or getup_front (from lying on the front / face down = FrontStand)', type: choice, options: [walk, stand, getup_back, getup_front], default: 'walk'}
+      task:    {description: 'stand (balance), walk (velocity walk: forward / back / left / right / turn on command), walk_ref (imitate the official forward walk), getup_back (get up from lying on the back / face up = official BackStand) or getup_front (from lying on the front / face down = FrontStand)', type: choice, options: [walk, walk_ref, stand, getup_back, getup_front], default: 'walk'}
       resume:  {description: 'Resume from the latest cached checkpoint (true/false)', default: 'true'}
       seed:    {description: 'Random seed', default: '0'}
       cfg:     {description: 'JSON overrides for push / reward weights, see CFG in rl/alpha2_env.py', default: '{}'}
@@ -27,7 +27,7 @@ jobs:
     steps:
       - name: Validate inputs
         run: |
-          case "$TASK" in stand|walk|getup_back|getup_front) ;; *) echo "task must be stand, walk, getup_back or getup_front"; exit 1;; esac
+          case "$TASK" in stand|walk|walk_ref|getup_back|getup_front) ;; *) echo "task must be stand, walk, walk_ref, getup_back or getup_front"; exit 1;; esac
           [[ "$MINUTES" =~ ^[0-9]+$ ]] && [ "$MINUTES" -ge 1 ] && [ "$MINUTES" -le 340 ] || { echo "minutes must be 1..340"; exit 1; }
           [[ "$SEED" =~ ^[0-9]+$ ]] || { echo "seed must be a non-negative integer"; exit 1; }
           [[ -z "$POLICY_NAME" || ( "$POLICY_NAME" =~ ^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$ && "$POLICY_NAME" != legacy ) ]] || { echo "name must be letters/digits/-/_ (max 32), not 'legacy'"; exit 1; }

@@ -18,7 +18,11 @@
     { k: 'w_pose', def: 0.1, min: 0, max: 2, step: 0.05 },
     { k: 'w_track', def: 1, min: 0, max: 5, step: 0.1 },
     { k: 'w_smooth', def: 0.02, min: 0, max: 1, step: 0.01 },
-    { k: 'w_torque', def: 0.002, min: 0, max: 0.05, step: 0.001 }
+    { k: 'w_torque', def: 0.002, min: 0, max: 0.05, step: 0.001 },
+    { k: 'w_air', def: 0.5, min: 0, max: 3, step: 0.1 },
+    { k: 'cmd_vx', def: 0.05, min: 0, max: 0.3, step: 0.01 },
+    { k: 'cmd_vy', def: 0.03, min: 0, max: 0.2, step: 0.01 },
+    { k: 'cmd_wz', def: 0.4, min: 0, max: 2, step: 0.05 }
   ];
   var TXT = {
     rc_title: ['☁ GitHub 雲端訓練', '☁ GitHub cloud training'],
@@ -33,7 +37,8 @@
     rc_new_token: ['建立 token ↗', 'Create token ↗'],
     rc_task: ['任務', 'Task'],
     rc_stand: ['站穩抗推', 'Stand / balance'],
-    rc_walk: ['步行（模仿官方前行）', 'Walk (imitate official forward walk)'],
+    rc_walk: ['步行（速度指令：前後左右＋轉身）', 'Walk (velocity command: forward / back / left / right / turn)'],
+    rc_walk_ref: ['步行（模仿官方前行）', 'Walk (imitate official forward walk)'],
     rc_getup_back: ['起身（仰躺・頭向上，官方 BackStand）', 'Get up (on the back, face up; official BackStand)'],
     rc_getup_front: ['起身（趴著・頭向下，官方 FrontStand）', 'Get up (on the front, face down; official FrontStand)'],
     rc_minutes: ['時長（分鐘）', 'Minutes'],
@@ -44,16 +49,24 @@
     rc_seed: ['seed', 'seed'],
     p_push_force: ['推力 N', 'Push force N'],
     p_push_force_t: ['隨機推機身嘅力（訓練抗推用）。0＝唔推。', 'Random push on the body during training. 0 = no pushes.'],
-    p_push_steps: ['推持續（步）', 'Push length (steps)'],
-    p_push_steps_t: ['每次推持續幾多個控制步（每步 0.02 秒）。1＝原本單步；5＝0.1 秒。', 'Control steps (0.02 s each) a push is held. 1 = the original single step; 5 = 0.1 s.'],
+    p_push_steps: ['推持續（×0.02 秒）', 'Push length (x 0.02 s)'],
+    p_push_steps_t: ['每次推持續幾耐，單位 0.02 秒。1＝20 毫秒；5＝0.1 秒（一個控制步）。', 'How long a push is held, in units of 0.02 s. 1 = 20 ms; 5 = 0.1 s (one control step).'],
     p_push_prob: ['推嘅機率', 'Push probability'],
     p_push_prob_t: ['每 2 秒一次機會，有幾大機率推。', 'Chance of a push at each 2 s slot.'],
     p_w_tilt: ['傾斜懲罰', 'Tilt penalty'],
     p_w_tilt_t: ['越大越努力保持直立。', 'Bigger = tries harder to stay upright.'],
     p_w_pose: ['偏離企姿懲罰（站穩）', 'Pose-deviation penalty (stand)'],
     p_w_pose_t: ['只係「站穩」任務：越大越貼近預設企姿。', '"Stand" only: bigger = stays closer to the default stance.'],
-    p_w_track: ['跟隨動作獎勵（步行）', 'Reference-tracking reward (walk)'],
-    p_w_track_t: ['只係「步行」任務：越大越貼近官方動作。', '"Walk" only: bigger = follows the official motion more closely.'],
+    p_w_track: ['跟隨獎勵（步行）', 'Tracking reward (walk)'],
+    p_w_track_t: ['步行任務：越大越貼近速度指令（模仿官方前行：越貼近官方動作）。', 'Walk tasks: bigger = follows the velocity command (reference walk: the official motion) more closely.'],
+    p_w_air: ['單腳支撐獎勵', 'Single-support reward'],
+    p_w_air_t: ['只係「步行」（速度指令）：有指令時獎勵一隻腳離地，鼓勵真正踏步。', '"Walk" (velocity) only: rewards one foot in the air while a command is active, encouraging real steps.'],
+    p_cmd_vx: ['最大前後速度 m/s', 'Max forward/back speed m/s'],
+    p_cmd_vx_t: ['只係「步行」（速度指令）：訓練時 vx 指令範圍 ±，player 嘅 slider 都用呢個範圍。', '"Walk" (velocity) only: training range ± of the vx command; the player sliders use it too.'],
+    p_cmd_vy: ['最大左右速度 m/s', 'Max sideways speed m/s'],
+    p_cmd_vy_t: ['只係「步行」（速度指令）：vy 指令範圍 ±。', '"Walk" (velocity) only: range ± of the vy command.'],
+    p_cmd_wz: ['最大轉身速度 rad/s', 'Max turn rate rad/s'],
+    p_cmd_wz_t: ['只係「步行」（速度指令）：wz 指令範圍 ±。', '"Walk" (velocity) only: range ± of the wz command.'],
     p_w_smooth: ['動作平滑懲罰', 'Action-smoothness penalty'],
     p_w_smooth_t: ['越大動作越柔和（少抖動）。', 'Bigger = smoother, less jitter.'],
     p_w_torque: ['扭力懲罰', 'Torque penalty'],
@@ -126,9 +139,9 @@
 
   // ---- state (persisted in localStorage when available) ----
   var ST = { repo: '', token: '', remember: false, task: 'walk', name: '', minutes: 330, resume: true, seed: 0, params: {}, runId: 0, t0: 0, task0: 'walk' };
-  var TASKS = ['stand', 'walk', 'getup_back', 'getup_front'];
+  var TASKS = ['stand', 'walk', 'walk_ref', 'getup_back', 'getup_front'];
   function taskOf(t) { return TASKS.indexOf(t) >= 0 ? t : 'walk'; }
-  var LOOP = { id: '', k: 3, min: 330, gens: 10, pat: 3 }, loopTimer = 0, loopChamp = '', IDX = [], CURVES = {}, chartTok = 0, NAME_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$/, PATH_RE = /^(stand|walk|getup_back|getup_front)(\/[A-Za-z0-9_-]{1,32})?$/;
+  var LOOP = { id: '', k: 3, min: 330, gens: 10, pat: 3 }, loopTimer = 0, loopChamp = '', IDX = [], CURVES = {}, chartTok = 0, NAME_RE = /^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$/, PATH_RE = /^(stand|walk|walk_ref|getup_back|getup_front)(\/[A-Za-z0-9_-]{1,32})?$/;
   var timer = 0, branchCache = {}, busy = false;
   function lsGet() { try { return JSON.parse(localStorage.getItem(LSK) || '{}'); } catch (e) { return {}; } }
   function lsSet() {
@@ -208,7 +221,7 @@
       '<label ' + row + '><span ' + lab + ' data-i18n="rc_token" data-i18n-title="rc_token_t"></span><input id="rlcToken" type="password" autocomplete="off" spellcheck="false" ' + inp + '></label>' +
       '<div ' + row + '><span ' + lab + '></span><label style="display:flex;align-items:center;gap:3px"><input id="rlcRem" type="checkbox" style="margin:0"><span data-i18n="rc_remember" data-i18n-title="rc_remember_t"></span></label>' +
       '<a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener" style="margin-left:auto" data-i18n="rc_new_token"></a></div>' +
-      '<label ' + row + '><span ' + lab + ' data-i18n="rc_task"></span><select id="rlcTask" ' + inp + '><option value="stand" data-i18n="rc_stand"></option><option value="walk" data-i18n="rc_walk"></option><option value="getup_back" data-i18n="rc_getup_back"></option><option value="getup_front" data-i18n="rc_getup_front"></option></select></label>' +
+      '<label ' + row + '><span ' + lab + ' data-i18n="rc_task"></span><select id="rlcTask" ' + inp + '><option value="stand" data-i18n="rc_stand"></option><option value="walk" data-i18n="rc_walk"></option><option value="walk_ref" data-i18n="rc_walk_ref"></option><option value="getup_back" data-i18n="rc_getup_back"></option><option value="getup_front" data-i18n="rc_getup_front"></option></select></label>' +
       '<label ' + row + '><span ' + lab + ' data-i18n="rc_name" data-i18n-title="rc_name_t"></span><input id="rlcName" type="text" maxlength="32" spellcheck="false" placeholder="auto" ' + inp + '></label>' +
       '<label ' + row + '><span ' + lab + ' data-i18n="rc_minutes" data-i18n-title="rc_minutes_t"></span><input id="rlcMin" type="number" min="1" max="340" step="1" ' + inp + '></label>' +
       '<label style="display:flex;align-items:center;gap:4px;margin:3px 0"><input id="rlcResume" type="checkbox" style="margin:0"><span data-i18n="rc_resume"></span></label>' +
@@ -394,8 +407,10 @@
       stat(tt('rc_loading'));
       var pr = await fetch(base + 'policy.onnx' + bust); if (!pr.ok) throw new Error(tt('rc_ehttp') + ' ' + pr.status);
       var files = [new File([await pr.arrayBuffer()], 'policy.onnx')];
-      if (e.task !== 'stand') { var rr = await fetch(base + 'ref.json' + bust);   // walk / get-up policies need the reference they were trained against
-        if (!rr.ok) throw new Error(tt('rc_ehttp') + ' ' + rr.status); files.push(new File([await rr.text()], 'ref.json')); }
+      // reference walk / get-up policies need the reference they were trained against; velocity-walk policies (and older 'walk' ones, which were reference walks) try it optionally
+      var needRef = e.task === 'walk_ref' || e.task.indexOf('getup') === 0, rr = (needRef || e.task === 'walk') ? await fetch(base + 'ref.json' + bust) : null;
+      if (rr && rr.ok) files.push(new File([await rr.text()], 'ref.json')); else if (needRef) throw new Error(tt('rc_ehttp') + ' ' + (rr ? rr.status : '?'));
+      files.push(new File([JSON.stringify({ task: e.task, cfg: e.cfg || {} })], 'meta.json'));   // task + cfg (command ranges) for the player
       if (!window.MJSIM) throw new Error('MJSIM not available');
       if (!MJSIM.on) MJSIM.toggle();   // the policy runs in the physics mode
       await MJSIM.loadPolicy(files);

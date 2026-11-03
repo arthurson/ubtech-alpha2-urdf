@@ -6,14 +6,14 @@ import alpha2_env as E
 
 for mode, must_stand in (('back', True), ('front', None)):
     env = E.make_env('getup_' + mode, randomize=False, push=False, seed=0); o, _ = env.reset(seed=0)
-    assert o.shape == (65,) and env.observation_space.shape == (65,)
+    assert o.shape == (E.OBS_DIM,) and env.observation_space.shape == (E.OBS_DIM,)
     zz = env.d.xmat[1].reshape(3, 3)[2, 2]; assert zz < 0.2 and env.d.qpos[2] < 0.08 and not env.standing(), 'starts lying on the floor'
-    assert abs(o[63]) == 0 and o[64] == 0                                   # progress 0, reference not over
+    assert abs(o[46]) == 0 and o[47] == 0                                   # progress 0, reference not over
     n = 0
     while True:
         o, r, te, tr, _ = env.step(np.zeros(20)); n += 1
         if te or tr: break
-    assert not te and n == env.EP == env.T + env.HOLD and o[63] == 1 and o[64] == 1
+    assert not te and n == env.EP == env.T + env.HOLD and o[46] == 1 and o[47] == 1
     if must_stand: assert env.standing(), 'the official BackStand replay gets up in the simulator'
     print(mode, 'ok: steps', n, 'standing at the end:', env.standing())
 # pushes only after the reference is over

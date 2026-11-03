@@ -36,6 +36,15 @@ UBTECH Alpha 2 嘅標準 URDF（20 粒轉向關節、21 條 link），由
 - FK 由 `servo_map.yaml` 計（offset，逐粒關節同 MuJoCo 對過，誤差 < 1e-13 mm）；`.ubx` 播放跟官方 Alpha2Services 1.1.7.3 流程（leaf 鏈＋block gate＋Loop＋跳 track＋跨 track 續接），202 招逐格（角度／時間／歌）對過全中。
 - 無後端、無 build：`web/` 下面靜態檔（three.js r147 已收歸 `web/vendor/`，唔經 CDN）。本地有網用喺 repo root 起 `python -m http.server`；完全離線就咁開 html 再揀模型資料夾。
 
+## RL policy（rl/，GitHub Actions `train-rl`）
+
+- **所有 task 用同一個觀測值格式**（68 個 float）：關節位置 - 預設（20）、上一個 action（20）、機身座標重力（3）、速度指令 vx/vy/wz（3）、phase（2）、目標 - 預設（20；冇 ref 嘅 task 全 0）。匯出嘅 `policy.onnx` 有兩個輸出：`action`（回饋入 obs）同 `delta`（＝scale × action，rad）；player 對所有 task 都用 `ctrl = q_default + obs[48:68] + delta`。細節睇 `rl/alpha2_env.py` 開頭。舊 policy（obs 43／65，20 ms）仍然載入到。
+- **控制週期 100 ms**（`CTRL_DT`，50 個 2 ms 物理步；0–20 ms 動作延遲喺步內隨機）。50 Hz 嘅 ref 按 100 ms 內插。`push_steps` 單位仍然係 0.02 秒。
+- **Task**：`stand`、`walk`（速度指令：前／後／左／右／轉身，每 4 秒換指令，15% 企定、15% 原地轉；參考 Rhoban/mjlab_microban；冇 ref，phase 用 1 秒自由運行時鐘；預設範圍 `cmd_vx/vy/wz` ＝ 0.05 m/s、0.03 m/s、0.4 rad/s）、`walk_ref`（原本模仿官方前行）、`getup_back`、`getup_front`。
+- Player：載入速度 policy 後出現「速度」一行（vx／vy／wz slider；鍵盤 W/S、A/D、Q/E，空白＝停）。
+- 測試：`python rl/test_env.py`、`rl/test_getup.py`、`rl/test_autoloop.py`；JS 對 Python：`python rl/dump_parity.py /tmp/parity.json && node web/tools/test-policy.mjs /tmp/parity.json`。
+- 注意：100 ms 步長令每 CPU 小時嘅樣本數大約得返舊 20 ms 嘅 1/5。
+
 ## 授權
 GPL-3.0-only（見 `LICENSE`；`package.xml` license 欄）。覆蓋呢度生出嚟嘅檔（URDF、SRDF、config、launch、本包 script）。mesh 幾何嚟自 maintainer 提供嘅 UBTECH Alpha 2 PC 軟件模型／散件，本包唔授予該第三方素材任何權利。
 

@@ -1,12 +1,13 @@
 """Strict policy evaluation (CPU). The training-time eval only reports survival, which saturates (even the untrained baseline survives),
 so this measures what actually differs:
   clean : n episodes without pushes  -> survival rate, forward distance x, lateral drift |y|, mean / max tilt, mean torque
-  push  : a push of F newtons held for `--push-steps` control steps (0.02 s each) while moving, 4 directions x seeds,
+  push  : a push of F newtons held for `--push-steps` x 0.02 s (default 5 = 0.1 s = one 100 ms control step) while moving, 4 directions x seeds,
           for each F in --forces  -> survival rate per force, their mean (push_mean) and the force where survival crosses 50 % (push_f50)
   score : one number in 0..1 used by rl/autoloop.py to rank policies (see score()).
 Evaluation seeds are fixed (independent of the training seed) so scores of different policies are comparable.
   python rl/evaluate.py --model rl/out/model.zip --task walk --out rl/out/eval.json
-  python rl/evaluate.py --baseline --task walk --out rl/out/eval_baseline.json      # zero action (= replay of the reference for walk)"""
+  python rl/evaluate.py --baseline --task walk --out rl/out/eval_baseline.json      # zero action (= replay of the reference for walk_ref)
+walk (velocity task) is evaluated with a constant forward command of 0.75 * cmd_vx; clean['x_target'] = the distance that command asks for."""
 import argparse, json, os, sys, time
 import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -27,20 +28,23 @@ def _init(model_path, task, ref):
         _G['model'] = PPO.load(model_path, device='cpu')
 
 
+def _csteps(push_steps): return max(1, int(np.ceil(push_steps * 0.02 / E.CTRL_DT - 1e-9)))   # --push-steps (x 0.02 s) -> control steps
+
+
 def _env(seed):
     return E.make_env(_G['task'], ref=_G['ref'], seed=seed, push=False)
 
 
 def _episode_getup(job):
     """get-up tasks: success = standing during the last 0.5 s; a push (force held nsteps control steps) hits the standing robot 0.6 s after the reference ends"""
-    seed, force, direc, nsteps = job
-    env = _env(seed); o, _ = env.reset(seed=seed); vec = np.array(DIRS[direc], float) * force; t_push = env.T + 30; stood, tq = [], []
+    seed, force, direc, nsteps = job; nsteps = _csteps(nsteps)
+    env = _env(seed); o, _ = env.reset(seed=seed); vec = np.array(DIRS[direc], float) * force; t_push = env.T + 6; stood, tq = [], []
     for t in range(env.EP):
         if force > 0 and t_push <= t < t_push + nsteps: env.d.xfrc_applied[1, :2] = vec
         a = _G['model'].predict(o, deterministic=True)[0] if 'model' in _G else np.zeros(20)
         o, _, te, tr, _ = env.step(a); stood.append(env.standing()); tq.append(float(np.mean(np.abs(env.d.actuator_force[env.act]))))
         if tr: break
-    ok = all(stood[-25:]); i = len(stood)
+    ok = all(stood[-5:]); i = len(stood)
     if ok:
         while i > 0 and stood[i - 1]: i -= 1
     zz = env.d.xmat[1].reshape(3, 3)[2, 2]
@@ -49,11 +53,13 @@ def _episode_getup(job):
 
 def _episode(job):
     if _G['task'].startswith('getup'): return _episode_getup(job)
-    seed, force, direc, nsteps = job
-    walk = _G['task'] == 'walk'
-    env = _env(seed); o, _ = env.reset(seed=seed)
-    t_push, T = (300, 700) if walk else (100, 400)
-    if force <= 0: T = 1000 if walk else 500
+    seed, force, direc, nsteps = job; nsteps = _csteps(nsteps)
+    walk = _G['task'] in ('walk', 'walk_ref')
+    env = _env(seed)
+    if _G['task'] == 'walk': env.cmd_fixed = (0.75 * E.CFG['cmd_vx'], 0.0, 0.0)
+    o, _ = env.reset(seed=seed)
+    t_push, T = (60, 140) if walk else (20, 80)
+    if force <= 0: T = 200 if walk else 100
     vec = np.array(DIRS[direc], float) * force
     tilts, tq, fell = [], [], False
     for t in range(T):
@@ -77,7 +83,7 @@ def evaluate(model, task, ref, seeds=8, push_seeds=3, forces=FORCES, push_steps=
     surv = [float(np.mean([not r['fell'] for r in R[i * per:(i + 1) * per]])) for i in range(len(forces))]
     push = dict(forces=list(forces), steps=push_steps, survive=surv, mean=float(np.mean(surv)), f50=f50(forces, surv))
     if task.startswith('getup'):
-        ts = [c['t_stand'] * 0.02 for c in C if c['ok']]
+        ts = [c['t_stand'] * E.CTRL_DT for c in C if c['ok']]
         clean = dict(n=len(C), survive=float(np.mean([c['ok'] for c in C])), x_mean=0.0, x_std=0.0, y_abs=0.0, tilt_mean=float(np.mean([c['tilt'] for c in C])),
                      tilt_max=float(np.max([c['tilt'] for c in C])), torque=float(np.mean([c['torque'] for c in C])), z_final=float(np.mean([c['z'] for c in C])),
                      stand_time=(float(np.mean(ts)) if ts else None))
@@ -85,13 +91,14 @@ def evaluate(model, task, ref, seeds=8, push_seeds=3, forces=FORCES, push_steps=
     clean = dict(n=len(C), survive=float(np.mean([not c['fell'] for c in C])), x_mean=float(np.mean([c['x'] for c in C])), x_std=float(np.std([c['x'] for c in C])),
                  y_abs=float(np.mean([abs(c['y']) for c in C])), tilt_mean=float(np.mean([c['tilt_mean'] for c in C])), tilt_max=float(np.max([c['tilt_max'] for c in C])),
                  torque=float(np.mean([c['torque'] for c in C])))
+    if task == 'walk': clean['x_target'] = 0.75 * E.CFG['cmd_vx'] * 200 * E.CTRL_DT
     return dict(task=task, clean=clean, push=push)
 
 
 if __name__ == '__main__':
     ap = argparse.ArgumentParser()
     ap.add_argument('--model'); ap.add_argument('--baseline', action='store_true', help='zero action instead of a model')
-    ap.add_argument('--task', default='walk', choices=['stand', 'walk', 'getup_back', 'getup_front']); ap.add_argument('--ref', default=None, help='reference json (default: rl/ref/ of the task)')
+    ap.add_argument('--task', default='walk', choices=list(E.TASKS)); ap.add_argument('--ref', default=None, help='reference json (default: rl/ref/ of the task)')
     ap.add_argument('--out', required=True); ap.add_argument('--base-json', help='baseline eval json (for the score); default constants')
     ap.add_argument('--seeds', type=int, default=8); ap.add_argument('--push-seeds', type=int, default=3); ap.add_argument('--push-steps', type=int, default=5)
     ap.add_argument('--forces', default=','.join(map(str, FORCES))); ap.add_argument('--workers', type=int, default=None)

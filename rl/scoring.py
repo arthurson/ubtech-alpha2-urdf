@@ -28,7 +28,9 @@ def score(m, base=None):
     if c['survive'] < 0.95: return 0.0
     bt = ((base or {}).get('clean') or {}).get('tilt_mean') or 10.0
     parts = [(0.5, p['mean']), (0.3, clip(1.5 - c['tilt_mean'] / bt, 0, 1))]
-    if m.get('task') == 'walk':
+    if m.get('task') == 'walk' and c.get('x_target'):   # velocity walk: fraction of the distance the forward command asks for
+        parts.append((0.2, clip(c['x_mean'] / c['x_target'], 0, 1)))
+    elif m.get('task') in ('walk', 'walk_ref'):
         bx = ((base or {}).get('clean') or {}).get('x_mean') or 0.27
         parts.append((0.2, clip(c['x_mean'] / bx - 0.5, 0, 1)))
     return float(sum(w * v for w, v in parts) / sum(w for w, _ in parts))

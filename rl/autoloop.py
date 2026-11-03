@@ -22,12 +22,13 @@ MARGIN, TARGET, SIGMA0, SIGMA_MIN = 0.01, 0.95, 0.35, 0.1
 TUNE = {   # key: (lo, hi, kind)   kind: log = multiplicative noise, lin = additive, int = rounded multiplicative
     'push_force': (4.0, 24.0, 'log'), 'push_steps': (1, 10, 'int'), 'push_prob': (0.3, 1.0, 'lin'),
     'w_tilt': (0.5, 8.0, 'log'), 'w_smooth': (0.003, 0.3, 'log'), 'w_torque': (0.0003, 0.02, 'log'),
-    'w_pose': (0.02, 1.0, 'log'), 'w_track': (0.3, 3.0, 'log'), 'w_up': (0.1, 3.0, 'log'), 'w_stand': (0.3, 6.0, 'log'),
+    'w_pose': (0.02, 1.0, 'log'), 'w_track': (0.3, 3.0, 'log'), 'w_up': (0.1, 3.0, 'log'), 'w_stand': (0.3, 6.0, 'log'), 'w_air': (0.1, 2.0, 'log'),
 }
 TASK_KEYS = {'stand': ['push_force', 'push_steps', 'push_prob', 'w_tilt', 'w_smooth', 'w_torque', 'w_pose'],
-             'walk': ['push_force', 'push_steps', 'push_prob', 'w_tilt', 'w_smooth', 'w_torque', 'w_track']}
+             'walk': ['push_force', 'push_steps', 'push_prob', 'w_tilt', 'w_smooth', 'w_torque', 'w_track', 'w_air'],   # velocity walk (forward / back / left / right / turn)
+             'walk_ref': ['push_force', 'push_steps', 'push_prob', 'w_tilt', 'w_smooth', 'w_torque', 'w_track']}   # imitation of the official forward walk
 for _t in ('getup_back', 'getup_front'): TASK_KEYS[_t] = ['push_force', 'push_steps', 'push_prob', 'w_up', 'w_stand', 'w_track', 'w_smooth', 'w_torque']
-START = {'push_force': 6.0, 'push_steps': 5, 'push_prob': 0.7, 'w_tilt': 2.0, 'w_smooth': 0.02, 'w_torque': 0.002, 'w_pose': 0.1, 'w_track': 1.0, 'w_up': 0.5, 'w_stand': 1.0}
+START = {'push_force': 6.0, 'push_steps': 5, 'push_prob': 0.7, 'w_tilt': 2.0, 'w_smooth': 0.02, 'w_torque': 0.002, 'w_pose': 0.1, 'w_track': 1.0, 'w_up': 0.5, 'w_stand': 1.0, 'w_air': 0.5}
 ID_RE_MAX = 20
 
 
@@ -151,7 +152,7 @@ def rj(path):
 
 def main():
     ap = argparse.ArgumentParser(); sub = ap.add_subparsers(dest='cmd', required=True)
-    p = sub.add_parser('plan'); p.add_argument('--state-dir', required=True); p.add_argument('--loop-id', required=True); p.add_argument('--task', default='walk', choices=['stand', 'walk', 'getup_back', 'getup_front'])
+    p = sub.add_parser('plan'); p.add_argument('--state-dir', required=True); p.add_argument('--loop-id', required=True); p.add_argument('--task', default='walk', choices=['stand', 'walk', 'walk_ref', 'getup_back', 'getup_front'])
     p.add_argument('--k', type=int, default=3); p.add_argument('--minutes', type=int, default=60); p.add_argument('--max-gens', type=int, default=10)
     p.add_argument('--patience', type=int, default=3); p.add_argument('--seed', type=int, default=0)
     p.add_argument('--restart', action='store_true', help='resume a stopped loop: --max-gens = how many MORE generations, --patience = new patience')

@@ -36,6 +36,15 @@ Standard URDF of the UBTech Alpha 2 (20 revolute joints, 21 links), built from
 - FK is computed from `servo_map.yaml` (offsets, verified joint-for-joint against MuJoCo to 1e-13 mm); the `.ubx` player follows the official Alpha2Services 1.1.7.3 playback flow (leaf chain, block gates, loops, track jumps, cross-track continuation), verified frame-by-frame on all 202 bundled actions.
 - No backend, no build step: static files under `web/` (three.js r147 vendored in `web/vendor/`, no CDN). Online: serve the repo root (`python -m http.server`). Offline: just open the html file and pick the model folder.
 
+## RL policies (rl/, GitHub Actions `train-rl`)
+
+- **One observation layout for every task** (68 floats): joint pos - default (20), previous action (20), gravity in base frame (3), velocity command vx/vy/wz (3), phase (2), target - default (20; zeros unless the task has a reference). The exported `policy.onnx` has two outputs, `action` (feeds back into the obs) and `delta` (= scale x action, rad); the player applies `ctrl = q_default + obs[48:68] + delta` for every task. Details: docstring of `rl/alpha2_env.py`. Older policies (obs 43 / 65, 20 ms) still load in the player.
+- **Control period 100 ms** (`CTRL_DT`, 50 physics steps of 2 ms; action latency 0-20 ms is randomised inside the step). Reference trajectories (50 Hz) are interpolated at 100 ms. `push_steps` is still in units of 0.02 s.
+- **Tasks**: `stand`, `walk` (velocity command: forward / back / left / right / turn, resampled every 4 s, 15 % stand, 15 % turn on the spot - modelled on Rhoban/mjlab_microban; no reference, free-running 1 s clock as phase input; ranges `cmd_vx/vy/wz` = 0.05 m/s, 0.03 m/s, 0.4 rad/s by default), `walk_ref` (the previous imitation of the official forward walk), `getup_back`, `getup_front`.
+- Player: with a velocity policy loaded a Velocity row appears (vx / vy / wz sliders, keys W/S A/D Q/E, Space = stop).
+- Tests: `python rl/test_env.py`, `rl/test_getup.py`, `rl/test_autoloop.py`; JS-vs-Python parity: `python rl/dump_parity.py /tmp/parity.json && node web/tools/test-policy.mjs /tmp/parity.json`.
+- Note: 100 ms steps are ~5x fewer samples per CPU-hour than the old 20 ms steps.
+
 ## License
 GPL-3.0-only (see `LICENSE`; `package.xml` license field). This covers the files generated here (URDF, SRDF, config, launch, scripts of this package). The mesh geometry is derived from the UBTECH Alpha 2 PC-software model / part exports supplied by the maintainer; this package does not grant any rights to that third-party material.
 
