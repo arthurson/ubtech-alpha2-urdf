@@ -39,13 +39,13 @@ jobs:
       - name: Restore latest checkpoint
         if: inputs.resume == 'true'
         uses: actions/cache/restore@v4
-        with: {path: rl/out, key: 'rl-ckpt-${{ inputs.task }}-none', restore-keys: 'rl-ckpt-${{ inputs.task }}-'}
+        with: {path: rl/out, key: 'rl-ckpt-v2-${{ inputs.task }}-none', restore-keys: 'rl-ckpt-v2-${{ inputs.task }}-'}
       - name: Train
         run: python rl/train.py --task "$TASK" --minutes "$MINUTES" --seed "$SEED" --out rl/out --resume rl/out/model.zip
       - name: Save checkpoint for the next run
         if: always()
         uses: actions/cache/save@v4
-        with: {path: rl/out, key: 'rl-ckpt-${{ inputs.task }}-${{ github.run_id }}'}
+        with: {path: rl/out, key: 'rl-ckpt-v2-${{ inputs.task }}-${{ github.run_id }}'}
       - uses: actions/upload-artifact@v4
         if: always()
         with: {name: alpha2-policy, path: rl/out/}

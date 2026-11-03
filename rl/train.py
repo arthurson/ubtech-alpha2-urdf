@@ -46,8 +46,12 @@ if __name__ == '__main__':
     mk = lambda i: (lambda: make_env(a.task, ref=a.ref, seed=a.seed * 1000 + i))
     env = VecMonitor((SubprocVecEnv if a.envs > 1 else DummyVecEnv)([mk(i) for i in range(a.envs)]))   # VecMonitor -> rollout/ep_len_mean, ep_rew_mean in the log + learning curve (SB3 does not add it to a VecEnv by itself)
     curve = []
+    model = None
     if a.resume and os.path.exists(a.resume):
-        model = PPO.load(a.resume, env=env); print('resumed', a.resume)
+        try: model = PPO.load(a.resume, env=env); print('resumed', a.resume)
+        except Exception as ex:   # e.g. a checkpoint of the old 43 / 65-dim, 20 ms layout: its observation space does not match -> start from scratch
+            print('WARNING: cannot resume %s (%s: %s) - starting a new training' % (a.resume, type(ex).__name__, str(ex).splitlines()[0] if str(ex) else ''), flush=True); model = None
+    if model is not None:
         try: curve = [c for c in json.load(open(os.path.join(a.out, 'curve.json'))) if c['t'] <= model.num_timesteps]   # keep the earlier part of the curve
         except (OSError, ValueError, KeyError, TypeError): curve = []
     else: model = PPO('MlpPolicy', env, n_steps=256, batch_size=1024, learning_rate=3e-4, gamma=0.99, ent_coef=0.0, seed=a.seed, verbose=1,
