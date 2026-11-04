@@ -6,10 +6,10 @@
  "minutes": 330,
  "max_gens": 10,
  "patience_max": 3,
- "patience": 2,
+ "patience": 3,
  "seed": 0,
- "gen": 2,
- "sigma": 0.27999999999999997,
+ "gen": 3,
+ "sigma": 0.35,
  "stopped": false,
  "reason": "",
  "champion": {
@@ -25,23 +25,24 @@
    "w_up": 0.5,
    "w_stand": 1.0,
    "w_air": 0.5,
-   "cmd_vx": 0.05,
-   "cmd_vy": 0.03,
-   "cmd_wz": 0.4
+   "w_step": 0.5,
+   "cmd_vx": 0.03,
+   "cmd_vy": 0.02,
+   "cmd_wz": 0.3
   },
-  "score": 0.17308209430245175,
+  "score": 0.18315653511937416,
   "eval": {
    "task": "walk",
    "clean": {
     "n": 8,
     "survive": 1.0,
-    "x_mean": 0.024057853634194062,
-    "x_std": 0.0027365821488913476,
-    "y_abs": 0.005120655552242576,
-    "tilt_mean": 0.9076115845760696,
-    "tilt_max": 8.922022891096487,
-    "torque": 0.2845501673934022,
-    "x_target": 0.7500000000000001
+    "x_mean": 0.01835220401859183,
+    "x_std": 0.002389925887233548,
+    "y_abs": 0.012197334510154149,
+    "tilt_mean": 2.5066201782793787,
+    "tilt_max": 6.968669051245008,
+    "torque": 0.2571896291866348,
+    "x_target": 0.45
    },
    "push": {
     "forces": [
@@ -54,22 +55,36 @@
     "steps": 5,
     "survive": [
      1.0,
-     0.6666666666666666,
-     0.0,
+     0.5833333333333334,
+     0.16666666666666666,
      0.0,
      0.0
     ],
-    "mean": 0.3333333333333333,
-    "f50": 13.0
+    "mean": 0.35000000000000003,
+    "f50": 12.8,
+    "disp": [
+     0.000952073785665027,
+     0.07046355320962298,
+     0.154369564091324,
+     0.188947328108892,
+     0.20155272010318728
+    ],
+    "stepped": [
+     1.9166666666666667,
+     4.0,
+     3.75,
+     2.9166666666666665,
+     2.5
+    ]
    },
-   "score": 0.47308209430245174,
-   "seconds": 35.4
+   "score": 0.4831565351193742,
+   "seconds": 27.9
   },
-  "gen": 0,
-  "cand": 2,
-  "id": "g0c2",
-  "timesteps": 4041632,
-  "name": "walk-g0"
+  "gen": 2,
+  "cand": 0,
+  "id": "g2c0",
+  "timesteps": 9378648,
+  "name": "walk-g2"
  },
  "baseline": {
   "task": "walk",
@@ -289,8 +304,101 @@
    "timesteps": 8160836,
    "accepted": false,
    "failed": false
+  },
+  {
+   "gen": 2,
+   "id": "g2c0",
+   "cand": 0,
+   "cfg": {
+    "push_force": 6.0,
+    "push_steps": 5.0,
+    "push_prob": 0.7,
+    "w_tilt": 2.906,
+    "w_pose": 0.1,
+    "w_smooth": 0.02,
+    "w_torque": 0.001904,
+    "w_track": 1.0,
+    "w_up": 0.5,
+    "w_stand": 1.0,
+    "w_air": 0.5,
+    "w_step": 0.5,
+    "cmd_vx": 0.03,
+    "cmd_vy": 0.02,
+    "cmd_wz": 0.3
+   },
+   "score": 0.18315653511937416,
+   "push_mean": 0.35000000000000003,
+   "f50": 12.8,
+   "tilt_mean": 2.5066201782793787,
+   "x_mean": 0.01835220401859183,
+   "survive": 1.0,
+   "timesteps": 9378648,
+   "accepted": true,
+   "failed": false
+  },
+  {
+   "gen": 2,
+   "id": "g2c1",
+   "cand": 1,
+   "cfg": {
+    "push_force": 6.0,
+    "push_steps": 5.0,
+    "push_prob": 0.7,
+    "w_tilt": 4.068,
+    "w_pose": 0.1,
+    "w_smooth": 0.02,
+    "w_torque": 0.001904,
+    "w_track": 1.0,
+    "w_up": 0.5,
+    "w_stand": 1.0,
+    "w_air": 0.5,
+    "w_step": 0.5,
+    "cmd_vx": 0.03,
+    "cmd_vy": 0.02,
+    "cmd_wz": 0.3
+   },
+   "score": 0.15406744017972682,
+   "push_mean": 0.2833333333333333,
+   "f50": 10.857142857142858,
+   "tilt_mean": 2.9374424003877158,
+   "x_mean": 0.02790174040438534,
+   "survive": 1.0,
+   "timesteps": 9306860,
+   "accepted": false,
+   "failed": false
+  },
+  {
+   "gen": 2,
+   "id": "g2c2",
+   "cand": 2,
+   "cfg": {
+    "push_force": 6.0,
+    "push_steps": 4.0,
+    "push_prob": 0.5506,
+    "w_tilt": 2.906,
+    "w_pose": 0.1,
+    "w_smooth": 0.02556,
+    "w_torque": 0.001767,
+    "w_track": 0.9155,
+    "w_up": 0.5,
+    "w_stand": 1.0,
+    "w_air": 0.5,
+    "w_step": 0.5,
+    "cmd_vx": 0.03,
+    "cmd_vy": 0.02,
+    "cmd_wz": 0.3
+   },
+   "score": 0.16563966518264694,
+   "push_mean": 0.3,
+   "f50": 13.0,
+   "tilt_mean": 3.965132194270277,
+   "x_mean": 0.03518924666095561,
+   "survive": 1.0,
+   "timesteps": 8088592,
+   "accepted": false,
+   "failed": false
   }
  ],
  "created": "2026-11-03T23:34:43Z",
- "updated": "2026-11-04T07:35:56Z"
+ "updated": "2026-11-04T13:08:06Z"
 }
