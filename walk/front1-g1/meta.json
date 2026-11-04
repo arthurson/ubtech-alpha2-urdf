@@ -1,0 +1,170 @@
+{
+ "task": "walk",
+ "seed": 100,
+ "cfg": {
+  "push_force": 4.616,
+  "push_steps": 6.0,
+  "push_prob": 0.527,
+  "w_tilt": 2.0,
+  "w_pose": 0.1,
+  "w_smooth": 0.02424,
+  "w_torque": 0.002875,
+  "w_track": 1.0,
+  "w_up": 0.5,
+  "w_stand": 1.0,
+  "w_air": 0.3996,
+  "w_step": 0.5,
+  "cmd_vx": 0.03,
+  "cmd_vy": 0.02,
+  "cmd_wz": 0.3
+ },
+ "timesteps": 1490888,
+ "eval_max_len": 200,
+ "eval_lens": [
+  200,
+  200,
+  200,
+  200,
+  200,
+  200,
+  200
+ ],
+ "eval_mean_len": 200.0,
+ "eval_final_x": [
+  -0.003,
+  0.001,
+  -0.003,
+  0.005,
+  -0.005,
+  0.003,
+  -0.003
+ ],
+ "ctrl_dt": 0.1,
+ "obs_dim": 68,
+ "obs_layout": {
+  "q": [
+   0,
+   20
+  ],
+  "prev_action": [
+   20,
+   40
+  ],
+  "gravity": [
+   40,
+   43
+  ],
+  "command": [
+   43,
+   46
+  ],
+  "phase": [
+   46,
+   48
+  ],
+  "target": [
+   48,
+   68
+  ]
+ },
+ "act_scale": 0.5,
+ "velocity_eval": [
+  {
+   "cmd": [
+    0.03,
+    0,
+    0
+   ],
+   "len": 200,
+   "lin_err": 0.0325,
+   "ang_err": 0.008,
+   "x": -0.003,
+   "y": 0.029
+  },
+  {
+   "cmd": [
+    -0.03,
+    0,
+    0
+   ],
+   "len": 200,
+   "lin_err": 0.0366,
+   "ang_err": 0.007,
+   "x": 0.001,
+   "y": 0.019
+  },
+  {
+   "cmd": [
+    0,
+    0.02,
+    0
+   ],
+   "len": 200,
+   "lin_err": 0.0256,
+   "ang_err": 0.022,
+   "x": -0.003,
+   "y": 0.019
+  },
+  {
+   "cmd": [
+    0,
+    -0.02,
+    0
+   ],
+   "len": 200,
+   "lin_err": 0.0251,
+   "ang_err": 0.019,
+   "x": 0.005,
+   "y": 0.003
+  },
+  {
+   "cmd": [
+    0,
+    0,
+    0.3
+   ],
+   "len": 200,
+   "lin_err": 0.015,
+   "ang_err": 0.296,
+   "x": -0.005,
+   "y": -0.005
+  },
+  {
+   "cmd": [
+    0,
+    0,
+    -0.3
+   ],
+   "len": 200,
+   "lin_err": 0.0215,
+   "ang_err": 0.303,
+   "x": 0.003,
+   "y": 0.015
+  },
+  {
+   "cmd": [
+    0,
+    0,
+    0
+   ],
+   "len": 200,
+   "lin_err": 0.0212,
+   "ang_err": 0.011,
+   "x": -0.003,
+   "y": 0.016
+  }
+ ],
+ "score": 0.1683,
+ "push_mean": 0.333,
+ "push_f50": 12.0,
+ "tilt_mean": 3.25,
+ "x_mean": 0.004,
+ "loop": "front1",
+ "gen": 1,
+ "name": "front1-g1",
+ "run_id": "41764810227",
+ "run_url": "https://github.com/arthurson/ubtech-alpha2-urdf/actions/runs/41764810227",
+ "minutes": 60,
+ "path": "walk/front1-g1",
+ "finished_at": "2026-11-04T04:07:00Z"
+}
