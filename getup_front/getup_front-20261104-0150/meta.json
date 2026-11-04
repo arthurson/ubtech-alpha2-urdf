@@ -1,0 +1,85 @@
+{
+ "task": "getup_front",
+ "seed": 0,
+ "cfg": {
+  "push_force": 6.0,
+  "push_steps": 5.0,
+  "push_prob": 0.6,
+  "w_tilt": 2.0,
+  "w_pose": 0.2,
+  "w_smooth": 0.03,
+  "w_torque": 0.002,
+  "w_track": 0.2,
+  "w_up": 0.5,
+  "w_stand": 1.0,
+  "w_air": 0.5,
+  "w_step": 0.5,
+  "cmd_vx": 0.03,
+  "cmd_vy": 0.02,
+  "cmd_wz": 0.3
+ },
+ "timesteps": 888536,
+ "eval_max_len": 144,
+ "eval_lens": [
+  144,
+  144,
+  144,
+  144,
+  144,
+  144,
+  144,
+  144,
+  144,
+  144
+ ],
+ "eval_mean_len": 144.0,
+ "eval_final_x": [
+  -0.237,
+  -0.255,
+  0.008,
+  -0.243,
+  -0.219,
+  -0.21,
+  0.042,
+  -0.214,
+  -0.247,
+  -0.256
+ ],
+ "ctrl_dt": 0.1,
+ "obs_dim": 68,
+ "obs_layout": {
+  "q": [
+   0,
+   20
+  ],
+  "prev_action": [
+   20,
+   40
+  ],
+  "gravity": [
+   40,
+   43
+  ],
+  "command": [
+   43,
+   46
+  ],
+  "phase": [
+   46,
+   48
+  ],
+  "target": [
+   48,
+   68
+  ]
+ },
+ "act_scale": 0.2,
+ "success": 0.8,
+ "baseline_success": 0.4,
+ "name": "getup_front-20261104-0150",
+ "run_id": "41749697172",
+ "run_url": "https://github.com/arthurson/ubtech-alpha2-urdf/actions/runs/41749697172",
+ "minutes": 60,
+ "path": "getup_front/getup_front-20261104-0150",
+ "finished_at": "2026-11-04T01:50:55Z"
+}
