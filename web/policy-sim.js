@@ -81,7 +81,8 @@
       if (j < 0 || a < 0) throw new Error('servo ' + k + ' joint/actuator missing');
       S.jid.push(j); S.act.push(a); S.qadr.push(m.jnt_qposadr[j]);
     }
-    S.bid.base_link = mj.mj_name2id(m, O.mjOBJ_BODY.value, 'base_link'); if (S.bid.base_link < 0) throw new Error('body base_link missing');
+    FK.links.forEach(function (ln) { S.bid[ln] = mj.mj_name2id(m, O.mjOBJ_BODY.value, ln); });   // one MuJoCo body per link (same name as the visual mesh)
+    if (!(S.bid.base_link >= 0)) throw new Error('body base_link missing');
     S.ready = true;
   }
   function loadOrt() {
@@ -210,7 +211,7 @@
   }
 
   // ---- drawing: three.js, geoms straight from the MuJoCo model ----
-  var R = { renderer: null, scene: null, camera: null, controls: null, root: null, meshes: [], busy: false, last: 0 };
+  var R = { renderer: null, scene: null, camera: null, controls: null, root: null, meshes: [], links: {}, hull: {}, loadMsg: '', busy: false, last: 0 };
   function initView() {
     var cv = $('view'); if (!cv || !window.THREE) return false;
     var r = R.renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true }); r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -222,8 +223,31 @@
     window.addEventListener('resize', resize); resize(); return true;
   }
   function resize() { var cv = $('view'); if (!cv || !R.renderer) return; var w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return; R.renderer.setSize(w, h, false); R.camera.aspect = w / h; R.camera.updateProjectionMatrix(); }
+  // The robot is drawn with the real visual meshes (../meshes/visual/<link>.obj, ~45 MB, the head is 21 MB), exactly like ubx-player.html: one group per link, posed by its MuJoCo body.
+  // Until a link's OBJ has arrived its MuJoCo collision hulls are shown as a placeholder.
+  var skinMat = null;
+  function loadVisuals() {
+    if (!window.THREE || !THREE.OBJLoader) { R.loadMsg = 'OBJLoader missing'; return; }
+    skinMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55, metalness: 0.15 });   // the OBJs carry vertex colours
+    var kb = FK.meshKB || {}, todo = FK.links.slice().sort(function (a, b) { return (kb[a] || 0) - (kb[b] || 0); }), n = todo.length, done = 0, fails = 0;
+    FK.links.forEach(function (ln) { var g = new THREE.Group(); g.matrixAutoUpdate = true; R.root.add(g); R.links[ln] = g; });
+    (async function () {
+      for (var i = 0; i < todo.length; i++) {
+        var ln = todo[i]; R.loadMsg = 'mesh ' + done + '/' + n + ' (' + ln + ')';
+        try {
+          var r = await fetch(new URL('../meshes/visual/' + ln + '.obj', BASE).href); if (!r.ok) throw new Error('HTTP ' + r.status);
+          var t = (await r.text()).replace(/^mtllib.*$/gm, '').replace(/^usemtl.*$/gm, ''), o = new THREE.OBJLoader().parse(t);
+          o.traverse(function (c) { if (c.isMesh) c.material = skinMat; });
+          R.links[ln].add(o); (R.hull[S.bid[ln]] || []).forEach(function (h) { h.visible = false; });   // the real mesh replaces the placeholder hulls
+        } catch (e) { fails++; window.log('mesh ' + ln + ': ' + (e && e.message || e)); }
+        done++;
+        await new Promise(function (res) { setTimeout(res, 0); });   // let the sim / UI breathe between the big files
+      }
+      R.loadMsg = fails ? 'mesh: ' + fails + ' failed (placeholder hulls)' : '';
+    })();
+  }
   function buildMeshes() {
-    var m = S.m, mat = new THREE.MeshStandardMaterial({ color: 0xb8a9ff, roughness: 0.55, metalness: 0.1, flatShading: true }), v = m.mesh_vert, f = m.mesh_face;
+    var m = S.m, mat = new THREE.MeshStandardMaterial({ color: 0xc9c9d6, roughness: 0.6, metalness: 0.05, flatShading: true }), v = m.mesh_vert, f = m.mesh_face;
     for (var g = 0; g < m.ngeom; g++) {
       if (m.geom_type[g] !== 7) continue;   // mjGEOM_MESH (the ground plane is the grid)
       var id = m.geom_dataid[g], va = m.mesh_vertadr[id], vn = m.mesh_vertnum[id], fa = m.mesh_faceadr[id], fn = m.mesh_facenum[id];
@@ -231,14 +255,19 @@
       for (i = 0; i < 3 * vn; i++) pos[i] = v[3 * va + i];
       for (i = 0; i < 3 * fn; i++) idx[i] = f[3 * fa + i];
       var geo = new THREE.BufferGeometry(); (geo.setAttribute || geo.addAttribute).call(geo, 'position', new THREE.BufferAttribute(pos, 3)); geo.setIndex(new THREE.BufferAttribute(idx, 1)); geo.computeVertexNormals();
-      var mesh = new THREE.Mesh(geo, mat); mesh.matrixAutoUpdate = false; R.root.add(mesh); R.meshes.push({ g: g, mesh: mesh });
+      var mesh = new THREE.Mesh(geo, mat); mesh.matrixAutoUpdate = false; R.root.add(mesh); R.meshes.push({ g: g, mesh: mesh }); (R.hull[m.geom_bodyid[g]] = R.hull[m.geom_bodyid[g]] || []).push(mesh);
     }
   }
   function draw() {
     if (!S.ready || !R.renderer) return;
-    if (!R.meshes.length) buildMeshes();
+    if (!R.meshes.length) { buildMeshes(); loadVisuals(); }
     var d = S.d, xp = d.geom_xpos, xm = d.geom_xmat, i;
+    FK.links.forEach(function (ln) {   // visual meshes: link group = MuJoCo body pose (world, z-up; R.root turns it y-up)
+      var g = R.links[ln], b = S.bid[ln], bp = d.xpos, bq = d.xquat; if (!g) return;
+      g.position.set(bp[3 * b], bp[3 * b + 1], bp[3 * b + 2]); g.quaternion.set(bq[4 * b + 1], bq[4 * b + 2], bq[4 * b + 3], bq[4 * b]);
+    });
     for (i = 0; i < R.meshes.length; i++) {
+      if (!R.meshes[i].mesh.visible) continue;
       var g = R.meshes[i].g, a = 9 * g, p = 3 * g;
       R.meshes[i].mesh.matrix.set(xm[a], xm[a + 1], xm[a + 2], xp[p], xm[a + 3], xm[a + 4], xm[a + 5], xp[p + 1], xm[a + 6], xm[a + 7], xm[a + 8], xp[p + 2], 0, 0, 0, 1);
       R.meshes[i].mesh.matrixWorldNeedsUpdate = true;
@@ -252,7 +281,7 @@
     var e = $('mjstat'); if (!e || !POL.sess && !S.ready) return;
     var d = S.d, b = S.bid.base_link, q = d.xquat, z = d.xpos[3 * b + 2], zz = 1 - 2 * (q[4 * b + 1] * q[4 * b + 1] + q[4 * b + 2] * q[4 * b + 2]), tilt = Math.acos(Math.max(-1, Math.min(1, zz))) * 180 / Math.PI, fallen = z < 0.15 || tilt > 40;
     var fr = S.m.actuator_forcerange, af = d.actuator_force, sat = 0; for (var i = 0; i < 20; i++) if (Math.abs(af[i]) >= 0.98 * fr[2 * i + 1]) sat++;
-    e.textContent = (POL.sess ? POL.file + ' · ' : '') + 't ' + S.simT.toFixed(1) + 's · z ' + (z * 100).toFixed(1) + 'cm · ' + tilt.toFixed(0) + '° · sat ' + sat + (fallen ? ' · ⚠ ' + T('mj_fallen') : '');
+    e.textContent = (R.loadMsg ? R.loadMsg + ' · ' : '') + (POL.sess ? POL.file + ' · ' : '') + 't ' + S.simT.toFixed(1) + 's · z ' + (z * 100).toFixed(1) + 'cm · ' + tilt.toFixed(0) + '° · sat ' + sat + (fallen ? ' · ⚠ ' + T('mj_fallen') : '');
     e.style.color = fallen ? 'var(--warn)' : '';
   }
   function frame(now) {
