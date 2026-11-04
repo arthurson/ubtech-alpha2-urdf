@@ -1,5 +1,5 @@
 // Parity test: the unified-policy runtime of web/mj-sim.js (polControlU) must build the same 68-dim observation and the same ctrl as rl/alpha2_env.py.
-//   python rl/dump_parity.py /tmp/parity.json && node web/tools/test-policy.mjs /tmp/parity.json
+//   python rl/dump_parity.py /tmp/parity.json && node web/tools/test-policy.mjs /tmp/parity.json [mj-sim.js | policy-sim.js]
 // mj-sim.js is loaded in a vm sandbox with a DOM stub and a mocked physics state / ONNX session (no wasm needed).
 import fs from 'node:fs'; import vm from 'node:vm'; import path from 'node:path'; import { fileURLToPath } from 'node:url';
 const PKG = path.dirname(path.dirname(path.dirname(fileURLToPath(import.meta.url))));
@@ -10,7 +10,7 @@ const sb = { window: win, document: { currentScript: null, getElementById: () =>
   console, Math, Float32Array, Float64Array, Array, Promise, JSON, URL, Blob: class {}, Uint8Array, isFinite, parseFloat, String, Object, Date,
   I18N: {}, T: (k) => k, applyLang() {}, $: () => null, log() {}, requestAnimationFrame() {}, FK: { links: [] } };
 sb.window.MJSIM = undefined; sb.self = sb.window; vm.createContext(sb);
-vm.runInContext(fs.readFileSync(path.join(PKG, 'web', 'mj-sim.js'), 'utf8'), sb, { filename: 'mj-sim.js' });
+vm.runInContext(fs.readFileSync(path.join(PKG, 'web', process.argv[3] || 'mj-sim.js'), 'utf8'), sb, { filename: process.argv[3] || 'mj-sim.js' });
 const S = win.MJSIM, POL = S.pol, UNI = S.UNI; if (!S || !POL) throw new Error('MJSIM not exported');
 let n = 0, worstObs = 0, worstCtrl = 0;
 for (const [task, T] of Object.entries(P.tasks)) {
