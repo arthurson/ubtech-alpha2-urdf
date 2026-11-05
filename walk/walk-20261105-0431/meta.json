@@ -1,0 +1,163 @@
+{
+ "task": "walk",
+ "seed": 0,
+ "cfg": {
+  "push_force": 3.0,
+  "push_steps": 1.0,
+  "push_prob": 0.6,
+  "w_tilt": 2.0,
+  "w_pose": 0.2,
+  "w_smooth": 0.03,
+  "w_torque": 0.002,
+  "w_track": 0.2,
+  "w_up": 0.5,
+  "w_stand": 1.0,
+  "w_air": 0.5,
+  "w_step": 0.5,
+  "cmd_vx": 0.05,
+  "cmd_vy": 0.03,
+  "cmd_wz": 0.4
+ },
+ "timesteps": 7246412,
+ "eval_max_len": 200,
+ "eval_lens": [
+  200,
+  200,
+  200,
+  200,
+  200,
+  200,
+  200
+ ],
+ "eval_mean_len": 200.0,
+ "eval_final_x": [
+  -0.02,
+  -0.01,
+  0.124,
+  -0.157,
+  0.027,
+  0.018,
+  0.008
+ ],
+ "ctrl_dt": 0.1,
+ "obs_dim": 68,
+ "obs_layout": {
+  "q": [
+   0,
+   20
+  ],
+  "prev_action": [
+   20,
+   40
+  ],
+  "gravity": [
+   40,
+   43
+  ],
+  "command": [
+   43,
+   46
+  ],
+  "phase": [
+   46,
+   48
+  ],
+  "target": [
+   48,
+   68
+  ]
+ },
+ "act_scale": 0.5,
+ "velocity_eval": [
+  {
+   "cmd": [
+    0.05,
+    0,
+    0
+   ],
+   "len": 200,
+   "lin_err": 0.1225,
+   "ang_err": 0.047,
+   "x": -0.02,
+   "y": 0.071
+  },
+  {
+   "cmd": [
+    -0.05,
+    0,
+    0
+   ],
+   "len": 200,
+   "lin_err": 0.1239,
+   "ang_err": 0.059,
+   "x": -0.01,
+   "y": -0.018
+  },
+  {
+   "cmd": [
+    0,
+    0.03,
+    0
+   ],
+   "len": 200,
+   "lin_err": 0.0942,
+   "ang_err": 0.141,
+   "x": 0.124,
+   "y": 0.297
+  },
+  {
+   "cmd": [
+    0,
+    -0.03,
+    0
+   ],
+   "len": 200,
+   "lin_err": 0.1011,
+   "ang_err": 0.044,
+   "x": -0.157,
+   "y": -0.054
+  },
+  {
+   "cmd": [
+    0,
+    0,
+    0.4
+   ],
+   "len": 200,
+   "lin_err": 0.1085,
+   "ang_err": 0.52,
+   "x": 0.027,
+   "y": 0.163
+  },
+  {
+   "cmd": [
+    0,
+    0,
+    -0.4
+   ],
+   "len": 200,
+   "lin_err": 0.1075,
+   "ang_err": 0.303,
+   "x": 0.018,
+   "y": 0.09
+  },
+  {
+   "cmd": [
+    0,
+    0,
+    0
+   ],
+   "len": 200,
+   "lin_err": 0.0998,
+   "ang_err": 0.091,
+   "x": 0.008,
+   "y": 0.063
+  }
+ ],
+ "name": "walk-20261105-0431",
+ "run_id": "41928739674",
+ "run_url": "https://github.com/arthurson/ubtech-alpha2-urdf/actions/runs/41928739674",
+ "minutes": 340,
+ "path": "walk/walk-20261105-0431",
+ "finished_at": "2026-11-05T04:31:16Z"
+}
