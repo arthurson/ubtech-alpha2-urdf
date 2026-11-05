@@ -211,7 +211,7 @@
   }
 
   // ---- drawing: three.js, geoms straight from the MuJoCo model ----
-  var R = { renderer: null, scene: null, camera: null, controls: null, root: null, meshes: [], links: {}, hull: {}, loadMsg: '', busy: false, last: 0 };
+  var R = { renderer: null, scene: null, camera: null, controls: null, root: null, meshes: [], links: {}, hull: {}, loaded: {}, loadMsg: '', busy: false, last: 0 };
   function initView() {
     var cv = $('view'); if (!cv || !window.THREE) return false;
     var r = R.renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true }); r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -223,8 +223,9 @@
     window.addEventListener('resize', resize); resize(); return true;
   }
   function resize() { var cv = $('view'); if (!cv || !R.renderer) return; var w = cv.clientWidth, h = cv.clientHeight; if (!w || !h) return; R.renderer.setSize(w, h, false); R.camera.aspect = w / h; R.camera.updateProjectionMatrix(); }
-  // The robot is drawn with the real visual meshes (../meshes/visual/<link>.obj, ~45 MB, the head is 21 MB), exactly like ubx-player.html: one group per link, posed by its MuJoCo body.
-  // Until a link's OBJ has arrived its MuJoCo collision hulls are shown as a placeholder.
+  // Loading order: first the MuJoCo collision hulls (they come with the physics model, so the robot shows up at once), then the real visual meshes
+  // (../meshes/visual/<link>.obj, ~45 MB, the head is 21 MB; smallest first), exactly like ubx-player.html: one group per link, posed by its MuJoCo body.
+  // Each link's hulls disappear as soon as its OBJ has arrived.
   var skinMat = null;
   function loadVisuals() {
     if (!window.THREE || !THREE.OBJLoader) { R.loadMsg = 'OBJLoader missing'; return; }
@@ -238,7 +239,7 @@
           var r = await fetch(new URL('../meshes/visual/' + ln + '.obj', BASE).href); if (!r.ok) throw new Error('HTTP ' + r.status);
           var t = (await r.text()).replace(/^mtllib.*$/gm, '').replace(/^usemtl.*$/gm, ''), o = new THREE.OBJLoader().parse(t);
           o.traverse(function (c) { if (c.isMesh) c.material = skinMat; });
-          R.links[ln].add(o); (R.hull[S.bid[ln]] || []).forEach(function (h) { h.visible = false; });   // the real mesh replaces the placeholder hulls
+          R.links[ln].add(o); R.loaded[S.bid[ln]] = 1; (R.hull[S.bid[ln]] || []).forEach(function (h) { h.visible = false; });   // the real mesh replaces this link's collision hulls
         } catch (e) { fails++; window.log('mesh ' + ln + ': ' + (e && e.message || e)); }
         done++;
         await new Promise(function (res) { setTimeout(res, 0); });   // let the sim / UI breathe between the big files

@@ -25,10 +25,18 @@ def load_json(path, default):
     except (OSError, ValueError): return default
 
 
+def policy_name(task, name, suffix=''):
+    """the name a policy is published under: always starts with its task, so a name typed for another task (e.g. 'stand1' on a walk run) is never mistaken for it:
+    'walk' + 'front' + '-g3' -> 'walk-front-g3'; a name that already starts with the task is kept ('walk-1' -> 'walk-1-g3'); max 32 characters (the suffix is kept)."""
+    name = (name or '').strip()
+    base = name if re.match(r'^' + re.escape(task) + r'(?![A-Za-z0-9_])', name) else '%s-%s' % (task, name) if name else task
+    return base[:max(1, 32 - len(suffix))] + suffix
+
+
 def publish(dest, out, task, name, run_id='', run_url='', minutes=0, now=None):
     if task not in ('stand', 'walk', 'walk_ref', 'getup_back', 'getup_front'): raise SystemExit('task must be stand, walk, walk_ref, getup_back or getup_front')
     now = now or time.gmtime()
-    name = (name or '').strip() or '%s-%s' % (task, time.strftime('%Y%m%d-%H%M', now))
+    name = (name or '').strip(); name = policy_name(task, name) if name else '%s-%s' % (task, time.strftime('%Y%m%d-%H%M', now))
     if not NAME_RE.match(name) or name == 'legacy': raise SystemExit('name must match %s (and not be "legacy")' % NAME_RE.pattern)
     idx = load_json(os.path.join(dest, 'index.json'), {'version': 1, 'policies': []})
     pols = [p for p in idx.get('policies', []) if isinstance(p, dict)]

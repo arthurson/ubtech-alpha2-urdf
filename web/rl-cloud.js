@@ -98,6 +98,7 @@
     th_eval: ['評估', 'eval'], th_base: ['基準', 'base'], th_cfg: ['參數（唔同預設）', 'params (non-default)'],
     rc_default: ['預設', 'default'],
     rc_success: ['起身成功率', 'get-up success'],
+    rc_show_old: ['顯示舊格式（20 ms）policy', 'Show old-format (20 ms) policies'],
     rc_t_stand: ['站穩', 'Stand'], rc_t_walk: ['步行·速度指令', 'Walk·velocity'], rc_t_walk_ref: ['步行·模仿', 'Walk·reference'], rc_t_getup_back: ['起身·仰躺', 'Get-up·back'], rc_t_getup_front: ['起身·趴著', 'Get-up·front'],
     rc_loop_w: ['loop', 'loop'], rc_gen_w: ['第', 'gen'], rc_fmt_new: ['新格式 100ms', 'new 100ms'], rc_fmt_old: ['舊格式 20ms', 'old 20ms'],
     rc_score: ['評分', 'score'],
@@ -242,6 +243,7 @@
       '<div ' + row + '><select id="rlcSel" style="flex:1;min-width:0;font-size:11px"></select>' +
       '<button id="rlcLoad" style="padding:2px 6px;font-size:11px;margin:0" data-i18n="rc_load" data-i18n-title="rc_load_t"></button>' +
       '<button id="rlcListRef" style="padding:2px 6px;font-size:11px;margin:0" data-i18n-title="rc_list_t">↻</button></div>' +
+      '<label style="display:flex;gap:4px;align-items:center;font-size:11px;color:#666;margin:2px 0"><input type="checkbox" id="rlcShowOld"><span data-i18n="rc_show_old"></span></label>' +
       '<details id="rlcCmp" style="margin:3px 0"><summary style="cursor:pointer;color:#666" data-i18n="rc_cmp"></summary>' +
       '<div ' + row + '><span data-i18n="rc_b"></span><select id="rlcSelB" style="flex:1;min-width:0;font-size:11px"></select>' +
       '<select id="rlcMetric" style="font-size:11px"><option value="len" data-i18n="rc_m_len"></option><option value="rew" data-i18n="rc_m_rew"></option></select></div>' +
@@ -266,9 +268,15 @@
   }
   function wire() {
     $('rlcStart').onclick = start; $('rlcStop').onclick = cancel; $('rlcRefresh').onclick = function () { refresh(true); }; $('rlcLoad').onclick = function () { loadSelected(); }; $('rlcListRef').onclick = function () { refreshList(); };
+    var so = $('rlcShowOld'); so.checked = SHOW_OLD; so.addEventListener('change', function () { SHOW_OLD = so.checked; try { localStorage.setItem('rlc_showold', SHOW_OLD ? '1' : '0'); } catch (e) { /* ignore */ } fillSelect($('rlcSel'), false, $('rlcSel').value); fillSelect($('rlcSelB'), true, $('rlcSelB').value); renderTable(); drawChart(); });
     $('rlcSel').addEventListener('change', function () { renderTable(); drawChart(); }); $('rlcSelB').addEventListener('change', drawChart); $('rlcMetric').addEventListener('change', drawChart);
     $('rlcReset').onclick = function (e) { e.preventDefault(); ST.params = {}; ST.seed = 0; writeForm(); lsSet(); };
-    $('rlcTask').addEventListener('change', function () { readForm(); loopHint(); });
+    $('rlcTask').addEventListener('change', function () {
+      var old = ST.task; readForm();
+      // a name that starts with the previous task follows the new task (walk-foo -> stand-foo); a name that is only for the old task would be misleading
+      if (old && ST.task !== old && ST.name && ST.name.indexOf(old) === 0 && !/^[A-Za-z0-9]/.test(ST.name.slice(old.length) || ' ')) { ST.name = ST.task + ST.name.slice(old.length); $('rlcName').value = ST.name; }
+      loopHint(); lsSet();
+    });
     $('rlcLoopStart').onclick = loopStart; $('rlcLoopStop').onclick = loopStop; $('rlcLoopRef').onclick = function () { loopRefresh(false); };
     forIds(['rlcLoopId', 'rlcLoopK', 'rlcLoopMin', 'rlcLoopGens', 'rlcLoopPat'], function (el) { el.addEventListener('change', function () { readLoop(); lsSet(); }); });
     forIds(['rlcRepo', 'rlcToken', 'rlcRem', 'rlcTask', 'rlcName', 'rlcMin', 'rlcResume', 'rlcSeed'].concat(PARAMS.map(function (p) { return 'rlcP_' + p.k; })), function (el) {
@@ -336,23 +344,34 @@
     var d = e.finished_at ? new Date(e.finished_at) : null; if (!d || isNaN(d)) return e.finished_at ? String(e.finished_at).slice(0, 10) : '';
     var p = function (n) { return (n < 10 ? '0' : '') + n; }; return p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
   }
-  // one line per policy:  【task】 name (loop / generation) · result · date time · format (new = obs 68, 100 ms; old = obs 43/65, 20 ms)
-  function label(e) {
-    var lp = e.loop ? ' (' + tt('rc_loop_w') + ' ' + e.loop + (e.gen !== undefined ? ' · ' + tt('rc_gen_w') + ' ' + e.gen : '') + ')' : '';
-    return '【' + tt('rc_t_' + e.task) + '】 ' + (e.name || e.path) + lp + ' · ' + evalTxt(e) + ' · ' + whenTxt(e) + ' · ' + (e.obs_dim === 68 ? tt('rc_fmt_new') : tt('rc_fmt_old'));
+  // The list shows what the GitHub Actions runs really published (policies/index.json): newest first, grouped by task, one short line each.
+  // Old-format policies (obs 43 / 65, 20 ms, from before the unified layout) are hidden unless the checkbox is ticked.
+  var SHOW_OLD = false; try { SHOW_OLD = localStorage.getItem('rlc_showold') === '1'; } catch (e) { SHOW_OLD = false; }
+  var TASK_ORDER = ['walk', 'stand', 'walk_ref', 'getup_back', 'getup_front'];
+  function isNewFmt(e) { return e.obs_dim === 68; }
+  function visIdx() { return IDX.filter(function (e) { return SHOW_OLD || isNewFmt(e); }); }
+  function label(e) {   // name · result · date time (+ [old] for old-format ones)
+    return (e.name || e.path) + ' · ' + evalTxt(e) + ' · ' + whenTxt(e) + (isNewFmt(e) ? '' : ' · ' + tt('rc_fmt_old'));
   }
   function fillSelect(sel, withNone, keep) {
     sel.textContent = '';
     if (withNone) { var o0 = document.createElement('option'); o0.value = ''; o0.textContent = tt('rc_none'); sel.appendChild(o0); }
-    IDX.forEach(function (e) { var o = document.createElement('option'); o.value = e.path; o.textContent = label(e); sel.appendChild(o); });
-    if (!IDX.length && !withNone) { var oe = document.createElement('option'); oe.value = ''; oe.textContent = tt('rc_empty'); sel.appendChild(oe); }
-    if (keep && entryById(keep)) sel.value = keep;
+    var V = visIdx();
+    TASK_ORDER.concat(Object.keys(V.reduce(function (m, e) { m[e.task] = 1; return m; }, {})).filter(function (t) { return TASK_ORDER.indexOf(t) < 0; })).forEach(function (t) {
+      var L = V.filter(function (e) { return e.task === t; }); if (!L.length) return;
+      var g = document.createElement('optgroup'); g.label = tt('rc_t_' + t) + ' (' + L.length + ')';
+      L.forEach(function (e) { var o = document.createElement('option'); o.value = e.path; o.textContent = label(e); g.appendChild(o); });
+      sel.appendChild(g);
+    });
+    if (!V.length && !withNone) { var oe = document.createElement('option'); oe.value = ''; oe.textContent = tt('rc_empty'); sel.appendChild(oe); }
+    if (keep && entryById(keep) && (SHOW_OLD || isNewFmt(entryById(keep)))) sel.value = keep;
   }
   async function refreshList(runId, task, quiet) {   // -> the entry of that run (or the newest of `task`), selected in the list
     if (!needRepo()) return null;
     try {
       var j = await fetchJson(RAW + ST.repo + '/policies/index.json');
       IDX = j && Array.isArray(j.policies) ? j.policies.filter(validEntry) : [];
+      IDX.sort(function (x, y) { return String(y.finished_at || '').localeCompare(String(x.finished_at || '')); });   // newest first
       if (!j) {   // branch from before named policies existed: policies/<task>/{policy.onnx,meta.json}
         for (var t of ['walk', 'stand']) { var m = await fetchJson(RAW + ST.repo + '/policies/' + t + '/meta.json'); if (m) IDX.push({ id: t, path: t, task: t, name: 'latest', eval_mean_len: m.eval_mean_len, eval_max_len: m.eval_max_len, finished_at: m.finished_at, cfg: m.cfg, timesteps: m.timesteps, minutes: m.minutes, run_url: m.run_url }); }
       }
@@ -365,12 +384,12 @@
     return pick || entryById($('rlcSel').value);
   }
   function renderTable() {
-    var t = $('rlcTable'); t.textContent = ''; if (!IDX.length) return;
+    var t = $('rlcTable'); t.textContent = ''; if (!visIdx().length) return;
     var sel = $('rlcSel').value, heads = ['th_name', 'th_task', 'th_min', 'th_steps', 'th_eval', 'th_score', 'th_base', 'th_cfg'];
     var hr = document.createElement('tr');
     heads.forEach(function (k) { var th = document.createElement('th'); th.textContent = tt(k); th.style.cssText = 'text-align:left;padding:1px 3px;border-bottom:1px solid #999;white-space:nowrap'; hr.appendChild(th); });
     t.appendChild(hr);
-    IDX.forEach(function (e) {
+    visIdx().forEach(function (e) {
       var tr = document.createElement('tr'); tr.style.cursor = 'pointer'; if (e.path === sel) tr.style.fontWeight = 'bold';
       [e.name || e.path, e.task, e.minutes != null ? e.minutes : '-', e.timesteps != null ? (e.timesteps / 1e6).toFixed(2) + 'M' : '-', typeof e.success === 'number' ? tt('rc_success') + ' ' + Math.round(100 * e.success) + '%' : typeof e.eval_mean_len === 'number' ? Math.round(e.eval_mean_len) + '/' + (e.eval_max_len || '?') : '-', typeof e.score === 'number' ? e.score.toFixed(3) : '-', typeof e.baseline_mean_len === 'number' ? Math.round(e.baseline_mean_len) : '-', cfgTxt(e)].forEach(function (v) {
         var td = document.createElement('td'); td.textContent = String(v); td.style.cssText = 'padding:1px 3px;border-bottom:1px solid rgba(128,128,128,.3)'; tr.appendChild(td);

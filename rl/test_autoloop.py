@@ -97,7 +97,7 @@ for i, c in enumerate(m['include']):
     json.dump(ev(push=[.3, .8, .5][i], task='stand'), open(d + '/eval.json', 'w')); json.dump(dict(cfg=json.loads(c['cfg']), timesteps=500 + i, eval_mean_len=500.0), open(d + '/meta.json', 'w'))
 json.dump(ev(push=.4, tilt=9, task='stand'), open(f"{C}/cand-g0c0/eval_baseline.json", 'w'))
 out = subprocess.run([sys.executable, me, 'select', '--state-dir', S, '--cands-dir', C, '--winner-dir', W], capture_output=True, text=True, env=dict(os.environ, GITHUB_OUTPUT=T + '/out2.txt')); assert out.returncode == 0, out.stderr
-o = dict(l.split('=', 1) for l in open(T + '/out2.txt').read().splitlines()); assert o['accepted'] == 'true' and o['name'] == 'cli-g0' and o['stop'] == 'false', o
+o = dict(l.split('=', 1) for l in open(T + '/out2.txt').read().splitlines()); assert o['accepted'] == 'true' and o['name'] == 'stand-cli-g0' and o['stop'] == 'false', o
 assert open(W + '/policy.onnx', 'rb').read() == b'x1' and open(W + '/model.zip', 'rb').read() == b'm1'; wm = json.load(open(W + '/meta.json')); assert wm['loop'] == 'cli' and wm['gen'] == 0 and 'score' in wm
 st = A.load_state(S); assert st['gen'] == 1 and st['champion']['id'] == 'g0c1' and st['baseline'] is not None
 # second plan reads the state (inputs ignored) and now has no baseline job
@@ -105,4 +105,14 @@ out = subprocess.run([sys.executable, me, 'plan', '--state-dir', S, '--loop-id',
 assert len(p2['candidates']) == 3 and not any(c['baseline'] for c in p2['candidates']) and p2['gen'] == 1
 # bad loop id
 bad = subprocess.run([sys.executable, me, 'plan', '--state-dir', T + '/x', '--loop-id', '../evil'], capture_output=True, text=True); assert bad.returncode != 0
+# ---- policy names always start with their task ----
+from publish import policy_name
+assert policy_name('walk', 'front', '-g3') == 'walk-front-g3'
+assert policy_name('walk', 'walk-1', '-g0') == 'walk-1-g0'
+assert policy_name('walk', 'walk_ref-1', '-g0') == 'walk-walk_ref-1-g0'          # walk_ref is another task
+assert policy_name('walk_ref', 'walk_ref-1', '-g12') == 'walk_ref-1-g12'
+assert policy_name('getup_back', 'stand1', '-g2') == 'getup_back-stand1-g2'
+assert policy_name('stand', 'a' * 40, '-g10') == ('stand-' + 'a' * 40)[:28] + '-g10' and len(policy_name('stand', 'a' * 40, '-g10')) == 32
+assert policy_name('stand', '') == 'stand' and policy_name('stand', 'my-run') == 'stand-my-run'
+print('policy names ok')
 print('ALL AUTOLOOP TESTS PASSED')

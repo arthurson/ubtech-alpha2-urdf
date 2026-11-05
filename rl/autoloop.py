@@ -17,6 +17,7 @@ import argparse, copy, json, math, os, random, shutil, sys, time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from scoring import score
+from publish import policy_name
 
 MARGIN, TARGET, SIGMA0, SIGMA_MIN = 0.01, 0.95, 0.35, 0.1
 TUNE = {   # key: (lo, hi, kind)   kind: log = multiplicative noise, lin = additive, int = rounded multiplicative
@@ -114,7 +115,7 @@ def review(state, results, baseline_eval=None):
                                      x_mean=c.get('x_mean'), survive=c.get('survive'), timesteps=r.get('timesteps'), accepted=bool(accepted and r is best), failed=not e))
     state['history'] = state['history'][-300:]
     if accepted:
-        state['champion'] = dict(cfg=best['cfg'], score=best['score'], eval=best['eval'], gen=gen, cand=best['cand'], id=best['id'], timesteps=best.get('timesteps'), name='%s-g%d' % (state['loop_id'], gen))
+        state['champion'] = dict(cfg=best['cfg'], score=best['score'], eval=best['eval'], gen=gen, cand=best['cand'], id=best['id'], timesteps=best.get('timesteps'), name=policy_name(state['task'], state['loop_id'], '-g%d' % gen))
         state['sigma'], state['patience'] = SIGMA0, state['patience_max']
     else:
         state['sigma'] = max(SIGMA_MIN, state['sigma'] * 0.8); state['patience'] -= 1
